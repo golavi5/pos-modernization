@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../Quentame-Integration"
+		},
+		{
+			"path": "../ApiFacturame"
+		},
+		{
+			"path": "../New_App_POS"
+		},
+		{
+			"path": "../easy-shop-suite"
+		}
+	],
+	"settings": {}
+}

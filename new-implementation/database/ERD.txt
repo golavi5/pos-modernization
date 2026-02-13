@@ -1,0 +1,304 @@
+POS MODERNIZATION - ENTITY RELATIONSHIP DIAGRAM (ERD)
+=====================================================
+
+Version: 1.0 | Created: 2026-02-13
+
+=== USER MANAGEMENT LAYER ===
+
+┌─────────────────────┐
+│      companies      │
+├─────────────────────┤
+│ id (PK)            │
+│ name               │
+│ tax_id (UNIQUE)    │
+│ email              │
+│ is_active          │
+│ created_at         │
+└────────┬────────────┘
+         │
+         │ 1:N (Multi-tenant isolation)
+         │
+    ┌────┴──────────────────────────────────────┐
+    │                                            │
+    ▼                                            ▼
+┌──────────────────┐                    ┌──────────────────┐
+│      users       │                    │   warehouses     │
+├──────────────────┤                    ├──────────────────┤
+│ id (PK)         │                    │ id (PK)         │
+│ email (UNIQUE)   │                    │ name             │
+│ password_hash    │                    │ location         │
+│ company_id (FK)  │◄─ manages many    │ capacity         │
+│ is_active        │                    │ manager_id (FK)  │
+│ created_at       │                    └──────────────────┘
+└────────┬─────────┘
+         │ 1:N
+         │
+    ┌────┴──────────────────┐
+    │                       │
+    ▼                       ▼
+┌──────────────┐      ┌──────────────────┐
+│  user_roles  │      │  audit_log       │
+├──────────────┤      ├──────────────────┤
+│ user_id (FK) │      │ id (PK)         │
+│ role_id (FK) │      │ user_id (FK)     │
+│ assigned_at  │      │ action           │
+└──────────────┘      │ entity_type      │
+    │                 │ old_values (JSON)│
+    │                 │ timestamp        │
+    │                 └──────────────────┘
+    │
+    ▼
+┌──────────────────────┐
+│      roles           │
+├──────────────────────┤
+│ id (PK)             │
+│ name (UNIQUE)       │
+│ company_id (FK/NULL)│
+│ is_system_role      │
+└────────┬─────────────┘
+         │ 1:N
+         │
+         ▼
+    ┌─────────────────────┐
+    │  role_permissions   │
+    ├─────────────────────┤
+    │ role_id (FK)       │
+    │ permission_id (FK) │
+    └─────────────────────┘
+         │
+         ▼
+    ┌─────────────────────┐
+    │   permissions       │
+    ├─────────────────────┤
+    │ id (PK)            │
+    │ name               │
+    │ resource           │
+    │ description        │
+    └─────────────────────┘
+
+=== CUSTOMER RELATIONSHIP MANAGEMENT ===
+
+    companies (ref from above)
+         │
+         │ 1:N
+         │
+         ▼
+    ┌─────────────────┐
+    │   customers     │
+    ├─────────────────┤
+    │ id (PK)        │
+    │ company_id (FK)│
+    │ name           │
+    │ email (INDEX)  │
+    │ credit_limit   │
+    │ current_balance│
+    │ is_active      │
+    └────┬────────────┘
+         │
+    ┌────┴────────────────┬─────────────────────┐
+    │                     │                     │
+    ▼                     ▼                     ▼
+┌─────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│customer_addresses│ │customer_contacts │ │customer_balance* │
+├─────────────────┤ ├──────────────────┤ │ (Updated trigger)│
+│ id (PK)        │ │ id (PK)         │ │ from payments    │
+│ address_type   │ │ contact_name    │ │                  │
+│ street_address │ │ email           │ │ * Trigger-driven │
+│ city, state    │ │ phone           │ │   from orders    │
+│ is_default     │ │ is_primary      │ └──────────────────┘
+└─────────────────┘ └──────────────────┘
+
+=== INVENTORY & PRODUCTS ===
+
+    companies (ref)
+         │ 1:N
+         ▼
+    ┌────────────────┐
+    │  categories    │
+    ├────────────────┤
+    │ id (PK)       │
+    │ company_id (FK)
+    │ name          │
+    │ slug (UNIQUE) │
+    │ parent_cat_id │──── 1:N (self-referential hierarchy)
+    └────┬───────────┘
+         │ 1:N
+         │
+         ▼
+    ┌─────────────────┐
+    │    products     │
+    ├─────────────────┤
+    │ id (PK)        │
+    │ company_id (FK)│
+    │ category_id(FK)│
+    │ name           │
+    │ sku (UNIQUE)   │
+    │ barcode (IDX)  │
+    │ price (12,2)   │
+    │ cost (12,2)    │
+    │ quantity       │
+    │ reorder_level  │
+    │ is_active (IDX)│
+    └────┬────────────┘
+         │ 1:N
+         │
+         ├──────────────────────────┬──────────────────────┐
+         │                          │                      │
+         ▼                          ▼                      ▼
+    ┌────────────────┐        ┌─────────────┐      ┌──────────────────┐
+    │   inventory    │        │order_items  │      │stock_movements   │
+    ├────────────────┤        │ (See orders)│      ├──────────────────┤
+    │ id (PK)       │        │             │      │ id (PK)         │
+    │ product_id(FK)│        └─────────────┘      │ product_id (FK) │
+    │ warehouse_id(FK)                             │ movement_type   │
+    │ qty_on_hand   │        warehouses (ref)    │ quantity        │
+    │ qty_reserved  │        from above          │ reference_id    │
+    │ qty_available*│                             │ created_at      │
+    │ (calculated) │                             └──────────────────┘
+    │ last_counted  │
+    └────────────────┘
+
+=== SALES & ORDERS ===
+
+    companies (ref)
+         │ 1:N
+         ├─────────────────────────────────┐
+         │                                 │
+         ▼                                 ▼
+    ┌───────────────┐              ┌──────────────────┐
+    │    orders     │              │   invoices       │
+    ├───────────────┤              ├──────────────────┤
+    │ id (PK)      │◄─ 1:1 ──────│ id (PK)         │
+    │ customer_id  │              │ invoice_number   │
+    │ order_number │◄ UNIQUE      │ invoice_date     │
+    │ order_date   │              │ due_date         │
+    │ status (IDX) │              │ status (paid/due)│
+    │ subtotal     │              │ created_at       │
+    │ tax_amount   │              └──────────────────┘
+    │ total_amount │
+    │ paid_amount  │
+    │ remaining_bal│ * (calculated)
+    │ payment_stat │
+    │ created_by   │
+    │ is_active    │
+    │ created_at   │
+    └────┬─────────┘
+         │ 1:N
+    ┌────┴──────────────────────────┬──────────────────┐
+    │                               │                  │
+    ▼                               ▼                  ▼
+┌────────────────────┐    ┌──────────────┐    ┌────────────────┐
+│   order_items      │    │   payments   │    │  transactions  │
+├────────────────────┤    ├──────────────┤    ├────────────────┤
+│ id (PK)           │    │ id (PK)      │    │ id (PK)       │
+│ order_id (FK)     │    │ order_id (FK)│    │ order_id (FK) │
+│ product_id (FK)   │    │ amount       │    │ transaction_tp│
+│ quantity          │    │ method       │    │ amount        │
+│ unit_price        │    │ payment_date │    │ created_by    │
+│ tax_rate          │    │ status       │    │ created_at    │
+│ discount_percent  │    │ received_by  │    └────────────────┘
+│ tax_amount  *     │    │ created_at   │
+│ discount_amount * │    └──────────────┘
+│ subtotal  *       │       │ (Trigger: Update)
+│ line_total  *     │       │ customer.balance
+│ (all * = generated)│      │
+└────────────────────┘
+
+=== CONFIGURATION & REPORTING ===
+
+    companies (ref)
+         │ 1:N
+    ┌────┴──────────────────┬─────────────────────┐
+    │                       │                     │
+    ▼                       ▼                     ▼
+┌─────────────┐       ┌──────────────┐      ┌──────────────┐
+│  settings   │       │   reports    │      │  audit_log   │
+├─────────────┤       ├──────────────┤      │ (see users)  │
+│ id (PK)    │       │ id (PK)      │      │              │
+│ company_id │       │ report_type  │      └──────────────┘
+│ key        │       │ query        │
+│ value      │       │ created_by   │
+│ type       │       │ is_public    │
+│ is_system  │       │ created_at   │
+└─────────────┘       └──────────────┘
+
+=== KEY STATISTICS ===
+
+Tables: 20
+Columns: 200+
+Relationships: 30+
+Primary Keys: All UUID (CHAR 36)
+Foreign Keys: 30+ with proper constraints
+Indexes: 50+ (including full-text)
+Views: 6 reporting views
+Stored Procedures: 2
+Triggers: 4
+
+=== DESIGN PATTERNS ===
+
+1. MULTI-TENANCY: company_id in all transactional tables
+2. SOFT DELETES: deleted_at column for compliance
+3. AUDIT TRAIL: audit_log tracks all changes
+4. CALCULATED FIELDS: Generated columns (immutable)
+5. TEMPORAL DATA: created_at, updated_at timestamps
+6. RBAC: roles → permissions hierarchy
+7. DENORMALIZATION: inventory table (normalized separately)
+8. CASCADING: ON DELETE CASCADE for company cleanup
+
+=== QUERY EXAMPLES ===
+
+-- Sales by product (view)
+SELECT * FROM v_sales_by_product;
+
+-- Low stock alerts (view)
+SELECT * FROM v_low_stock_alert WHERE stock_status IN ('LOW', 'CRITICAL');
+
+-- Customer aging (view)
+SELECT * FROM v_customer_aging WHERE days_since_purchase > 90;
+
+-- Invoice aging (view)
+SELECT * FROM v_invoice_aging WHERE aging_bucket IN ('30-60 DAYS', '60-90 DAYS', '90+ DAYS');
+
+-- Find all orders for a customer
+SELECT * FROM orders 
+WHERE customer_id = ? 
+AND company_id = ? 
+ORDER BY order_date DESC;
+
+-- Audit changes to a specific record
+SELECT * FROM audit_log 
+WHERE entity_type = 'products' 
+AND entity_id = ? 
+ORDER BY timestamp DESC;
+
+-- Low stock by warehouse
+SELECT p.name, i.quantity_on_hand, p.reorder_level, w.name
+FROM inventory i
+JOIN products p ON i.product_id = p.id
+JOIN warehouse w ON i.warehouse_id = w.id
+WHERE i.quantity_on_hand <= p.reorder_level
+ORDER BY i.quantity_on_hand ASC;
+
+=== SCALABILITY NOTES ===
+
+Current design supports:
+- ✓ 100K+ orders
+- ✓ 50K+ products
+- ✓ 1M+ audit records
+- ✓ Multi-tenant isolation
+- ✓ Horizontal partitioning ready
+
+Recommended optimizations:
+- Partition orders/audit_log by year
+- Archive old audit logs (2+ years)
+- Add read replicas for reporting
+- Implement elasticsearch for search
+
+Legend:
+PK = Primary Key
+FK = Foreign Key
+IDX = Indexed
+* = Calculated/Generated column
+1:N = One-to-Many relationship
+1:1 = One-to-One relationship
+UNIQUE = Unique constraint

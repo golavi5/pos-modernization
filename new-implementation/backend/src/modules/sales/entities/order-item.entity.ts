@@ -1,0 +1,38 @@
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Order } from './order.entity';
+import { Product } from '../../products/entities/product.entity';
+
+@Entity('order_items')
+export class OrderItem {
+  @PrimaryGeneratedColumn('increment')
+  id: number;
+
+  @Column({ type: 'int', name: 'order_id' })
+  order_id: number;
+
+  @Column({ type: 'int', name: 'product_id' })
+  product_id: number;
+
+  @Column({ type: 'int' })
+  quantity: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unit_price' })
+  unit_price: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  subtotal: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'tax_amount' })
+  tax_amount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  total: number;
+
+  @ManyToOne(() => Order, order => order.order_items)
+  @JoinColumn({ name: 'order_id', referencedColumnName: 'id' })
+  order: Order;
+
+  @ManyToOne(() => Product, product => product.order_items)
+  @JoinColumn({ name: 'product_id', referencedColumnName: 'id' })
+  product: Product;
+}
