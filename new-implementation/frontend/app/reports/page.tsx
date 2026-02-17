@@ -1,71 +1,58 @@
 'use client';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { useState } from 'react';
+import { BarChart3, Package, Users, Warehouse } from 'lucide-react';
+import { SalesReportTab } from '@/components/reports/SalesReportTab';
+import { ProductReportTab } from '@/components/reports/ProductReportTab';
+import { CustomerReportTab } from '@/components/reports/CustomerReportTab';
+import { InventoryReportTab } from '@/components/reports/InventoryReportTab';
+
+type TabId = 'sales' | 'products' | 'customers' | 'inventory';
+
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: 'sales', label: 'Ventas', icon: <BarChart3 className="h-4 w-4" /> },
+  { id: 'products', label: 'Productos', icon: <Package className="h-4 w-4" /> },
+  { id: 'customers', label: 'Clientes', icon: <Users className="h-4 w-4" /> },
+  { id: 'inventory', label: 'Inventario', icon: <Warehouse className="h-4 w-4" /> },
+];
 
 export default function ReportsPage() {
+  const [activeTab, setActiveTab] = useState<TabId>('sales');
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Reports</h1>
-          <p className="text-gray-600 mt-1">Analyze your sales and business metrics</p>
-        </div>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Reportes y Analítica</h1>
+        <p className="text-gray-600 mt-1">Visualiza métricas, tendencias y análisis de tu negocio</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sales Report</CardTitle>
-          </CardHeader>
-          <CardContent className="min-h-64 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-600">Sales analytics will be implemented in Task 3.5</p>
-              <p className="text-sm text-gray-400 mt-2">Charts, trends, and summaries coming soon</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-1 -mb-px">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Inventory Report</CardTitle>
-          </CardHeader>
-          <CardContent className="min-h-64 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-600">Inventory analytics will be implemented in Task 3.6</p>
-              <p className="text-sm text-gray-400 mt-2">Stock levels, reorder alerts coming soon</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Report</CardTitle>
-          </CardHeader>
-          <CardContent className="min-h-64 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-600">Customer analytics will be implemented in Task 3.7</p>
-              <p className="text-sm text-gray-400 mt-2">Demographics, purchase history coming soon</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Financial Report</CardTitle>
-          </CardHeader>
-          <CardContent className="min-h-64 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-600">Financial analytics will be implemented in Task 3.8</p>
-              <p className="text-sm text-gray-400 mt-2">Revenue, margins, and forecasts coming soon</p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tab Content */}
+      <div>
+        {activeTab === 'sales' && <SalesReportTab />}
+        {activeTab === 'products' && <ProductReportTab />}
+        {activeTab === 'customers' && <CustomerReportTab />}
+        {activeTab === 'inventory' && <InventoryReportTab />}
       </div>
     </div>
   );
