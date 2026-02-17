@@ -1,0 +1,79 @@
+version: '3.9'
+
+# ── Para desarrollo local ──────────────────────────────────────────────────────
+# Uso: docker compose up -d
+# En Coolify se despliega cada servicio por separado.
+
+services:
+  # ── MySQL ──────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: pos_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: pos_db
+      MYSQL_USER: pos_user
+      MYSQL_PASSWORD: pos_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "pos_user", "-ppos_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (NestJS) ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: pos_backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: pos_user
+      DB_PASSWORD: pos_password
+      DB_NAME: pos_db
+      JWT_SECRET: dev_jwt_secret_change_in_production
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
+      CORS_ORIGINS: http://localhost:3001
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend (Next.js) ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3000
+    container_name: pos_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    ports:
+      - "3001:3001"
+
+volumes:
+  mysql_data:
+    driver: local
