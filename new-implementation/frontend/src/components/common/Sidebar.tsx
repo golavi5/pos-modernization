@@ -94,25 +94,19 @@ export function Sidebar({ isAdmin = false }: SidebarProps): React.ReactElement {
       );
     }
 
-    if (userRoles.includes(UserRole.ADMIN) && isAdmin) {
+    if (userRoles.includes(UserRole.ADMIN)) {
       allItems.push(
         {
-          id: 'admin-settings',
-          label: 'Settings',
-          path: '/admin/settings',
-          icon: 'Settings',
-        },
-        {
           id: 'users',
-          label: 'Users',
-          path: '/admin/users',
+          label: 'Usuarios',
+          path: '/users',
           icon: 'Users',
         },
         {
-          id: 'audit-log',
-          label: 'Audit Log',
-          path: '/admin/audit-log',
-          icon: 'FileText',
+          id: 'settings',
+          label: 'Configuración',
+          path: '/settings',
+          icon: 'Settings',
         }
       );
     }
