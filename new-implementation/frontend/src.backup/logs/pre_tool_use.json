@@ -1,0 +1,94 @@
+[
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "mkdir -p /tmp/legacy_backup && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_pages_legacy /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_App.legacy.tsx /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_main.legacy.tsx /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_routes_legacy /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/vite-env.d.ts /tmp/legacy_backup/ && echo \"Moved legacy files to /tmp/legacy_backup\"",
+      "description": "Move legacy files to backup location"
+    },
+    "tool_use_id": "toolu_0158J1FxgyNkVqdEpnpJnmMo"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cd /home/gor/Documents/devs/pos-modernization/new-implementation && docker compose up -d --build 2>&1",
+      "timeout": 600000,
+      "description": "Build and start Docker containers"
+    },
+    "tool_use_id": "toolu_01Tdocf63pn6GgskEWEaUshw"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/",
+      "description": "List UI components"
+    },
+    "tool_use_id": "toolu_012PyGEGVy5SevKtxqbKVTZN"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/customers/page.tsx",
+      "limit": 20
+    },
+    "tool_use_id": "toolu_01M9TYvge3u8MDz5GoXtjKNG"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "grep -r \"from '@/components/ui/Button'\" /home/gor/Documents/devs/pos-modernization/new-implementation/frontend --include=\"*.tsx\" --include=\"*.ts\" | head -20",
+      "description": "Find files with uppercase Button import"
+    },
+    "tool_use_id": "toolu_01GFBmwzdVqHKVeTmZThNG9n"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "grep -r \"from '@/components/ui/Card'\" /home/gor/Documents/devs/pos-modernization/new-implementation/frontend --include=\"*.tsx\" --include=\"*.ts\" | wc -l",
+      "description": "Count files with uppercase Card import"
+    },
+    "tool_use_id": "toolu_018mMxGWTxz764h76ZLd2dTD"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cd /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui && mv button.tsx Button.tsx && mv card.tsx Card.tsx && mv input.tsx Input.tsx && mv label.tsx Label.tsx && echo \"Renamed component files\"",
+      "description": "Rename UI components to match imports"
+    },
+    "tool_use_id": "toolu_01KdERw41sXNW44g1CAHh2vm"
+  }
+]

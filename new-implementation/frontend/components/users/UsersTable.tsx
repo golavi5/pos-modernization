@@ -43,7 +43,7 @@ export function UsersTable({
 
   if (users.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="text-center py-12 text-tertiary">
         <p className="text-lg font-medium">No se encontraron usuarios</p>
         <p className="text-sm mt-1">Intenta cambiar los filtros o crear un nuevo usuario</p>
       </div>
@@ -63,7 +63,7 @@ export function UsersTable({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-gray-500 text-xs uppercase">
+          <tr className="border-b text-tertiary text-xs uppercase">
             <th className="text-left py-3 px-4">Usuario</th>
             <th className="text-left py-3 px-4">Email</th>
             <th className="text-left py-3 px-4">Roles</th>
@@ -79,20 +79,20 @@ export function UsersTable({
               <td className="py-3 px-4">
                 <div>
                   <p className="font-medium">{user.name}</p>
-                  {user.phone && <p className="text-xs text-gray-400">{user.phone}</p>}
+                  {user.phone && <p className="text-xs text-quaternary">{user.phone}</p>}
                 </div>
               </td>
-              <td className="py-3 px-4 text-gray-600">{user.email}</td>
+              <td className="py-3 px-4 text-secondary">{user.email}</td>
               <td className="py-3 px-4">
                 <div className="flex flex-wrap gap-1">
                   {user.roles.length === 0 ? (
-                    <span className="text-gray-400 text-xs">Sin roles</span>
+                    <span className="text-quaternary text-xs">Sin roles</span>
                   ) : (
                     user.roles.map((role) => (
                       <span
                         key={role.id}
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          ROLE_COLORS[role.name.toLowerCase()] || 'bg-gray-100 text-gray-700'
+                          ROLE_COLORS[role.name.toLowerCase()] || 'bg-gray-100 text-secondary'
                         }`}
                       >
                         {role.name}
@@ -104,14 +104,14 @@ export function UsersTable({
               <td className="py-3 px-4 text-center">
                 <span
                   className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    user.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                    user.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-tertiary'
                   }`}
                 >
                   {user.isActive ? 'Activo' : 'Inactivo'}
                 </span>
               </td>
-              <td className="py-3 px-4 text-gray-500">{formatDate(user.lastLogin)}</td>
-              <td className="py-3 px-4 text-gray-500">{formatDate(user.createdAt)}</td>
+              <td className="py-3 px-4 text-tertiary">{formatDate(user.lastLogin)}</td>
+              <td className="py-3 px-4 text-tertiary">{formatDate(user.createdAt)}</td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">
                   <Button variant="ghost" size="sm" onClick={() => onEdit(user)} title="Editar">
@@ -131,7 +131,7 @@ export function UsersTable({
                   >
                     {user.isActive
                       ? <ToggleRight className="h-4 w-4 text-green-600" />
-                      : <ToggleLeft className="h-4 w-4 text-gray-400" />}
+                      : <ToggleLeft className="h-4 w-4 text-quaternary" />}
                   </Button>
                   <Button
                     variant="ghost"

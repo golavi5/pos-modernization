@@ -12,8 +12,8 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-lg">
           <span className="text-2xl font-bold text-white">POS</span>
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">POS Modernization</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <h1 className="mt-4 text-2xl font-bold">POS Modernization</h1>
+        <p className="mt-2 text-sm text-secondary">
           Modern Point of Sale System
         </p>
       </div>
@@ -24,7 +24,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       </div>
 
       {/* Footer */}
-      <div className="mt-8 text-center text-xs text-gray-600">
+      <div className="mt-8 text-center text-xs text-secondary">
         <p>&copy; 2024 POS System. All rights reserved.</p>
       </div>
     </div>

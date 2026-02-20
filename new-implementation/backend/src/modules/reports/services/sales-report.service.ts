@@ -1,12 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Sale } from '../../sales/entities/sale.entity';
-import { SaleItem } from '../../sales/entities/sale-item.entity';
-import {
-  ReportQueryDto,
-  PeriodType,
-} from '../dto/report-query.dto';
+import { Order } from '../../sales/entities/order.entity';
+import { OrderItem } from '../../sales/entities/order-item.entity';
+import { ReportQueryDto, PeriodType } from '../dto/report-query.dto';
 import {
   SalesReportDto,
   SalesSummaryDto,
@@ -20,17 +17,17 @@ export class SalesReportService {
   private readonly logger = new Logger(SalesReportService.name);
 
   constructor(
-    @InjectRepository(Sale)
-    private readonly saleRepository: Repository<Sale>,
-    @InjectRepository(SaleItem)
-    private readonly saleItemRepository: Repository<SaleItem>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+    @InjectRepository(OrderItem)
+    private readonly orderItemRepository: Repository<OrderItem>,
   ) {}
 
   /**
    * Generate sales summary report
    */
   async getSalesSummary(
-    companyId: number,
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<SalesSummaryDto> {
     const { startDate, endDate } = this.getDateRange(query);
@@ -82,7 +79,7 @@ export class SalesReportService {
    * Generate detailed sales report by period
    */
   async getSalesByPeriod(
-    companyId: number,
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<SalesReportDto> {
     const { startDate, endDate } = this.getDateRange(query);
@@ -108,7 +105,7 @@ export class SalesReportService {
    * Generate revenue trends report
    */
   async getRevenueTrends(
-    companyId: number,
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<RevenueTrendsDto> {
     const { startDate, endDate } = this.getDateRange(query);
@@ -145,29 +142,34 @@ export class SalesReportService {
    * Calculate metrics for a specific period
    */
   private async calculatePeriodMetrics(
-    companyId: number,
+    companyId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<Omit<SalesSummaryDto, 'period' | 'comparedToLastPeriod'>> {
-    const sales = await this.saleRepository.find({
+    const orders = await this.orderRepository.find({
       where: {
-        companyId,
-        createdAt: Between(startDate, endDate),
+        company_id: companyId,
+        created_at: Between(startDate, endDate),
       },
-      relations: ['items'],
+      relations: ['order_items', 'order_items.product'],
     });
 
-    const totalSales = sales.length;
-    const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-    const totalItems = sales.reduce(
-      (sum, sale) => sum + sale.items.reduce((s, item) => s + item.quantity, 0),
+    const totalSales = orders.length;
+    const totalRevenue = orders.reduce(
+      (sum, order) => sum + Number(order.total_amount),
+      0,
+    );
+    const totalItems = orders.reduce(
+      (sum, order) =>
+        sum + order.order_items.reduce((s, item) => s + item.quantity, 0),
       0,
     );
 
     // Calculate profit (assuming cost is tracked in product)
-    const totalProfit = sales.reduce((sum, sale) => {
-      const saleProfit = sale.items.reduce((itemSum, item) => {
-        const profit = (item.unitPrice - (item.product?.cost || 0)) * item.quantity;
+    const totalProfit = orders.reduce((sum, order) => {
+      const saleProfit = order.order_items.reduce((itemSum, item) => {
+        const profit =
+          (Number(item.unit_price) - (item.product?.cost || 0)) * item.quantity;
         return itemSum + profit;
       }, 0);
       return sum + saleProfit;
@@ -188,7 +190,7 @@ export class SalesReportService {
    * Get sales grouped by period (day/week/month)
    */
   private async getSalesGroupedByPeriod(
-    companyId: number,
+    companyId: string,
     startDate: Date,
     endDate: Date,
     periodType: PeriodType,
@@ -199,34 +201,33 @@ export class SalesReportService {
     switch (periodType) {
       case PeriodType.DAILY:
         dateFormat = '%Y-%m-%d';
-        groupBy = 'DATE(sale.createdAt)';
+        groupBy = 'DATE(order.created_at)';
         break;
       case PeriodType.WEEKLY:
         dateFormat = '%Y-W%u';
-        groupBy = 'YEARWEEK(sale.createdAt)';
+        groupBy = 'YEARWEEK(order.created_at)';
         break;
       case PeriodType.MONTHLY:
         dateFormat = '%Y-%m';
-        groupBy = 'DATE_FORMAT(sale.createdAt, "%Y-%m")';
+        groupBy = 'DATE_FORMAT(order.created_at, "%Y-%m")';
         break;
       case PeriodType.YEARLY:
         dateFormat = '%Y';
-        groupBy = 'YEAR(sale.createdAt)';
+        groupBy = 'YEAR(order.created_at)';
         break;
       default:
         dateFormat = '%Y-%m-%d';
-        groupBy = 'DATE(sale.createdAt)';
+        groupBy = 'DATE(order.created_at)';
     }
 
-    const results = await this.saleRepository
-      .createQueryBuilder('sale')
-      .select(`DATE_FORMAT(sale.createdAt, '${dateFormat}')`, 'date')
+    const results = await this.orderRepository
+      .createQueryBuilder('order')
+      .select(`DATE_FORMAT(order.created_at, '${dateFormat}')`, 'date')
       .addSelect('COUNT(*)', 'totalSales')
-      .addSelect('SUM(sale.totalAmount)', 'totalRevenue')
-      .addSelect('SUM(sale.totalItems)', 'totalItems')
-      .addSelect('AVG(sale.totalAmount)', 'averageTicket')
-      .where('sale.companyId = :companyId', { companyId })
-      .andWhere('sale.createdAt BETWEEN :startDate AND :endDate', {
+      .addSelect('SUM(order.total_amount)', 'totalRevenue')
+      .addSelect('AVG(order.total_amount)', 'averageTicket')
+      .where('order.company_id = :companyId', { companyId })
+      .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
@@ -237,9 +238,9 @@ export class SalesReportService {
     return results.map((row) => ({
       date: row.date,
       totalSales: parseInt(row.totalSales),
-      totalRevenue: parseFloat(row.totalRevenue),
-      totalItems: parseInt(row.totalItems),
-      averageTicket: parseFloat(row.averageTicket),
+      totalRevenue: parseFloat(row.totalRevenue || '0'),
+      totalItems: 0,
+      averageTicket: parseFloat(row.averageTicket || '0'),
     }));
   }
 
@@ -247,35 +248,36 @@ export class SalesReportService {
    * Get revenue breakdown by payment method
    */
   private async getRevenueByPaymentMethod(
-    companyId: number,
+    companyId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<RevenueByPaymentMethodDto[]> {
-    const results = await this.saleRepository
-      .createQueryBuilder('sale')
-      .select('sale.paymentMethod', 'paymentMethod')
-      .addSelect('SUM(sale.totalAmount)', 'totalRevenue')
-      .addSelect('COUNT(*)', 'transactionCount')
-      .where('sale.companyId = :companyId', { companyId })
-      .andWhere('sale.createdAt BETWEEN :startDate AND :endDate', {
+    const results = await this.orderRepository
+      .createQueryBuilder('order')
+      .innerJoin('order.payments', 'payment')
+      .select('payment.payment_method', 'paymentMethod')
+      .addSelect('SUM(payment.amount)', 'totalRevenue')
+      .addSelect('COUNT(DISTINCT order.id)', 'transactionCount')
+      .where('order.company_id = :companyId', { companyId })
+      .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
-      .groupBy('sale.paymentMethod')
+      .groupBy('payment.payment_method')
       .getRawMany();
 
     const totalRevenue = results.reduce(
-      (sum, row) => sum + parseFloat(row.totalRevenue),
+      (sum, row) => sum + parseFloat(row.totalRevenue || '0'),
       0,
     );
 
     return results.map((row) => ({
       paymentMethod: row.paymentMethod,
-      totalRevenue: parseFloat(row.totalRevenue),
+      totalRevenue: parseFloat(row.totalRevenue || '0'),
       transactionCount: parseInt(row.transactionCount),
       percentage:
         totalRevenue > 0
-          ? (parseFloat(row.totalRevenue) / totalRevenue) * 100
+          ? (parseFloat(row.totalRevenue || '0') / totalRevenue) * 100
           : 0,
     }));
   }
@@ -283,10 +285,7 @@ export class SalesReportService {
   /**
    * Calculate percentage change
    */
-  private calculatePercentageChange(
-    oldValue: number,
-    newValue: number,
-  ): number {
+  private calculatePercentageChange(oldValue: number, newValue: number): number {
     if (oldValue === 0) return newValue > 0 ? 100 : 0;
     return ((newValue - oldValue) / oldValue) * 100;
   }

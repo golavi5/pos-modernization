@@ -20,7 +20,7 @@ ENV NODE_ENV=production
 
 # Install only production deps
 COPY package*.json ./
-RUN npm ci --frozen-lockfile --only=production && npm cache clean --force
+RUN npm ci --frozen-lockfile --omit=dev && npm cache clean --force
 
 # Copy compiled output from builder
 COPY --from=builder /app/dist ./dist

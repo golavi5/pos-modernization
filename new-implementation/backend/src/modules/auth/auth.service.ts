@@ -114,7 +114,7 @@ export class AuthService {
         first_name: createUserDto.first_name,
         last_name: createUserDto.last_name,
         phone: createUserDto.phone,
-        company_id: createUserDto.company_id,
+        company_id: createUserDto.company_id || null,
         is_active: true,
         roles: [],
       });

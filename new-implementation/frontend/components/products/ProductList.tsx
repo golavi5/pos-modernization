@@ -1,6 +1,6 @@
 'use client';
 
-import { Product } from '@/lib/api/products';
+import type { Product } from '@/types/product';
 import { StockBadge } from './StockBadge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -30,7 +30,7 @@ export function ProductList({ products, onDelete }: ProductListProps) {
               <td className="p-3">
                 <div>
                   <div className="font-medium">{product.name}</div>
-                  <div className="text-sm text-gray-500">{product.description}</div>
+                  <div className="text-sm text-tertiary">{product.description}</div>
                 </div>
               </td>
               <td className="p-3">{product.sku}</td>
@@ -38,14 +38,14 @@ export function ProductList({ products, onDelete }: ProductListProps) {
               <td className="p-3">
                 <StockBadge
                   stock={product.stock_quantity}
-                  reorderLevel={product.reorder_level}
+                  reorderLevel={product.reorder_level ?? 0}
                 />
               </td>
               <td className="p-3">
                 {product.is_active ? (
                   <span className="text-green-600">Active</span>
                 ) : (
-                  <span className="text-gray-400">Inactive</span>
+                  <span className="text-quaternary">Inactive</span>
                 )}
               </td>
               <td className="p-3 text-right">

@@ -5,7 +5,6 @@ import {
   Param,
   Body,
   UseGuards,
-  ParseIntPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -18,10 +17,6 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Payment } from './entities/payment.entity';
 import { User } from '../auth/entities/user.entity';
 
-interface CurrentUserWithCompany extends User {
-  company_id: number;
-}
-
 @Controller('sales/orders/:orderId/payments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PaymentsController {
@@ -31,9 +26,9 @@ export class PaymentsController {
   @Roles('cashier', 'manager')
   @HttpCode(HttpStatus.CREATED)
   async recordPayment(
-    @Param('orderId', ParseIntPipe) orderId: number,
+    @Param('orderId') orderId: string,
     @Body() dto: CreatePaymentDto,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @CurrentUser() user: User,
   ): Promise<Payment> {
     return this.paymentsService.recordPayment(orderId, dto, user);
   }
@@ -41,8 +36,8 @@ export class PaymentsController {
   @Get()
   @Roles('cashier', 'manager', 'admin')
   async getPayments(
-    @Param('orderId', ParseIntPipe) orderId: number,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: User,
   ): Promise<Payment[]> {
     return this.paymentsService.getPaymentsByOrderId(orderId, user);
   }
@@ -50,8 +45,8 @@ export class PaymentsController {
   @Get('summary')
   @Roles('cashier', 'manager', 'admin')
   async getPaymentSummary(
-    @Param('orderId', ParseIntPipe) orderId: number,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: User,
   ) {
     return this.paymentsService.getPaymentSummary(orderId, user);
   }

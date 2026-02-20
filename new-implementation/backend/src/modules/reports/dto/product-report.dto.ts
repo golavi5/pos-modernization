@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class TopSellingProductDto {
   @ApiProperty()
-  productId: number;
+  productId: string;
 
   @ApiProperty()
   productName: string;
@@ -28,7 +28,7 @@ export class TopSellingProductDto {
 
 export class LowStockProductDto {
   @ApiProperty()
-  productId: number;
+  productId: string;
 
   @ApiProperty()
   productName: string;
@@ -54,7 +54,7 @@ export class LowStockProductDto {
 
 export class InventoryTurnoverDto {
   @ApiProperty()
-  productId: number;
+  productId: string;
 
   @ApiProperty()
   productName: string;

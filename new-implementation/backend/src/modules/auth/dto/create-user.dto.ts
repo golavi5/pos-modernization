@@ -17,18 +17,11 @@ export class CreateUserDto {
   email: string;
 
   @ApiProperty({
-    example: 'SecurePassword123!',
-    description: 'User password (min 8 chars, uppercase, lowercase, number, special char)',
+    example: 'Password123!',
+    description: 'User password (min 6 chars)',
   })
   @IsNotEmpty({ message: 'Password is required' })
-  @MinLength(8, { message: 'Password must be at least 8 characters' })
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-    {
-      message:
-        'Password must contain uppercase, lowercase, number and special character',
-    },
-  )
+  @MinLength(6, { message: 'Password must be at least 6 characters' })
   password: string;
 
   @ApiProperty({
@@ -42,10 +35,10 @@ export class CreateUserDto {
 
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'Company ID',
+    description: 'Company ID (optional)',
+    required: false,
   })
-  @IsNotEmpty({ message: 'Company ID is required' })
-  company_id: string;
+  company_id?: string;
 
   @ApiProperty({
     example: 'John',

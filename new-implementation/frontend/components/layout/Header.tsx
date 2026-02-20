@@ -1,8 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, Settings } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { LogOut, Settings, PanelTop, Menu } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useToolbar } from '@/components/layout/ToolbarContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -13,9 +15,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { LanguageSwitcher } from '@/components/language/LanguageSwitcher';
 
 export function Header() {
+  const t = useTranslations();
   const { user, logout } = useAuthStore();
+  const { isHidden, toggleHidden, sidebarCollapsed, toggleSidebar } = useToolbar();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -34,15 +40,33 @@ export function Header() {
   };
 
   return (
-    <header className="border-b border-gray-200 bg-white px-6 py-4">
+    <header className="border-b bg-surface-1 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <h2 className="text-sm text-gray-600">
-            Welcome back, <span className="font-semibold text-gray-900">{user?.name}</span>
+        <div className="flex items-center gap-4 flex-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            title={sidebarCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+          <h2 className="text-sm text-secondary">
+            {t('header.welcomeBack', { name: user?.name || 'Usuario' })}
           </h2>
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleHidden}
+            title={isHidden ? t('header.showToolbar') : t('header.hideToolbar')}
+          >
+            <PanelTop className={`h-4 w-4 ${isHidden ? 'opacity-50' : ''}`} />
+          </Button>
+          <ThemeToggle />
+          <LanguageSwitcher />
           <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -62,21 +86,21 @@ export function Header() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-600">{user?.email}</p>
+                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-xs text-tertiary">{user?.email}</p>
               </div>
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <a href="/settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                Settings
+                {t('auth.settings')}
               </a>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+            <DropdownMenuItem onClick={handleLogout} className="text-error">
               <LogOut className="h-4 w-4" />
-              Logout
+              {t('auth.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

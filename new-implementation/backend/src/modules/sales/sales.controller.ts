@@ -9,7 +9,6 @@ import {
   Body,
   Query,
   UseGuards,
-  ParseIntPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -27,10 +26,6 @@ import { Order } from './entities/order.entity';
 import { User } from '../auth/entities/user.entity';
 import { SalesSummaryDto } from './dto/sales-summary.dto';
 
-interface CurrentUserWithCompany extends User {
-  company_id: number;
-}
-
 @Controller('sales')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SalesController {
@@ -43,7 +38,7 @@ export class SalesController {
   @Roles('cashier', 'manager', 'admin')
   async listOrders(
     @Query() query: OrderQueryDto,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @CurrentUser() user: User,
   ) {
     return this.salesService.listOrders(query, user);
   }
@@ -51,8 +46,8 @@ export class SalesController {
   @Get('orders/:id')
   @Roles('cashier', 'manager', 'admin')
   async getOrderById(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @Param('id') id: string,
+    @CurrentUser() user: User,
   ): Promise<Order> {
     return this.salesService.getOrderById(id, user);
   }
@@ -62,7 +57,7 @@ export class SalesController {
   @HttpCode(HttpStatus.CREATED)
   async createOrder(
     @Body() dto: CreateOrderDto,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @CurrentUser() user: User,
   ): Promise<Order> {
     return this.salesService.createOrder(dto, user);
   }
@@ -70,9 +65,9 @@ export class SalesController {
   @Put('orders/:id')
   @Roles('manager')
   async updateOrder(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateOrderDto,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @CurrentUser() user: User,
   ): Promise<Order> {
     return this.salesService.updateOrder(id, dto, user);
   }
@@ -80,9 +75,9 @@ export class SalesController {
   @Patch('orders/:id/status')
   @Roles('cashier', 'manager')
   async updateOrderStatus(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() dto: UpdateOrderStatusDto,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @CurrentUser() user: User,
   ): Promise<Order> {
     return this.salesService.updateOrderStatus(id, dto, user);
   }
@@ -91,8 +86,8 @@ export class SalesController {
   @Roles('manager')
   @HttpCode(HttpStatus.OK)
   async deleteOrder(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @Param('id') id: string,
+    @CurrentUser() user: User,
   ) {
     return this.salesService.deleteOrder(id, user);
   }
@@ -100,8 +95,8 @@ export class SalesController {
   @Get('orders/:id/payments')
   @Roles('cashier', 'manager', 'admin')
   async getOrderPayments(
-    @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: CurrentUserWithCompany,
+    @Param('id') id: string,
+    @CurrentUser() user: User,
   ) {
     return this.salesService.getOrderPayments(id, user);
   }
@@ -109,7 +104,7 @@ export class SalesController {
   @Get('reports/daily')
   @Roles('manager', 'admin')
   async getDailySalesReport(
-    @CurrentUser() user: CurrentUserWithCompany,
+    @CurrentUser() user: User,
     @Query('date') date?: string,
   ): Promise<SalesSummaryDto> {
     const reportDate = date ? new Date(date) : new Date();
@@ -134,11 +129,13 @@ export class SalesController {
   @Get('reports/summary')
   @Roles('manager', 'admin')
   async getSalesSummary(
-    @CurrentUser() user: CurrentUserWithCompany,
+    @CurrentUser() user: User,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ): Promise<SalesSummaryDto> {
-    const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const end = endDate ? new Date(endDate) : new Date();
 
     const { orders } = await this.salesService.listOrders(
@@ -154,12 +151,23 @@ export class SalesController {
     return this.generateSalesSummary(orders, start, end);
   }
 
-  private generateSalesSummary(orders: Order[], startDate: Date, endDate: Date): SalesSummaryDto {
-    const completedOrders = orders.filter(o => o.status === 'completed');
+  private generateSalesSummary(
+    orders: Order[],
+    startDate: Date,
+    endDate: Date,
+  ): SalesSummaryDto {
+    const completedOrders = orders.filter((o) => o.status === 'completed');
 
-    const totalRevenue = completedOrders.reduce((sum, order) => sum + order.total_amount, 0);
-    const totalDiscount = completedOrders.reduce((sum, order) => sum + order.discount_amount, 0);
-    const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
+    const totalRevenue = completedOrders.reduce(
+      (sum, order) => sum + Number(order.total_amount),
+      0,
+    );
+    const totalDiscount = completedOrders.reduce(
+      (sum, order) => sum + Number(order.discount_amount),
+      0,
+    );
+    const averageOrderValue =
+      completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
 
     return {
       total_orders: completedOrders.length,

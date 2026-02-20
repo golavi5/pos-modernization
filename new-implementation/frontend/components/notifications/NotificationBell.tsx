@@ -16,7 +16,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   critical: 'bg-red-500',
   high: 'bg-orange-500',
   medium: 'bg-blue-500',
-  low: 'bg-gray-400',
+  low: 'bg-quaternary',
 };
 
 const TYPE_ICONS: Record<string, string> = {
@@ -76,7 +76,7 @@ export function NotificationBell() {
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
         aria-label="Notificaciones"
       >
-        <Bell className="h-5 w-5 text-gray-600" />
+        <Bell className="h-5 w-5 text-secondary" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -90,16 +90,16 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
             <div>
-              <h3 className="font-semibold text-gray-900">Notificaciones</h3>
+              <h3 className="font-semibold">Notificaciones</h3>
               {unreadCount > 0 && (
-                <p className="text-xs text-gray-500">{unreadCount} sin leer</p>
+                <p className="text-xs text-tertiary">{unreadCount} sin leer</p>
               )}
             </div>
             <div className="flex gap-1">
               {unreadCount > 0 && (
                 <button
                   onClick={() => markAllAsRead.mutate()}
-                  className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                  className="p-1.5 rounded hover:bg-hover-bg text-tertiary hover:text-secondary"
                   title="Marcar todas como leídas"
                 >
                   <CheckCheck className="h-4 w-4" />
@@ -107,14 +107,14 @@ export function NotificationBell() {
               )}
               <button
                 onClick={() => clearRead.mutate()}
-                className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
+                className="p-1.5 rounded hover:bg-hover-bg text-tertiary hover:text-secondary"
                 title="Limpiar leídas"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setOpen(false)}
-                className="p-1.5 rounded hover:bg-gray-200 text-gray-500"
+                className="p-1.5 rounded hover:bg-hover-bg text-tertiary"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -124,7 +124,7 @@ export function NotificationBell() {
           {/* List */}
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="py-12 text-center text-gray-400">
+              <div className="py-12 text-center text-quaternary">
                 <Bell className="h-8 w-8 mx-auto mb-2 opacity-40" />
                 <p className="text-sm">Sin notificaciones</p>
               </div>
@@ -141,21 +141,21 @@ export function NotificationBell() {
                   <div className="mt-1 flex-shrink-0">
                     <span
                       className={`inline-block h-2 w-2 rounded-full ${
-                        PRIORITY_COLORS[notif.priority] || 'bg-gray-400'
+                        PRIORITY_COLORS[notif.priority] || 'bg-quaternary'
                       }`}
                     />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm font-medium leading-tight ${notif.isRead ? 'text-gray-600' : 'text-gray-900'}`}>
+                      <p className={`text-sm font-medium leading-tight ${notif.isRead ? 'text-secondary' : ''}`}>
                         {TYPE_ICONS[notif.type]} {notif.title}
                       </p>
                       {!notif.isRead && (
                         <span className="flex-shrink-0 h-2 w-2 rounded-full bg-blue-500 mt-1" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                    <p className="text-xs text-gray-400 mt-1">{timeAgo(notif.createdAt)}</p>
+                    <p className="text-xs text-tertiary mt-0.5 line-clamp-2">{notif.message}</p>
+                    <p className="text-xs text-quaternary mt-1">{timeAgo(notif.createdAt)}</p>
                   </div>
                 </div>
               ))

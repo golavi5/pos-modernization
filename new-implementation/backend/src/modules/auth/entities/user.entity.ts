@@ -8,9 +8,11 @@ import {
   UpdateDateColumn,
   Index,
   BeforeInsert,
+  OneToMany,
 } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from './role.entity';
+import { Order } from '../../sales/entities/order.entity';
 
 @Entity('users')
 @Index('idx_email', ['email'], { unique: true })
@@ -67,6 +69,9 @@ export class User {
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
   roles: Role[];
+
+  @OneToMany(() => Order, (order) => order.creator)
+  orders: Order[];
 
   @BeforeInsert()
   generateId() {

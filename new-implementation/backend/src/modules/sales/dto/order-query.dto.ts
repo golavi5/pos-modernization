@@ -1,5 +1,12 @@
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { OrderStatus } from '../entities/order.entity';
 
 export class OrderQueryDto {
@@ -13,7 +20,6 @@ export class OrderQueryDto {
   @Transform(({ value }) => parseInt(value))
   @IsInt()
   @Min(1)
-  @MaxLength(100)
   limit?: number = 10;
 
   @IsOptional()
@@ -25,14 +31,12 @@ export class OrderQueryDto {
   status?: OrderStatus;
 
   @IsOptional()
-  @Transform(({ value }) => parseInt(value))
-  @IsInt()
-  customer_id?: number;
+  @IsUUID()
+  customer_id?: string;
 
   @IsOptional()
-  @Transform(({ value }) => parseInt(value))
-  @IsInt()
-  company_id?: number;
+  @IsUUID()
+  company_id?: string;
 
   @IsOptional()
   @Transform(({ value }) => new Date(value))

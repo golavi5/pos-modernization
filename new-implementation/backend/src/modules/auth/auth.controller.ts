@@ -110,7 +110,7 @@ export class AuthController {
    * Register new user (Admin only)
    * Creates a new user account
    */
-  @ApiOperation({ summary: 'Register new user (Admin only)' })
+  @ApiOperation({ summary: 'Register new user' })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({
     status: 201,
@@ -119,17 +119,13 @@ export class AuthController {
   })
   @ApiResponse({ status: 409, description: 'Email already exists' })
   @ApiResponse({ status: 400, description: 'Invalid user data' })
-  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   @Post('register')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
   async register(
     @Body() createUserDto: CreateUserDto,
-    @CurrentUser() admin: User,
   ): Promise<UserResponseDto> {
     this.logger.log(
-      `New user registration by admin ${admin.email}: ${createUserDto.email}`,
+      `New user registration: ${createUserDto.email}`,
     );
     return this.authService.register(createUserDto);
   }

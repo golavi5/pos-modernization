@@ -163,7 +163,7 @@ export function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps)
                       />
                       <div>
                         <p className="text-sm font-medium">{role.name}</p>
-                        <p className="text-xs text-gray-500">{role.description}</p>
+                        <p className="text-xs text-tertiary">{role.description}</p>
                       </div>
                     </label>
                   ))}

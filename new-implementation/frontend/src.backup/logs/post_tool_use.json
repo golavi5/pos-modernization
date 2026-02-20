@@ -1,0 +1,120 @@
+[
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cd /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src && ls -la _*.tsx _routes_legacy _pages_legacy vite-env.d.ts 2>/dev/null | head -10",
+      "description": "List legacy files"
+    },
+    "tool_response": {
+      "stdout": "-rw-rw-r-- 1 gor gor  664 Feb 13 09:31 _App.legacy.tsx\n-rw-rw-r-- 1 gor gor  231 Feb 13 09:31 _main.legacy.tsx\n-rw-rw-r-- 1 gor gor  391 Feb 13 09:33 vite-env.d.ts\n\n_pages_legacy:\ntotal 44\ndrwxrwxr-x  4 gor gor 4096 Feb 13 09:31 .\ndrwxrwxr-x 14 gor gor 4096 Feb 17 12:54 ..\ndrwxrwxr-x  2 gor gor 4096 Feb 13 09:31 auth\n-rw-rw-r--  1 gor gor 3563 Feb 11 23:16 Customers.tsx",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_01FSu8X5Q7CogwCSkrAEy9hQ"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "mkdir -p /tmp/legacy_backup && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_pages_legacy /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_App.legacy.tsx /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_main.legacy.tsx /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/_routes_legacy /tmp/legacy_backup/ && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/vite-env.d.ts /tmp/legacy_backup/ && echo \"Moved legacy files to /tmp/legacy_backup\"",
+      "description": "Move legacy files to backup location"
+    },
+    "tool_response": {
+      "stdout": "Moved legacy files to /tmp/legacy_backup",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_0158J1FxgyNkVqdEpnpJnmMo"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/",
+      "description": "List UI components"
+    },
+    "tool_response": {
+      "stdout": "total 56\ndrwxrwxr-x 2 gor gor 4096 Feb 17 12:58 .\ndrwxrwxr-x 9 gor gor 4096 Feb 17 09:53 ..\n-rw-rw-r-- 1 gor gor 1053 Feb 13 16:15 avatar.tsx\n-rw-rw-r-- 1 gor gor 1226 Feb 17 12:58 badge.tsx\n-rw-rw-r-- 1 gor gor 1735 Feb 13 16:15 button.tsx\n-rw-rw-r-- 1 gor gor 1844 Feb 13 16:15 card.tsx\n-rw-rw-r-- 1 gor gor 4403 Feb 13 16:15 dropdown-menu.tsx\n-rw-rw-r-- 1 gor gor  732 Feb 13 16:15 input.tsx\n-rw-rw-r-- 1 gor gor  477 Feb 13 16:20 label.tsx\n-rw-rw-r-- 1 gor gor 2436 Feb 17 09:37 select.tsx\n-rw-rw-r-- 1 gor gor  711 Feb 13 16:15 separator.tsx\n-rw-rw-r-- 1 gor gor  260 Feb 17 09:37 skeleton.tsx\n-rw-rw-r-- 1 gor gor 2839 Feb 17 09:37 tabs.tsx",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_012PyGEGVy5SevKtxqbKVTZN"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/customers/page.tsx",
+      "limit": 20
+    },
+    "tool_response": {
+      "type": "text",
+      "file": {
+        "filePath": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/customers/page.tsx",
+        "content": "'use client';\n\nimport { useState } from 'react';\nimport { Plus, Users, Award, TrendingUp, DollarSign } from 'lucide-react';\nimport { Button } from '@/components/ui/Button';\nimport { Card } from '@/components/ui/Card';\nimport { CustomersTable } from '@/components/customers/CustomersTable';\nimport { CustomerFilters } from '@/components/customers/CustomerFilters';\nimport { CustomerForm } from '@/components/customers/CustomerForm';\nimport { LoyaltyPointsModal } from '@/components/customers/LoyaltyPointsModal';\nimport {\n  useCustomers,\n  useCustomerStats,\n  useCreateCustomer,\n  useUpdateCustomer,\n  useDeleteCustomer,\n  useUpdateLoyaltyPoints,\n} from '@/hooks/useCustomers';\nimport type { Customer, CustomerQueryParams, CreateCustomerDto } from '@/types/customer';\n",
+        "numLines": 20,
+        "startLine": 1,
+        "totalLines": 297
+      }
+    },
+    "tool_use_id": "toolu_01M9TYvge3u8MDz5GoXtjKNG"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "grep -r \"from '@/components/ui/Button'\" /home/gor/Documents/devs/pos-modernization/new-implementation/frontend --include=\"*.tsx\" --include=\"*.ts\" | head -20",
+      "description": "Find files with uppercase Button import"
+    },
+    "tool_response": {
+      "stdout": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/customers/page.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/sales/page.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/products/page.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomerForm.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/LoyaltyPointsModal.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomerFilters.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomersTable.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/PaymentModal.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/SalesCart.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/ProductSearch.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/CustomerSelect.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/AdjustStockModal.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/InventoryFilters.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/StockTable.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductForm.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductsTable.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductCard.tsx:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductFilters.tsx:import { Button } from '@/components/ui/Button';",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_01GFBmwzdVqHKVeTmZThNG9n"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "grep -r \"from '@/components/ui/Card'\" /home/gor/Documents/devs/pos-modernization/new-implementation/frontend --include=\"*.tsx\" --include=\"*.ts\" | wc -l",
+      "description": "Count files with uppercase Card import"
+    },
+    "tool_response": {
+      "stdout": "6",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_018mMxGWTxz764h76ZLd2dTD"
+  }
+]

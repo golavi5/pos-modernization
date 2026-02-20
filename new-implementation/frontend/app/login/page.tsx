@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
@@ -11,46 +12,51 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login } = useAuthStore();
+  const t = useTranslations('auth');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+    setLoading(true);
+
     try {
       await login(email, password);
-      router.push('/dashboard');
-      router.refresh();
+      document.cookie = 'accessToken=true; path=/; max-age=86400';
+      window.location.replace('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
+      setError(err.message || t('invalidCredentials'));
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">Sign in to your account</CardTitle>
+          <CardTitle className="text-2xl text-center">{t('signInToAccount')}</CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access the POS system
+            {t('enterCredentials')}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
-              <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+              <div className="bg-error-subtle text-error p-3 rounded-md text-sm">
                 {error}
               </div>
             )}
             <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+              <label htmlFor="email" className="block text-sm font-medium text-tertiary">
+                {t('emailAddress')}
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder={t('emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -58,13 +64,13 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+              <label htmlFor="password" className="block text-sm font-medium text-tertiary">
+                {t('password')}
               </label>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder={t('passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -73,13 +79,13 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button type="submit" className="w-full">
-              Sign in
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? t('signingIn') : t('signIn')}
             </Button>
-            <p className="mt-4 text-center text-sm text-gray-600">
-              Need an account?{' '}
-              <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-                Register here
+            <p className="mt-4 text-center text-sm text-secondary">
+              {t('needAccount')}{' '}
+              <a href="/register" className="font-medium text-primary hover:text-primary-hover">
+                {t('registerHere')}
               </a>
             </p>
           </CardFooter>

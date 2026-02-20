@@ -1,10 +1,10 @@
-import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 import { OrderStatus } from '../entities/order.entity';
 
 export class UpdateOrderDto {
   @IsOptional()
-  @IsInt()
-  customer_id?: number;
+  @IsUUID()
+  customer_id?: string;
 
   @IsOptional()
   @IsString()

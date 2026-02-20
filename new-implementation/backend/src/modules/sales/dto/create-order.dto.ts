@@ -1,14 +1,20 @@
-import { IsArray, IsEnum, IsInt, IsOptional, IsPositive, IsString, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderStatus, PaymentStatus } from '../entities/order.entity';
 
 export class CreateOrderItemDto {
-  @IsInt()
-  @IsPositive()
-  product_id: number;
+  @IsUUID()
+  product_id: string;
 
-  @IsInt()
   @IsPositive()
+  @Min(1)
   quantity: number;
 
   @IsPositive()
@@ -17,8 +23,8 @@ export class CreateOrderItemDto {
 
 export class CreateOrderDto {
   @IsOptional()
-  @IsInt()
-  customer_id?: number;
+  @IsUUID()
+  customer_id?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

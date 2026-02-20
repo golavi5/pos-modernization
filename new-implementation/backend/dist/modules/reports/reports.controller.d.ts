@@ -1,0 +1,32 @@
+import { Response } from 'express';
+import { SalesReportService } from './services/sales-report.service';
+import { ProductReportService } from './services/product-report.service';
+import { CustomerReportService } from './services/customer-report.service';
+import { ExportService } from './services/export.service';
+import { InventoryReportService } from './services/inventory-report.service';
+import { ReportQueryDto, ExportQueryDto } from './dto/report-query.dto';
+import { SalesReportDto, SalesSummaryDto, RevenueTrendsDto } from './dto/sales-report.dto';
+import { ProductReportDto, InventoryReportDto } from './dto/product-report.dto';
+import { CustomerReportDto } from './dto/customer-report.dto';
+export declare class ReportsController {
+    private readonly salesReportService;
+    private readonly productReportService;
+    private readonly customerReportService;
+    private readonly inventoryReportService;
+    private readonly exportService;
+    constructor(salesReportService: SalesReportService, productReportService: ProductReportService, customerReportService: CustomerReportService, inventoryReportService: InventoryReportService, exportService: ExportService);
+    getSalesSummary(user: any, query: ReportQueryDto): Promise<SalesSummaryDto>;
+    getSalesByPeriod(user: any, query: ReportQueryDto): Promise<SalesReportDto>;
+    getRevenueTrends(user: any, query: ReportQueryDto): Promise<RevenueTrendsDto>;
+    getTopSellingProducts(user: any, query: ReportQueryDto): Promise<import("./dto/product-report.dto").TopSellingProductDto[]>;
+    getLowStockProducts(user: any, query: ReportQueryDto): Promise<import("./dto/product-report.dto").LowStockProductDto[]>;
+    getProductReport(user: any, query: ReportQueryDto): Promise<ProductReportDto>;
+    getInventoryTurnover(user: any, query: ReportQueryDto): Promise<InventoryReportDto>;
+    getInventoryValueByWarehouse(user: any): Promise<any[]>;
+    getTopCustomers(user: any, query: ReportQueryDto): Promise<import("./dto/customer-report.dto").TopCustomerDto[]>;
+    getCustomerSegments(user: any, query: ReportQueryDto): Promise<import("./dto/customer-report.dto").CustomerSegmentDto[]>;
+    getCustomerReport(user: any, query: ReportQueryDto): Promise<CustomerReportDto>;
+    exportSalesReport(user: any, query: ExportQueryDto, res: Response): Promise<void>;
+    exportProductReport(user: any, query: ExportQueryDto, res: Response): Promise<void>;
+    exportCustomerReport(user: any, query: ExportQueryDto, res: Response): Promise<void>;
+}

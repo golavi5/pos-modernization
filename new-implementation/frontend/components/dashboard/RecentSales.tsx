@@ -75,13 +75,13 @@ export function RecentSales() {
               className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
             >
               <div className="flex-1">
-                <p className="font-medium text-gray-900">{sale.customer}</p>
-                <p className="text-sm text-gray-500">{sale.email}</p>
+                <p className="font-medium">{sale.customer}</p>
+                <p className="text-sm text-tertiary">{sale.email}</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">{sale.amount}</p>
-                  <p className="text-xs text-gray-500">{sale.date}</p>
+                  <p className="font-semibold">{sale.amount}</p>
+                  <p className="text-xs text-tertiary">{sale.date}</p>
                 </div>
                 <Badge variant={statusVariants[sale.status]}>
                   {sale.status}

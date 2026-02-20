@@ -44,13 +44,13 @@ export function SalesReportTab() {
         {/* Total Ventas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Ventas</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-secondary">Total Ventas</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summary?.totalSales ?? 0}</div>
             {summary?.comparedToLastPeriod && (
-              <p className="text-xs flex items-center gap-1 mt-1 text-gray-500">
+              <p className="text-xs flex items-center gap-1 mt-1 text-tertiary">
                 {summary.comparedToLastPeriod.salesChange >= 0
                   ? <TrendingUp className="h-3 w-3 text-green-600" />
                   : <TrendingDown className="h-3 w-3 text-red-600" />}
@@ -66,13 +66,13 @@ export function SalesReportTab() {
         {/* Ingresos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Ingresos Totales</CardTitle>
-            <DollarSign className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-secondary">Ingresos Totales</CardTitle>
+            <DollarSign className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalRevenue ?? 0)}</div>
             {summary?.comparedToLastPeriod && (
-              <p className="text-xs flex items-center gap-1 mt-1 text-gray-500">
+              <p className="text-xs flex items-center gap-1 mt-1 text-tertiary">
                 {summary.comparedToLastPeriod.revenueChange >= 0
                   ? <TrendingUp className="h-3 w-3 text-green-600" />
                   : <TrendingDown className="h-3 w-3 text-red-600" />}
@@ -88,13 +88,13 @@ export function SalesReportTab() {
         {/* Ganancia */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Ganancia Total</CardTitle>
-            <TrendingUp className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-secondary">Ganancia Total</CardTitle>
+            <TrendingUp className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.totalProfit ?? 0)}</div>
             {summary?.comparedToLastPeriod && (
-              <p className="text-xs flex items-center gap-1 mt-1 text-gray-500">
+              <p className="text-xs flex items-center gap-1 mt-1 text-tertiary">
                 {summary.comparedToLastPeriod.profitChange >= 0
                   ? <TrendingUp className="h-3 w-3 text-green-600" />
                   : <TrendingDown className="h-3 w-3 text-red-600" />}
@@ -110,12 +110,12 @@ export function SalesReportTab() {
         {/* Ticket Promedio */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Ticket Promedio</CardTitle>
-            <Package className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-secondary">Ticket Promedio</CardTitle>
+            <Package className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(summary?.averageTicket ?? 0)}</div>
-            <p className="text-xs text-gray-500 mt-1">{summary?.totalItems ?? 0} artículos vendidos</p>
+            <p className="text-xs text-tertiary mt-1">{summary?.totalItems ?? 0} artículos vendidos</p>
           </CardContent>
         </Card>
       </div>
@@ -132,15 +132,15 @@ export function SalesReportTab() {
               {trends.byPaymentMethod.map((method) => (
                 <div key={method.paymentMethod} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <CreditCard className="h-5 w-5 text-gray-500" />
+                    <CreditCard className="h-5 w-5 text-tertiary" />
                     <div>
                       <p className="font-medium capitalize">{method.paymentMethod}</p>
-                      <p className="text-sm text-gray-500">{method.transactionCount} transacciones</p>
+                      <p className="text-sm text-tertiary">{method.transactionCount} transacciones</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold">{formatCurrency(method.totalRevenue)}</p>
-                    <p className="text-sm text-gray-500">{method.percentage.toFixed(1)}%</p>
+                    <p className="text-sm text-tertiary">{method.percentage.toFixed(1)}%</p>
                   </div>
                 </div>
               ))}
@@ -160,7 +160,7 @@ export function SalesReportTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-gray-500 text-xs uppercase">
+                  <tr className="border-b text-tertiary text-xs uppercase">
                     <th className="text-left py-3 px-4">Fecha</th>
                     <th className="text-right py-3 px-4">Ventas</th>
                     <th className="text-right py-3 px-4">Ingresos</th>

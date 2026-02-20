@@ -5,7 +5,7 @@ import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
-import { User } from '../../auth/entities/user.entity'; // Assuming user entity exists
+import { User } from '../auth/entities/user.entity';
 
 @Injectable()
 export class ProductsService {
@@ -154,7 +154,26 @@ export class ProductsService {
       .andWhere('product.stock_quantity <= product.reorder_level')
       .andWhere('product.is_active = :isActive', { isActive: true })
       .getMany();
-    
+
     return lowStockProducts;
+  }
+
+  async deductStock(productId: string, quantity: number, user: User): Promise<Product> {
+    const product = await this.findOne(productId, user);
+
+    if (product.stock_quantity < quantity) {
+      throw new BadRequestException(
+        `Insufficient stock for product ${product.name}. Available: ${product.stock_quantity}, Requested: ${quantity}`,
+      );
+    }
+
+    product.stock_quantity -= quantity;
+    return await this.productRepository.save(product);
+  }
+
+  async addStock(productId: string, quantity: number, user: User): Promise<Product> {
+    const product = await this.findOne(productId, user);
+    product.stock_quantity += quantity;
+    return await this.productRepository.save(product);
   }
 }

@@ -1,4 +1,4 @@
-import { Product } from '@/lib/api/products';
+import type { Product } from '@/types/product';
 import { Card, CardContent } from '@/components/ui/card';
 import { StockBadge } from './StockBadge';
 import { PricingDisplay } from './PricingDisplay';
@@ -21,10 +21,10 @@ export function ProductCard({ product }: ProductCardProps) {
           />
         )}
         <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{product.description}</p>
+        <p className="text-sm text-secondary mb-2 line-clamp-2">{product.description}</p>
         <div className="flex justify-between items-center mb-4">
           <PricingDisplay price={product.price} />
-          <StockBadge stock={product.stock_quantity} reorderLevel={product.reorder_level} />
+          <StockBadge stock={product.stock_quantity} reorderLevel={product.reorder_level ?? 0} />
         </div>
         <div className="flex gap-2">
           <Link href={`/products/${product.id}`} className="flex-1">

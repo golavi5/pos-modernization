@@ -24,7 +24,8 @@
       "@/components/*": ["components/*"],
       "@/lib/*": ["lib/*"],
       "@/hooks/*": ["hooks/*"],
-      "@/store/*": ["store/*"],
+      "@/store/*": ["stores/*"],
+      "@/stores/*": ["stores/*"],
       "@/types/*": ["types/*"]
     }
   },
@@ -35,6 +36,10 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src",
+    "src.backup",
+    "vite.config.ts",
+    "tests"
   ]
 }

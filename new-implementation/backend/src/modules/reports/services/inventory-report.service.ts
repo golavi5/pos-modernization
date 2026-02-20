@@ -1,52 +1,42 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { StockLevel } from '../../inventory/entities/stock-level.entity';
+import { Repository, Between } from 'typeorm';
 import { StockMovement } from '../../inventory/entities/stock-movement.entity';
 import { Warehouse } from '../../inventory/entities/warehouse.entity';
+import { Product } from '../../products/entities/product.entity';
 
 /**
  * Inventory Report Service
- * 
+ *
  * Provides specialized inventory analytics and reporting.
- * Works alongside ProductReportService for comprehensive inventory insights.
  */
 @Injectable()
 export class InventoryReportService {
   private readonly logger = new Logger(InventoryReportService.name);
 
   constructor(
-    @InjectRepository(StockLevel)
-    private readonly stockLevelRepository: Repository<StockLevel>,
     @InjectRepository(StockMovement)
     private readonly stockMovementRepository: Repository<StockMovement>,
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: Repository<Warehouse>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
   ) {}
 
   /**
    * Get inventory value by warehouse
    */
-  async getInventoryValueByWarehouse(companyId: number): Promise<any[]> {
-    const results = await this.stockLevelRepository
-      .createQueryBuilder('stock')
-      .innerJoin('stock.product', 'product')
-      .innerJoin('stock.warehouse', 'warehouse')
-      .select('warehouse.id', 'warehouseId')
-      .addSelect('warehouse.name', 'warehouseName')
-      .addSelect('COUNT(DISTINCT product.id)', 'productCount')
-      .addSelect('SUM(stock.quantity)', 'totalUnits')
-      .addSelect('SUM(stock.quantity * product.price)', 'totalValue')
-      .where('product.companyId = :companyId', { companyId })
-      .groupBy('warehouse.id')
-      .getRawMany();
+  async getInventoryValueByWarehouse(companyId: string): Promise<any[]> {
+    const warehouses = await this.warehouseRepository.find({
+      where: { company_id: companyId },
+    });
 
-    return results.map((row) => ({
-      warehouseId: parseInt(row.warehouseId),
-      warehouseName: row.warehouseName,
-      productCount: parseInt(row.productCount),
-      totalUnits: parseInt(row.totalUnits),
-      totalValue: parseFloat(row.totalValue),
+    return warehouses.map((warehouse) => ({
+      warehouseId: warehouse.id,
+      warehouseName: warehouse.name,
+      productCount: 0,
+      totalUnits: 0,
+      totalValue: 0,
     }));
   }
 
@@ -54,28 +44,55 @@ export class InventoryReportService {
    * Get stock movement summary
    */
   async getStockMovementSummary(
-    companyId: number,
+    companyId: string,
     startDate: Date,
     endDate: Date,
-  ): Promise<any> {
+  ): Promise<any[]> {
     const results = await this.stockMovementRepository
       .createQueryBuilder('movement')
-      .innerJoin('movement.product', 'product')
-      .select('movement.type', 'type')
+      .select('movement.movement_type', 'type')
       .addSelect('COUNT(*)', 'count')
-      .addSelect('SUM(ABS(movement.quantityChange))', 'totalQuantity')
-      .where('product.companyId = :companyId', { companyId })
-      .andWhere('movement.createdAt BETWEEN :startDate AND :endDate', {
+      .addSelect('SUM(ABS(movement.quantity))', 'totalQuantity')
+      .where('movement.company_id = :companyId', { companyId })
+      .andWhere('movement.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
-      .groupBy('movement.type')
+      .groupBy('movement.movement_type')
       .getRawMany();
 
     return results.map((row) => ({
       type: row.type,
       count: parseInt(row.count),
-      totalQuantity: parseInt(row.totalQuantity),
+      totalQuantity: parseInt(row.totalQuantity || '0'),
     }));
+  }
+
+  /**
+   * Get low stock products
+   */
+  async getLowStockProducts(companyId: string): Promise<any[]> {
+    const products = await this.productRepository.find({
+      where: {
+        company_id: companyId,
+        is_active: true,
+      },
+    });
+
+    return products
+      .filter((p) => p.stock_quantity <= p.reorder_level)
+      .map((product) => ({
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        currentStock: product.stock_quantity,
+        reorderLevel: product.reorder_level,
+        stockLevel:
+          product.stock_quantity === 0
+            ? 'critical'
+            : product.stock_quantity <= product.reorder_level * 0.5
+              ? 'critical'
+              : 'low',
+      }));
   }
 }

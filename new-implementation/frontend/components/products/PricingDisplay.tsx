@@ -9,7 +9,7 @@ export function PricingDisplay({ price, cost, showCost = false }: PricingDisplay
     <div className="flex flex-col">
       <span className="text-lg font-semibold">${price.toFixed(2)}</span>
       {showCost && cost && (
-        <span className="text-sm text-gray-500">Cost: ${cost.toFixed(2)}</span>
+        <span className="text-sm text-tertiary">Cost: ${cost.toFixed(2)}</span>
       )}
     </div>
   );

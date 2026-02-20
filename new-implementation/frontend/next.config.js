@@ -1,11 +1,11 @@
+const createNextIntlPlugin = require('next-intl/plugin');
+
+const withNextIntl = createNextIntlPlugin('./i18n-request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Required for Docker standalone build
   output: 'standalone',
-
-  experimental: {
-    appDir: true,
-  },
 
   images: {
     domains: ['localhost'],
@@ -23,4 +23,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = withNextIntl(nextConfig)

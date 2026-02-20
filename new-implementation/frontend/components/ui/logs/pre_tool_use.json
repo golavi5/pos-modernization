@@ -1,0 +1,110 @@
+[
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cd /home/gor/Documents/devs/pos-modernization/new-implementation && docker compose up -d --build 2>&1",
+      "timeout": 600000,
+      "description": "Build and start Docker containers"
+    },
+    "tool_use_id": "toolu_013EhGxhtpfzi2Rhegw8brW7"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/app/",
+      "description": "Check app directory structure"
+    },
+    "tool_use_id": "toolu_014XSjoXMuKrVc6t2DNc7xoF"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cp Button.tsx button.tsx && cp Card.tsx card.tsx && cp Input.tsx input.tsx && cp Label.tsx label.tsx && echo \"Created lowercase versions\"",
+      "description": "Create lowercase copies of components"
+    },
+    "tool_use_id": "toolu_01WVPys5u3M6mP98Ur9enGGA"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cd /home/gor/Documents/devs/pos-modernization/new-implementation && docker compose up -d --build 2>&1",
+      "timeout": 600000,
+      "description": "Build and start Docker containers"
+    },
+    "tool_use_id": "toolu_0126g9Fb4J61v2SQLCbjDPWh"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/",
+      "description": "List UI components to see duplicates"
+    },
+    "tool_use_id": "toolu_01Hbs7i1yvM9wPeqCE9qCv3b"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Button.tsx /tmp/Button.tsx.bak && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Card.tsx /tmp/Card.tsx.bak && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Input.tsx /tmp/Input.tsx.bak && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Label.tsx /tmp/Label.tsx.bak",
+      "description": "Move uppercase duplicates to backup"
+    },
+    "tool_use_id": "toolu_01KuNw3fXx91Rm3YoVQFSYmp"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Grep",
+    "tool_input": {
+      "pattern": "from ['\"]@/components/ui/[A-Z]",
+      "path": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend",
+      "glob": "*.{tsx,ts}",
+      "output_mode": "content"
+    },
+    "tool_use_id": "toolu_01KRKBkUiWY5Y1UKJ9GCdDDQ"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cd /home/gor/Documents/devs/pos-modernization/new-implementation/frontend && find src -name \"*.tsx\" -exec sed -i \"s|@/components/ui/Button|@/components/ui/button|g; s|@/components/ui/Card|@/components/ui/card|g; s|@/components/ui/Input|@/components/ui/input|g; s|@/components/ui/Label|@/components/ui/label|g; s|@/components/ui/Badge|@/components/ui/badge|g\" {} \\;",
+      "description": "Fix uppercase imports to lowercase in all tsx files"
+    },
+    "tool_use_id": "toolu_014Bx9sBDxZ36wS3fFJfbAFJ"
+  }
+]

@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
-import { IsUUID, IsString, IsNumber, IsBoolean, IsOptional, IsPositive, Min, Max, IsUrl, ValidateNested } from 'class-validator';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
+import { IsUUID, IsString, IsNumber, IsBoolean, IsOptional, Min, Max, IsUrl } from 'class-validator';
+import { OrderItem } from '../../sales/entities/order-item.entity';
 
 @Entity('products')
 export class Product {
@@ -81,4 +82,7 @@ export class Product {
 
   @DeleteDateColumn({ name: 'deleted_at' })
   deleted_at?: Date;
+
+  @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
+  order_items: OrderItem[];
 }

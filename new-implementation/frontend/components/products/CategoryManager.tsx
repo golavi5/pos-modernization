@@ -50,7 +50,7 @@ export function CategoryManager() {
                 <div>
                   <div className="font-medium">{category.name}</div>
                   {category.description && (
-                    <div className="text-sm text-gray-500">{category.description}</div>
+                    <div className="text-sm text-tertiary">{category.description}</div>
                   )}
                 </div>
               </div>

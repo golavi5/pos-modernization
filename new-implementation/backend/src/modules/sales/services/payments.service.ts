@@ -11,10 +11,6 @@ import { Order, PaymentStatus as OrderPaymentStatus } from '../entities/order.en
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { User } from '../../auth/entities/user.entity';
 
-interface CurrentUser extends User {
-  company_id: number;
-}
-
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -26,7 +22,11 @@ export class PaymentsService {
     private readonly orderRepository: Repository<Order>,
   ) {}
 
-  async recordPayment(orderId: number, dto: CreatePaymentDto, user: CurrentUser): Promise<Payment> {
+  async recordPayment(
+    orderId: string,
+    dto: CreatePaymentDto,
+    user: User,
+  ): Promise<Payment> {
     // Get order and verify ownership
     const order = await this.orderRepository.findOne({
       where: { id: orderId, company_id: user.company_id },
@@ -43,8 +43,11 @@ export class PaymentsService {
     }
 
     // Calculate total paid
-    const totalPaid = (order.payments || []).reduce((sum, p) => sum + p.amount, 0);
-    const remainingBalance = order.total_amount - totalPaid;
+    const totalPaid = (order.payments || []).reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    );
+    const remainingBalance = Number(order.total_amount) - totalPaid;
 
     if (dto.amount > remainingBalance) {
       throw new BadRequestException(
@@ -65,7 +68,7 @@ export class PaymentsService {
 
     // Update order payment status
     const newTotalPaid = totalPaid + dto.amount;
-    if (newTotalPaid >= order.total_amount) {
+    if (newTotalPaid >= Number(order.total_amount)) {
       order.payment_status = OrderPaymentStatus.PAID;
     } else if (newTotalPaid > 0) {
       order.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
@@ -80,7 +83,7 @@ export class PaymentsService {
     return savedPayment;
   }
 
-  async getPaymentsByOrderId(orderId: number, user: CurrentUser): Promise<Payment[]> {
+  async getPaymentsByOrderId(orderId: string, user: User): Promise<Payment[]> {
     // Verify order ownership
     const order = await this.orderRepository.findOne({
       where: { id: orderId, company_id: user.company_id },
@@ -98,7 +101,7 @@ export class PaymentsService {
     return payments;
   }
 
-  async refundPayment(paymentId: number, user: CurrentUser): Promise<Payment> {
+  async refundPayment(paymentId: string, user: User): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { id: paymentId },
       relations: ['order'],
@@ -127,12 +130,12 @@ export class PaymentsService {
     });
 
     const totalPaid = remainingPayments
-      .filter(p => p.status !== PaymentStatus.REFUNDED)
-      .reduce((sum, p) => sum + p.amount, 0);
+      .filter((p) => p.status !== PaymentStatus.REFUNDED)
+      .reduce((sum, p) => sum + Number(p.amount), 0);
 
     if (totalPaid <= 0) {
       order.payment_status = OrderPaymentStatus.UNPAID;
-    } else if (totalPaid < order.total_amount) {
+    } else if (totalPaid < Number(order.total_amount)) {
       order.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
     } else {
       order.payment_status = OrderPaymentStatus.PAID;
@@ -145,7 +148,7 @@ export class PaymentsService {
     return updatedPayment;
   }
 
-  async getPaymentSummary(orderId: number, user: CurrentUser) {
+  async getPaymentSummary(orderId: string, user: User) {
     const order = await this.orderRepository.findOne({
       where: { id: orderId, company_id: user.company_id },
       relations: ['payments'],
@@ -157,14 +160,14 @@ export class PaymentsService {
 
     const payments = order.payments || [];
     const totalPaid = payments
-      .filter(p => p.status !== PaymentStatus.REFUNDED)
-      .reduce((sum, p) => sum + p.amount, 0);
+      .filter((p) => p.status !== PaymentStatus.REFUNDED)
+      .reduce((sum, p) => sum + Number(p.amount), 0);
 
     return {
       order_id: orderId,
       order_total: order.total_amount,
       total_paid: totalPaid,
-      remaining_balance: order.total_amount - totalPaid,
+      remaining_balance: Number(order.total_amount) - totalPaid,
       payment_status: order.payment_status,
       payments_count: payments.length,
     };

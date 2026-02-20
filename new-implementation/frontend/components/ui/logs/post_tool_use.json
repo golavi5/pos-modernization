@@ -1,0 +1,119 @@
+[
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cd /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui && mv button.tsx Button.tsx && mv card.tsx Card.tsx && mv input.tsx Input.tsx && mv label.tsx Label.tsx && echo \"Renamed component files\"",
+      "description": "Rename UI components to match imports"
+    },
+    "tool_response": {
+      "stdout": "Renamed component files",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_01KdERw41sXNW44g1CAHh2vm"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/app/",
+      "description": "Check app directory structure"
+    },
+    "tool_response": {
+      "stdout": "total 56\ndrwxrwxr-x 12 gor gor 4096 Feb 17 09:54 .\ndrwxrwxr-x 13 gor gor 4096 Feb 17 12:55 ..\ndrwxrwxr-x  2 gor gor 4096 Feb 13 16:21 customers\ndrwxrwxr-x  2 gor gor 4096 Feb 13 16:14 dashboard\n-rw-rw-r--  1 gor gor 1461 Feb 13 16:13 globals.css\n-rw-rw-r--  1 gor gor 1021 Feb 13 16:20 layout.tsx\ndrwxrwxr-x  2 gor gor 4096 Feb 13 16:13 login\ndrwxrwxr-x  2 gor gor 4096 Feb 17 09:54 notifications\ndrwxrwxr-x  5 gor gor 4096 Feb 14 20:36 products\ndrwxrwxr-x  2 gor gor 4096 Feb 13 16:14 register\ndrwxrwxr-x  2 gor gor 4096 Feb 13 16:21 reports\ndrwxrwxr-x  2 gor gor 4096 Feb 13 16:14 sales\ndrwxrwxr-x  2 gor gor 4096 Feb 13 16:14 settings\ndrwxrwxr-x  2 gor gor 4096 Feb 17 09:49 users",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_014XSjoXMuKrVc6t2DNc7xoF"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "cp Button.tsx button.tsx && cp Card.tsx card.tsx && cp Input.tsx input.tsx && cp Label.tsx label.tsx && echo \"Created lowercase versions\"",
+      "description": "Create lowercase copies of components"
+    },
+    "tool_response": {
+      "stdout": "Created lowercase versions",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_01WVPys5u3M6mP98Ur9enGGA"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ls -la /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/",
+      "description": "List UI components to see duplicates"
+    },
+    "tool_response": {
+      "stdout": "total 76\ndrwxrwxr-x 3 gor gor 4096 Feb 17 13:04 .\ndrwxrwxr-x 9 gor gor 4096 Feb 17 09:53 ..\n-rw-rw-r-- 1 gor gor 1053 Feb 13 16:15 avatar.tsx\n-rw-rw-r-- 1 gor gor 1226 Feb 17 12:58 badge.tsx\n-rw-rw-r-- 1 gor gor 1735 Feb 17 13:04 button.tsx\n-rw-rw-r-- 1 gor gor 1735 Feb 13 16:15 Button.tsx\n-rw-rw-r-- 1 gor gor 1844 Feb 17 13:04 card.tsx\n-rw-rw-r-- 1 gor gor 1844 Feb 13 16:15 Card.tsx\n-rw-rw-r-- 1 gor gor 4403 Feb 13 16:15 dropdown-menu.tsx\n-rw-rw-r-- 1 gor gor  732 Feb 17 13:04 input.tsx\n-rw-rw-r-- 1 gor gor  732 Feb 13 16:15 Input.tsx\n-rw-rw-r-- 1 gor gor  477 Feb 17 13:04 label.tsx\n-rw-rw-r-- 1 gor gor  477 Feb 13 16:20 Label.tsx\ndrwxrwxr-x 2 gor gor 4096 Feb 17 13:02 logs\n-rw-rw-r-- 1 gor gor 2436 Feb 17 09:37 select.tsx\n-rw-rw-r-- 1 gor gor  711 Feb 13 16:15 separator.tsx\n-rw-rw-r-- 1 gor gor  260 Feb 17 09:37 skeleton.tsx\n-rw-rw-r-- 1 gor gor 2839 Feb 17 09:37 tabs.tsx",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_01Hbs7i1yvM9wPeqCE9qCv3b"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Button.tsx /tmp/Button.tsx.bak && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Card.tsx /tmp/Card.tsx.bak && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Input.tsx /tmp/Input.tsx.bak && mv /home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui/Label.tsx /tmp/Label.tsx.bak",
+      "description": "Move uppercase duplicates to backup"
+    },
+    "tool_response": {
+      "stdout": "",
+      "stderr": "",
+      "interrupted": false,
+      "isImage": false
+    },
+    "tool_use_id": "toolu_01KuNw3fXx91Rm3YoVQFSYmp"
+  },
+  {
+    "session_id": "1878f5fc-40dc-46bf-b159-c8d54cb71021",
+    "transcript_path": "/home/gor/.claude/projects/-home-gor-Documents-devs-pos-modernization/1878f5fc-40dc-46bf-b159-c8d54cb71021.jsonl",
+    "cwd": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/components/ui",
+    "permission_mode": "default",
+    "hook_event_name": "PostToolUse",
+    "tool_name": "Grep",
+    "tool_input": {
+      "pattern": "from ['\"]@/components/ui/[A-Z]",
+      "path": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend",
+      "glob": "*.{tsx,ts}",
+      "output_mode": "content"
+    },
+    "tool_response": {
+      "mode": "content",
+      "numFiles": 0,
+      "filenames": [],
+      "content": "/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductFilters.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductFilters.tsx:6:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductCard.tsx:4:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductCard.tsx:5:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductCard.tsx:6:import { Card } from '@/components/ui/Card';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductsTable.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductsTable.tsx:6:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductForm.tsx:4:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductForm.tsx:5:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/products/ProductForm.tsx:6:import { Label } from '@/components/ui/Label';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/StockTable.tsx:4:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/StockTable.tsx:5:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/StockMovements.tsx:4:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/InventoryFilters.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/AdjustStockModal.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/AdjustStockModal.tsx:6:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/inventory/AdjustStockModal.tsx:7:import { Label } from '@/components/ui/Label';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/CustomerSelect.tsx:5:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/CustomerSelect.tsx:6:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/CustomerSelect.tsx:7:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/ProductSearch.tsx:5:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/ProductSearch.tsx:6:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/ProductSearch.tsx:7:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/SalesCart.tsx:4:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/SalesCart.tsx:5:import { Card } from '@/components/ui/Card';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/PaymentModal.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/PaymentModal.tsx:6:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/sales/PaymentModal.tsx:7:import { Label } from '@/components/ui/Label';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomersTable.tsx:4:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomersTable.tsx:5:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomerForm.tsx:4:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomerForm.tsx:5:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomerForm.tsx:6:import { Label } from '@/components/ui/Label';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/LoyaltyPointsModal.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/LoyaltyPointsModal.tsx:6:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/LoyaltyPointsModal.tsx:7:import { Label } from '@/components/ui/Label';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/products/page.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/products/page.tsx:6:import { Card } from '@/components/ui/Card';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/products/page.tsx:7:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomerFilters.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/components/customers/CustomerFilters.tsx:6:import { Input } from '@/components/ui/Input';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/inventory/page.tsx:5:import { Card } from '@/components/ui/Card';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/inventory/page.tsx:6:import { Badge } from '@/components/ui/Badge';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/sales/page.tsx:5:import { Card } from '@/components/ui/Card';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/sales/page.tsx:6:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/customers/page.tsx:5:import { Button } from '@/components/ui/Button';\n/home/gor/Documents/devs/pos-modernization/new-implementation/frontend/src/app/dashboard/customers/page.tsx:6:import { Card } from '@/components/ui/Card';",
+      "numLines": 47
+    },
+    "tool_use_id": "toolu_01KRKBkUiWY5Y1UKJ9GCdDDQ"
+  }
+]

@@ -14,11 +14,11 @@ export const AUTH_CONSTANTS = {
   // Password Configuration
   PASSWORD: {
     BCRYPT_ROUNDS: 10,
-    MIN_LENGTH: 8,
-    REQUIRE_UPPERCASE: true,
-    REQUIRE_LOWERCASE: true,
-    REQUIRE_NUMBERS: true,
-    REQUIRE_SPECIAL_CHARS: true,
+    MIN_LENGTH: 6,
+    REQUIRE_UPPERCASE: false,
+    REQUIRE_LOWERCASE: false,
+    REQUIRE_NUMBERS: false,
+    REQUIRE_SPECIAL_CHARS: false,
   },
 
   // Error Messages

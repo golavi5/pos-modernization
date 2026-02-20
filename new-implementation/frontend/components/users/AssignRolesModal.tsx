@@ -58,10 +58,10 @@ export function AssignRolesModal({ user, onSubmit, onCancel, isLoading }: Assign
                 />
                 <div className="flex-1">
                   <p className="font-medium">{role.name}</p>
-                  <p className="text-sm text-gray-500">{role.description}</p>
+                  <p className="text-sm text-tertiary">{role.description}</p>
                 </div>
                 {role.isSystemRole && (
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Sistema</span>
+                  <span className="text-xs bg-gray-100 text-secondary px-2 py-0.5 rounded">Sistema</span>
                 )}
               </label>
             ))}

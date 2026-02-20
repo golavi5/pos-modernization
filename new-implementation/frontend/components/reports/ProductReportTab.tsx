@@ -50,7 +50,7 @@ export function ProductReportTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-gray-500 text-xs uppercase">
+                  <tr className="border-b text-tertiary text-xs uppercase">
                     <th className="text-left py-3 px-4">#</th>
                     <th className="text-left py-3 px-4">Producto</th>
                     <th className="text-left py-3 px-4">Categoría</th>
@@ -62,14 +62,14 @@ export function ProductReportTab() {
                 <tbody>
                   {topSelling.map((product, i) => (
                     <tr key={product.productId} className="border-b hover:bg-gray-50">
-                      <td className="py-3 px-4 text-gray-400 font-medium">{i + 1}</td>
+                      <td className="py-3 px-4 text-quaternary font-medium">{i + 1}</td>
                       <td className="py-3 px-4">
                         <div>
                           <p className="font-medium">{product.productName}</p>
-                          <p className="text-xs text-gray-400">{product.sku}</p>
+                          <p className="text-xs text-quaternary">{product.sku}</p>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">{product.category}</td>
+                      <td className="py-3 px-4 text-secondary">{product.category}</td>
                       <td className="py-3 px-4 text-right font-medium">{product.totalQuantitySold}</td>
                       <td className="py-3 px-4 text-right">{formatCurrency(product.totalRevenue)}</td>
                       <td className="py-3 px-4 text-right">{formatCurrency(product.averagePrice)}</td>
@@ -79,7 +79,7 @@ export function ProductReportTab() {
               </table>
             </div>
           ) : (
-            <p className="text-center text-gray-500 py-8">No hay datos de ventas disponibles</p>
+            <p className="text-center text-tertiary py-8">No hay datos de ventas disponibles</p>
           )}
         </CardContent>
       </Card>
@@ -98,7 +98,7 @@ export function ProductReportTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-gray-500 text-xs uppercase">
+                  <tr className="border-b text-tertiary text-xs uppercase">
                     <th className="text-left py-3 px-4">Producto</th>
                     <th className="text-left py-3 px-4">Almacén</th>
                     <th className="text-right py-3 px-4">Stock Actual</th>
@@ -113,12 +113,12 @@ export function ProductReportTab() {
                       <td className="py-3 px-4">
                         <div>
                           <p className="font-medium">{product.productName}</p>
-                          <p className="text-xs text-gray-400">{product.sku}</p>
+                          <p className="text-xs text-quaternary">{product.sku}</p>
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">{product.warehouseName}</td>
+                      <td className="py-3 px-4 text-secondary">{product.warehouseName}</td>
                       <td className="py-3 px-4 text-right font-bold text-red-600">{product.currentStock}</td>
-                      <td className="py-3 px-4 text-right text-gray-600">{product.reorderPoint}</td>
+                      <td className="py-3 px-4 text-right text-secondary">{product.reorderPoint}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           product.stockLevel === 'critical'
@@ -128,7 +128,7 @@ export function ProductReportTab() {
                           {product.stockLevel === 'critical' ? '⚠️ Crítico' : '⚠️ Bajo'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right text-gray-600">
+                      <td className="py-3 px-4 text-right text-secondary">
                         {product.daysUntilStockout !== undefined ? `${product.daysUntilStockout} días` : 'N/A'}
                       </td>
                     </tr>
@@ -137,7 +137,7 @@ export function ProductReportTab() {
               </table>
             </div>
           ) : (
-            <p className="text-center text-gray-500 py-8">
+            <p className="text-center text-tertiary py-8">
               ✅ Todos los productos tienen stock suficiente
             </p>
           )}

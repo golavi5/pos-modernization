@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { ProductCategory } from './entities/product-category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { User } from '../../auth/entities/user.entity'; // Assuming user entity exists
+import { User } from '../auth/entities/user.entity';
 
 @Injectable()
 export class ProductCategoriesService {

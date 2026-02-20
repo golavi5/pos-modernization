@@ -63,12 +63,12 @@ export class CustomersService {
   ): Promise<{ data: CustomerResponseDto[]; total: number; page: number; pageSize: number }> {
     const {
       page = 1,
-      pageSize = 20,
+      limit: pageSize = 20,
       search,
       isActive,
       minLoyaltyPoints,
-      sortBy = 'created_at',
-      sortOrder = 'DESC',
+      sort_by: sortBy = 'created_at',
+      order: sortOrder = 'DESC',
     } = query;
 
     const qb = this.customerRepository.createQueryBuilder('customer');
@@ -326,8 +326,8 @@ export class CustomersService {
       });
     }
 
-    const sortBy = query.sortBy || 'created_at';
-    const sortOrder = query.sortOrder || 'DESC';
+    const sortBy = query.sort_by || 'created_at';
+    const sortOrder = query.order || 'DESC';
     const orderColumn =
       sortBy === 'name'
         ? 'customer.name'

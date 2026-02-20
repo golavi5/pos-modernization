@@ -37,9 +37,9 @@ export function StatsCard({
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
-            <p className="mt-1 text-xs text-gray-500">{description}</p>
+            <p className="text-sm font-medium text-secondary">{title}</p>
+            <p className="mt-2 text-2xl font-bold">{value}</p>
+            <p className="mt-1 text-xs text-tertiary">{description}</p>
           </div>
           <div className="ml-4">{iconMap[icon]}</div>
         </div>

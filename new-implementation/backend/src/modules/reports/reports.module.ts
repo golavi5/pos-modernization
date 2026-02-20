@@ -8,22 +8,20 @@ import { CustomerReportService } from './services/customer-report.service';
 import { ExportService } from './services/export.service';
 
 // Import entities from other modules
-import { Sale } from '../sales/entities/sale.entity';
-import { SaleItem } from '../sales/entities/sale-item.entity';
-import { Product } from '../products/product.entity';
+import { Order } from '../sales/entities/order.entity';
+import { OrderItem } from '../sales/entities/order-item.entity';
+import { Product } from '../products/entities/product.entity';
 import { Customer } from '../customers/customer.entity';
-import { StockLevel } from '../inventory/entities/stock-level.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      Sale,
-      SaleItem,
+      Order,
+      OrderItem,
       Product,
       Customer,
-      StockLevel,
       StockMovement,
       Warehouse,
     ]),

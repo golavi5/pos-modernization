@@ -1,0 +1,34 @@
+export declare class Settings {
+    id: number;
+    companyId: string;
+    companyName: string;
+    nit: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
+    logoUrl: string;
+    city: string;
+    country: string;
+    taxRate: number;
+    taxIncludedInPrice: boolean;
+    currency: string;
+    locale: string;
+    paymentCash: boolean;
+    paymentCard: boolean;
+    paymentTransfer: boolean;
+    paymentCredit: boolean;
+    paymentTransferInstructions: string;
+    trackInventory: boolean;
+    allowNegativeStock: boolean;
+    defaultReorderPoint: number;
+    requireCustomer: boolean;
+    printReceiptAutomatically: boolean;
+    receiptFooter: string;
+    largeSaleThreshold: number;
+    loyaltyEnabled: boolean;
+    loyaltyPointsPerCurrency: number;
+    loyaltyPointValue: number;
+    createdAt: Date;
+    updatedAt: Date;
+}

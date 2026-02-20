@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThan } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { Customer } from '../../customers/customer.entity';
-import { Sale } from '../../sales/entities/sale.entity';
+import { Order } from '../../sales/entities/order.entity';
 import { ReportQueryDto } from '../dto/report-query.dto';
 import {
   CustomerReportDto,
@@ -17,52 +17,55 @@ export class CustomerReportService {
   constructor(
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
-    @InjectRepository(Sale)
-    private readonly saleRepository: Repository<Sale>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
   ) {}
 
   /**
    * Get top buying customers
    */
   async getTopCustomers(
-    companyId: number,
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<TopCustomerDto[]> {
     const { startDate, endDate } = this.getDateRange(query);
     const limit = query.limit || 10;
 
-    const results = await this.saleRepository
-      .createQueryBuilder('sale')
-      .innerJoin('sale.customer', 'customer')
+    const results = await this.orderRepository
+      .createQueryBuilder('order')
+      .innerJoin(Customer, 'customer', 'customer.id = order.customer_id')
       .select('customer.id', 'customerId')
       .addSelect('customer.name', 'customerName')
       .addSelect('customer.email', 'email')
       .addSelect('customer.phone', 'phone')
-      .addSelect('customer.loyaltyPoints', 'loyaltyPoints')
-      .addSelect('COUNT(sale.id)', 'totalPurchases')
-      .addSelect('SUM(sale.totalAmount)', 'totalSpent')
-      .addSelect('AVG(sale.totalAmount)', 'averageTicket')
-      .addSelect('MAX(sale.createdAt)', 'lastPurchaseDate')
-      .where('sale.companyId = :companyId', { companyId })
-      .andWhere('sale.createdAt BETWEEN :startDate AND :endDate', {
+      .addSelect('customer.loyalty_points', 'loyaltyPoints')
+      .addSelect('COUNT(order.id)', 'totalPurchases')
+      .addSelect('SUM(order.total_amount)', 'totalSpent')
+      .addSelect('AVG(order.total_amount)', 'averageTicket')
+      .addSelect('MAX(order.created_at)', 'lastPurchaseDate')
+      .where('order.company_id = :companyId', { companyId })
+      .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
+      .andWhere('order.customer_id IS NOT NULL')
       .groupBy('customer.id')
       .orderBy('totalSpent', 'DESC')
       .limit(limit)
       .getRawMany();
 
     return results.map((row) => ({
-      customerId: parseInt(row.customerId),
+      customerId: row.customerId,
       customerName: row.customerName,
       email: row.email,
       phone: row.phone,
-      totalPurchases: parseInt(row.totalPurchases),
-      totalSpent: parseFloat(row.totalSpent),
-      averageTicket: parseFloat(row.averageTicket),
-      lastPurchaseDate: new Date(row.lastPurchaseDate),
-      loyaltyPoints: parseInt(row.loyaltyPoints),
+      totalPurchases: parseInt(row.totalPurchases || '0'),
+      totalSpent: parseFloat(row.totalSpent || '0'),
+      averageTicket: parseFloat(row.averageTicket || '0'),
+      lastPurchaseDate: row.lastPurchaseDate
+        ? new Date(row.lastPurchaseDate)
+        : null,
+      loyaltyPoints: parseInt(row.loyaltyPoints || '0'),
     }));
   }
 
@@ -70,30 +73,28 @@ export class CustomerReportService {
    * Get customer segmentation
    */
   async getCustomerSegments(
-    companyId: number,
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<CustomerSegmentDto[]> {
-    const { startDate, endDate } = this.getDateRange(query);
-
     // Get all customers with their purchase data
     const customers = await this.customerRepository
       .createQueryBuilder('customer')
-      .leftJoin('customer.sales', 'sale')
+      .leftJoin(Order, 'order', 'order.customer_id = customer.id')
       .select('customer.id', 'customerId')
-      .addSelect('customer.createdAt', 'registrationDate')
-      .addSelect('COUNT(sale.id)', 'totalPurchases')
-      .addSelect('SUM(sale.totalAmount)', 'totalSpent')
-      .addSelect('MAX(sale.createdAt)', 'lastPurchaseDate')
-      .where('customer.companyId = :companyId', { companyId })
+      .addSelect('customer.created_at', 'registrationDate')
+      .addSelect('COUNT(order.id)', 'totalPurchases')
+      .addSelect('SUM(order.total_amount)', 'totalSpent')
+      .addSelect('MAX(order.created_at)', 'lastPurchaseDate')
+      .where('customer.company_id = :companyId', { companyId })
       .groupBy('customer.id')
       .getRawMany();
 
     // Segment customers
     const segments = {
-      vip: { customers: [], revenue: 0 },
-      regular: { customers: [], revenue: 0 },
-      new: { customers: [], revenue: 0 },
-      inactive: { customers: [], revenue: 0 },
+      vip: { customers: [] as any[], revenue: 0 },
+      regular: { customers: [] as any[], revenue: 0 },
+      new: { customers: [] as any[], revenue: 0 },
+      inactive: { customers: [] as any[], revenue: 0 },
     };
 
     const now = new Date();
@@ -131,10 +132,6 @@ export class CustomerReportService {
     });
 
     const totalCustomers = customers.length;
-    const totalRevenue = Object.values(segments).reduce(
-      (sum, seg) => sum + seg.revenue,
-      0,
-    );
 
     return [
       {
@@ -196,7 +193,7 @@ export class CustomerReportService {
    * Get comprehensive customer report
    */
   async getCustomerReport(
-    companyId: number,
+    companyId: string,
     query: ReportQueryDto,
   ): Promise<CustomerReportDto> {
     const { startDate, endDate } = this.getDateRange(query);
@@ -204,26 +201,27 @@ export class CustomerReportService {
     const topBuyers = await this.getTopCustomers(companyId, query);
     const segments = await this.getCustomerSegments(companyId, query);
 
-    // Count total and active customers
+    // Count total customers
     const totalCustomers = await this.customerRepository.count({
-      where: { companyId },
+      where: { company_id: companyId },
     });
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const activeCustomers = await this.saleRepository
-      .createQueryBuilder('sale')
-      .select('COUNT(DISTINCT sale.customerId)', 'count')
-      .where('sale.companyId = :companyId', { companyId })
-      .andWhere('sale.createdAt >= :date', { date: thirtyDaysAgo })
+    const activeCustomers = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('COUNT(DISTINCT order.customer_id)', 'count')
+      .where('order.company_id = :companyId', { companyId })
+      .andWhere('order.created_at >= :date', { date: thirtyDaysAgo })
+      .andWhere('order.customer_id IS NOT NULL')
       .getRawOne();
 
     // Count new customers in period
     const newCustomers = await this.customerRepository.count({
       where: {
-        companyId,
-        createdAt: Between(startDate, endDate),
+        company_id: companyId,
+        created_at: Between(startDate, endDate),
       },
     });
 

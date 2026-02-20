@@ -2,7 +2,6 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
   ConflictException,
   Logger,
 } from '@nestjs/common';
@@ -18,22 +17,19 @@ import { OrderCalculationService } from './order-calculation.service';
 import { ProductsService } from '../../products/products.service';
 import { User } from '../../auth/entities/user.entity';
 
-interface CurrentUser extends User {
-  company_id: number;
-}
-
 @Injectable()
 export class SalesService {
   private readonly logger = new Logger(SalesService.name);
 
-  private readonly VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-    [OrderStatus.DRAFT]: [OrderStatus.PENDING, OrderStatus.CANCELLED],
-    [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-    [OrderStatus.CONFIRMED]: [OrderStatus.COMPLETED, OrderStatus.VOIDED],
-    [OrderStatus.COMPLETED]: [],
-    [OrderStatus.CANCELLED]: [],
-    [OrderStatus.VOIDED]: [],
-  };
+  private readonly VALID_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> =
+    {
+      [OrderStatus.DRAFT]: [OrderStatus.PENDING, OrderStatus.CANCELLED],
+      [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
+      [OrderStatus.CONFIRMED]: [OrderStatus.COMPLETED, OrderStatus.VOIDED],
+      [OrderStatus.COMPLETED]: [],
+      [OrderStatus.CANCELLED]: [],
+      [OrderStatus.VOIDED]: [],
+    };
 
   constructor(
     @InjectRepository(Order)
@@ -44,7 +40,10 @@ export class SalesService {
     private readonly productsService: ProductsService,
   ) {}
 
-  async listOrders(query: OrderQueryDto, user: CurrentUser): Promise<{ orders: Order[]; total: number }> {
+  async listOrders(
+    query: OrderQueryDto,
+    user: User,
+  ): Promise<{ orders: Order[]; total: number }> {
     const page = query.page || 1;
     const limit = query.limit || 10;
     const skip = (page - 1) * limit;
@@ -76,11 +75,13 @@ export class SalesService {
       order: { created_at: 'DESC' },
     });
 
-    this.logger.log(`Retrieved ${orders.length} orders for company ${user.company_id}`);
+    this.logger.log(
+      `Retrieved ${orders.length} orders for company ${user.company_id}`,
+    );
     return { orders, total };
   }
 
-  async getOrderById(id: number, user: CurrentUser): Promise<Order> {
+  async getOrderById(id: string, user: User): Promise<Order> {
     const order = await this.orderRepository.findOne({
       where: { id, company_id: user.company_id },
       relations: ['order_items', 'payments', 'order_items.product'],
@@ -93,7 +94,7 @@ export class SalesService {
     return order;
   }
 
-  async createOrder(dto: CreateOrderDto, user: CurrentUser): Promise<Order> {
+  async createOrder(dto: CreateOrderDto, user: User): Promise<Order> {
     // Validate items
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('Order must have at least 1 item');
@@ -103,7 +104,9 @@ export class SalesService {
     for (const item of dto.items) {
       const product = await this.productsService.findOne(item.product_id, user);
       if (!product) {
-        throw new BadRequestException(`Product with ID ${item.product_id} not found`);
+        throw new BadRequestException(
+          `Product with ID ${item.product_id} not found`,
+        );
       }
       if (product.stock_quantity < item.quantity) {
         throw new BadRequestException(
@@ -113,11 +116,14 @@ export class SalesService {
     }
 
     // Calculate order items and totals
-    const calculatedItems = this.calculationService.calculateOrderItemTotals(dto.items);
-    const { subtotal, tax_amount, total_amount } = this.calculationService.calculateOrderTotals(
-      calculatedItems,
-      dto.discount_amount || 0,
+    const calculatedItems = this.calculationService.calculateOrderItemTotals(
+      dto.items,
     );
+    const { subtotal, tax_amount, total_amount } =
+      this.calculationService.calculateOrderTotals(
+        calculatedItems,
+        dto.discount_amount || 0,
+      );
 
     // Generate unique order number
     const orderNumber = await this.generateOrderNumber(user.company_id);
@@ -140,7 +146,7 @@ export class SalesService {
     const savedOrder = await this.orderRepository.save(order);
 
     // Create order items
-    const orderItems = calculatedItems.map(item => {
+    const orderItems = calculatedItems.map((item) => {
       const orderItem = new OrderItem();
       orderItem.order_id = savedOrder.id;
       orderItem.product_id = item.product_id;
@@ -156,17 +162,29 @@ export class SalesService {
 
     // Load complete order with items
     const completeOrder = await this.getOrderById(savedOrder.id, user);
-    this.logger.log(`Created order ${orderNumber} for company ${user.company_id}`);
+    this.logger.log(
+      `Created order ${orderNumber} for company ${user.company_id}`,
+    );
 
     return completeOrder;
   }
 
-  async updateOrder(id: number, dto: UpdateOrderDto, user: CurrentUser): Promise<Order> {
+  async updateOrder(
+    id: string,
+    dto: UpdateOrderDto,
+    user: User,
+  ): Promise<Order> {
     const order = await this.getOrderById(id, user);
 
     // Check if order can be modified
-    if ([OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.VOIDED].includes(order.status)) {
-      throw new ConflictException(`Cannot modify order with status ${order.status}`);
+    if (
+      [OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.VOIDED].includes(
+        order.status,
+      )
+    ) {
+      throw new ConflictException(
+        `Cannot modify order with status ${order.status}`,
+      );
     }
 
     order.customer_id = dto.customer_id ?? order.customer_id;
@@ -178,7 +196,11 @@ export class SalesService {
     return this.getOrderById(updatedOrder.id, user);
   }
 
-  async updateOrderStatus(id: number, dto: UpdateOrderStatusDto, user: CurrentUser): Promise<Order> {
+  async updateOrderStatus(
+    id: string,
+    dto: UpdateOrderStatusDto,
+    user: User,
+  ): Promise<Order> {
     const order = await this.getOrderById(id, user);
 
     // Validate status transition
@@ -193,7 +215,11 @@ export class SalesService {
     if (dto.status === OrderStatus.CONFIRMED) {
       // Deduct stock from products
       for (const item of order.order_items) {
-        await this.productsService.deductStock(item.product_id, item.quantity, user);
+        await this.productsService.deductStock(
+          item.product_id,
+          item.quantity,
+          user,
+        );
       }
     }
 
@@ -204,12 +230,14 @@ export class SalesService {
     return this.getOrderById(updatedOrder.id, user);
   }
 
-  async deleteOrder(id: number, user: CurrentUser): Promise<{ message: string }> {
+  async deleteOrder(id: string, user: User): Promise<{ message: string }> {
     const order = await this.getOrderById(id, user);
 
     // Only allow deletion of draft orders
     if (order.status !== OrderStatus.DRAFT) {
-      throw new BadRequestException('Only draft orders can be deleted. Use void/cancel instead.');
+      throw new BadRequestException(
+        'Only draft orders can be deleted. Use void/cancel instead.',
+      );
     }
 
     await this.orderItemRepository.delete({ order_id: id });
@@ -219,12 +247,12 @@ export class SalesService {
     return { message: `Order ${order.order_number} has been deleted` };
   }
 
-  async getOrderPayments(id: number, user: CurrentUser) {
+  async getOrderPayments(id: string, user: User) {
     const order = await this.getOrderById(id, user);
     return order.payments || [];
   }
 
-  private async generateOrderNumber(companyId: number): Promise<string> {
+  private async generateOrderNumber(companyId: string): Promise<string> {
     const today = new Date();
     const datePrefix = today.toISOString().split('T')[0].replace(/-/g, '');
 
@@ -233,10 +261,13 @@ export class SalesService {
       where: {
         company_id: companyId,
       },
-      order: { id: 'DESC' },
+      order: { created_at: 'DESC' },
     });
 
-    const sequenceNumber = lastOrder ? parseInt(lastOrder.order_number.substring(8)) + 1 : 1;
+    let sequenceNumber = 1;
+    if (lastOrder && lastOrder.order_number.startsWith(`ORD${datePrefix}`)) {
+      sequenceNumber = parseInt(lastOrder.order_number.substring(11)) + 1;
+    }
     return `ORD${datePrefix}${String(sequenceNumber).padStart(5, '0')}`;
   }
 }

@@ -15,14 +15,14 @@ const SEGMENT_COLORS: Record<string, string> = {
   VIP: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   Regular: 'bg-blue-100 text-blue-800 border-blue-200',
   New: 'bg-green-100 text-green-800 border-green-200',
-  Inactive: 'bg-gray-100 text-gray-600 border-gray-200',
+  Inactive: 'bg-gray-100 text-secondary border-gray-200',
 };
 
 const SEGMENT_ICONS: Record<string, React.ReactNode> = {
   VIP: <Crown className="h-5 w-5 text-yellow-500" />,
   Regular: <Users className="h-5 w-5 text-blue-500" />,
   New: <UserPlus className="h-5 w-5 text-green-500" />,
-  Inactive: <UserX className="h-5 w-5 text-gray-500" />,
+  Inactive: <UserX className="h-5 w-5 text-tertiary" />,
 };
 
 export function CustomerReportTab() {
@@ -53,8 +53,8 @@ export function CustomerReportTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Clientes</CardTitle>
-            <Users className="h-4 w-4 text-gray-400" />
+            <CardTitle className="text-sm font-medium text-secondary">Total Clientes</CardTitle>
+            <Users className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{report.totalCustomers}</div>
@@ -62,22 +62,22 @@ export function CustomerReportTab() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Clientes Activos</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">Clientes Activos</CardTitle>
             <Users className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{report.activeCustomers}</div>
-            <p className="text-xs text-gray-500 mt-1">Últimos 30 días</p>
+            <p className="text-xs text-tertiary mt-1">Últimos 30 días</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Nuevos Clientes</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">Nuevos Clientes</CardTitle>
             <UserPlus className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{report.newCustomers}</div>
-            <p className="text-xs text-gray-500 mt-1">En el período</p>
+            <p className="text-xs text-tertiary mt-1">En el período</p>
           </CardContent>
         </Card>
       </div>
@@ -119,7 +119,7 @@ export function CustomerReportTab() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b text-gray-500 text-xs uppercase">
+                <tr className="border-b text-tertiary text-xs uppercase">
                   <th className="text-left py-3 px-4">#</th>
                   <th className="text-left py-3 px-4">Cliente</th>
                   <th className="text-left py-3 px-4">Contacto</th>
@@ -133,20 +133,20 @@ export function CustomerReportTab() {
                 {report.topBuyers.map((customer, i) => (
                   <tr key={customer.customerId} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4">
-                      {i < 3 ? <Crown className="h-4 w-4 text-yellow-500" /> : <span className="text-gray-400">{i + 1}</span>}
+                      {i < 3 ? <Crown className="h-4 w-4 text-yellow-500" /> : <span className="text-quaternary">{i + 1}</span>}
                     </td>
                     <td className="py-3 px-4 font-medium">{customer.customerName}</td>
                     <td className="py-3 px-4">
                       <div>
                         <p className="text-sm">{customer.email}</p>
-                        <p className="text-xs text-gray-400">{customer.phone}</p>
+                        <p className="text-xs text-quaternary">{customer.phone}</p>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right">{customer.totalPurchases}</td>
                     <td className="py-3 px-4 text-right font-bold">{formatCurrency(customer.totalSpent)}</td>
                     <td className="py-3 px-4 text-right">{formatCurrency(customer.averageTicket)}</td>
                     <td className="py-3 px-4 text-right">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-secondary">
                         {customer.loyaltyPoints} pts
                       </span>
                     </td>

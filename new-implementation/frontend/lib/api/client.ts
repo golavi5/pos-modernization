@@ -51,7 +51,7 @@ apiClient.interceptors.response.use(
 
       try {
         const authStore = useAuthStore.getState();
-        if (authStore.refreshToken) {
+        if (authStore.refreshTokenValue) {
           await authStore.refreshTokenMethod();
           
           // Retry original request with new token
