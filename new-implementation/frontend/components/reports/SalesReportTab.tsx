@@ -7,9 +7,7 @@ import { useSalesSummary, useSalesByPeriod, useRevenueTrends } from '@/hooks/use
 import { reportsApi } from '@/lib/api/reports';
 import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Package, CreditCard } from 'lucide-react';
 import type { ReportQuery, ExportFormat } from '@/types/reports';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+import { formatCOP } from '@/lib/utils';
 
 const formatPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 
@@ -70,7 +68,7 @@ export function SalesReportTab() {
             <DollarSign className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary?.totalRevenue ?? 0)}</div>
+            <div className="text-2xl font-bold">{formatCOP(summary?.totalRevenue ?? 0)}</div>
             {summary?.comparedToLastPeriod && (
               <p className="text-xs flex items-center gap-1 mt-1 text-tertiary">
                 {summary.comparedToLastPeriod.revenueChange >= 0
@@ -92,7 +90,7 @@ export function SalesReportTab() {
             <TrendingUp className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary?.totalProfit ?? 0)}</div>
+            <div className="text-2xl font-bold">{formatCOP(summary?.totalProfit ?? 0)}</div>
             {summary?.comparedToLastPeriod && (
               <p className="text-xs flex items-center gap-1 mt-1 text-tertiary">
                 {summary.comparedToLastPeriod.profitChange >= 0
@@ -114,7 +112,7 @@ export function SalesReportTab() {
             <Package className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(summary?.averageTicket ?? 0)}</div>
+            <div className="text-2xl font-bold">{formatCOP(summary?.averageTicket ?? 0)}</div>
             <p className="text-xs text-tertiary mt-1">{summary?.totalItems ?? 0} artículos vendidos</p>
           </CardContent>
         </Card>
@@ -139,7 +137,7 @@ export function SalesReportTab() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold">{formatCurrency(method.totalRevenue)}</p>
+                    <p className="font-bold">{formatCOP(method.totalRevenue)}</p>
                     <p className="text-sm text-tertiary">{method.percentage.toFixed(1)}%</p>
                   </div>
                 </div>
@@ -173,9 +171,9 @@ export function SalesReportTab() {
                     <tr key={i} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium">{row.date}</td>
                       <td className="py-3 px-4 text-right">{row.totalSales}</td>
-                      <td className="py-3 px-4 text-right">{formatCurrency(row.totalRevenue)}</td>
+                      <td className="py-3 px-4 text-right">{formatCOP(row.totalRevenue)}</td>
                       <td className="py-3 px-4 text-right">{row.totalItems}</td>
-                      <td className="py-3 px-4 text-right">{formatCurrency(row.averageTicket)}</td>
+                      <td className="py-3 px-4 text-right">{formatCOP(row.averageTicket)}</td>
                     </tr>
                   ))}
                 </tbody>

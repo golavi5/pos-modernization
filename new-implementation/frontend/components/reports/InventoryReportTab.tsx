@@ -6,9 +6,7 @@ import { ReportFilters } from './ReportFilters';
 import { useInventoryTurnover, useInventoryValueByWarehouse } from '@/hooks/useReports';
 import { BarChart3, TrendingUp, AlertTriangle, Warehouse } from 'lucide-react';
 import type { ReportQuery } from '@/types/reports';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+import { formatCOP } from '@/lib/utils';
 
 const STATUS_STYLES: Record<string, { label: string; className: string }> = {
   'fast-moving': { label: 'Rápido', className: 'bg-green-100 text-green-700' },
@@ -101,7 +99,7 @@ export function InventoryReportTab() {
                     <p className="font-semibold">{wh.warehouseName}</p>
                     <p className="text-sm text-tertiary">{wh.productCount} productos · {wh.totalUnits.toLocaleString()} unidades</p>
                   </div>
-                  <p className="text-xl font-bold text-blue-600">{formatCurrency(wh.totalValue)}</p>
+                  <p className="text-xl font-bold text-blue-600">{formatCOP(wh.totalValue)}</p>
                 </div>
               ))}
             </div>

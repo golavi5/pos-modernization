@@ -8,9 +8,7 @@ import { useTopSellingProducts, useLowStockProducts } from '@/hooks/useReports';
 import { reportsApi } from '@/lib/api/reports';
 import { AlertTriangle, TrendingUp } from 'lucide-react';
 import type { ReportQuery, ExportFormat } from '@/types/reports';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+import { formatCOP } from '@/lib/utils';
 
 export function ProductReportTab() {
   const [query, setQuery] = useState<ReportQuery>({ period: 'monthly', limit: 10 });
@@ -71,8 +69,8 @@ export function ProductReportTab() {
                       </td>
                       <td className="py-3 px-4 text-secondary">{product.category}</td>
                       <td className="py-3 px-4 text-right font-medium">{product.totalQuantitySold}</td>
-                      <td className="py-3 px-4 text-right">{formatCurrency(product.totalRevenue)}</td>
-                      <td className="py-3 px-4 text-right">{formatCurrency(product.averagePrice)}</td>
+                      <td className="py-3 px-4 text-right">{formatCOP(product.totalRevenue)}</td>
+                      <td className="py-3 px-4 text-right">{formatCOP(product.averagePrice)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -7,9 +7,7 @@ import { useCustomerReport } from '@/hooks/useReports';
 import { reportsApi } from '@/lib/api/reports';
 import { Users, Crown, UserPlus, UserX } from 'lucide-react';
 import type { ReportQuery, ExportFormat } from '@/types/reports';
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+import { formatCOP } from '@/lib/utils';
 
 const SEGMENT_COLORS: Record<string, string> = {
   VIP: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -100,8 +98,8 @@ export function CustomerReportTab() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold">{formatCurrency(seg.totalRevenue)}</p>
-                  <p className="text-xs">{formatCurrency(seg.averageSpent)} promedio</p>
+                  <p className="font-bold">{formatCOP(seg.totalRevenue)}</p>
+                  <p className="text-xs">{formatCOP(seg.averageSpent)} promedio</p>
                 </div>
               </div>
             ))}
@@ -143,8 +141,8 @@ export function CustomerReportTab() {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right">{customer.totalPurchases}</td>
-                    <td className="py-3 px-4 text-right font-bold">{formatCurrency(customer.totalSpent)}</td>
-                    <td className="py-3 px-4 text-right">{formatCurrency(customer.averageTicket)}</td>
+                    <td className="py-3 px-4 text-right font-bold">{formatCOP(customer.totalSpent)}</td>
+                    <td className="py-3 px-4 text-right">{formatCOP(customer.averageTicket)}</td>
                     <td className="py-3 px-4 text-right">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-secondary">
                         {customer.loyaltyPoints} pts
