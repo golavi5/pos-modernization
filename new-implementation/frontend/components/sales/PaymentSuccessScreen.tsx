@@ -2,13 +2,7 @@
 
 import { CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-  }).format(amount);
+import { formatCOP } from '@/lib/utils';
 
 interface PaymentSuccessScreenProps {
   total: number;
@@ -41,18 +35,18 @@ export function PaymentSuccessScreen({
       <div className="bg-card rounded-xl border border-border w-full max-w-sm p-4 mb-6 space-y-2">
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Total cobrado</span>
-          <span className="font-semibold">{formatCurrency(total)}</span>
+          <span className="font-semibold">{formatCOP(total)}</span>
         </div>
         {method === 'cash' && (
           <>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Recibido</span>
-              <span className="font-semibold">{formatCurrency(received)}</span>
+              <span className="font-semibold">{formatCOP(received)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-border">
               <span className="text-emerald-500 font-semibold">Cambio</span>
               <span className="text-emerald-500 text-xl font-bold">
-                {formatCurrency(change)}
+                {formatCOP(change)}
               </span>
             </div>
           </>

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Numpad } from './Numpad';
 import { PaymentSuccessScreen } from './PaymentSuccessScreen';
-import { cn } from '@/lib/utils';
+import { CashPaymentSection } from './CashPaymentSection';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { cn, formatCOP } from '@/lib/utils';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -20,13 +21,6 @@ type ModalStatus = 'payment' | 'success';
 
 const QUICK_AMOUNTS = [10000, 20000, 50000, 100000];
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    minimumFractionDigits: 0,
-  }).format(amount);
-
 export function PaymentModal({
   isOpen,
   onClose,
@@ -39,10 +33,9 @@ export function PaymentModal({
   const [status, setStatus] = useState<ModalStatus>('payment');
   const [countdown, setCountdown] = useState(5);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useFocusTrap<HTMLDivElement>(isOpen && status === 'payment');
 
   const received = parseFloat(cashReceived) || 0;
-  const change = received - total;
   const canConfirm = method !== 'cash' || received >= total;
 
   const handleNewSale = useCallback(() => {
@@ -95,38 +88,6 @@ export function PaymentModal({
     }
   }, [isOpen]);
 
-  // Focus trap
-  useEffect(() => {
-    if (!isOpen || status !== 'payment') return;
-    const el = overlayRef.current;
-    if (!el) return;
-
-    const focusable = el.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    first?.focus();
-
-    const trap = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
-      }
-    };
-
-    el.addEventListener('keydown', trap);
-    return () => el.removeEventListener('keydown', trap);
-  }, [isOpen, status]);
-
   if (!isOpen) return null;
 
   if (status === 'success') {
@@ -134,7 +95,7 @@ export function PaymentModal({
       <PaymentSuccessScreen
         total={total}
         received={received}
-        change={change}
+        change={received - total}
         method={method}
         countdown={countdown}
         onNewSale={handleNewSale}
@@ -166,7 +127,7 @@ export function PaymentModal({
               Total a cobrar
             </p>
             <p className="text-5xl font-extrabold tracking-tight">
-              {formatCurrency(total)}
+              {formatCOP(total)}
             </p>
           </div>
 
@@ -189,49 +150,12 @@ export function PaymentModal({
           </div>
 
           {method === 'cash' && (
-            <>
-              {/* Cash display */}
-              <div
-                className={cn(
-                  'bg-card border-2 rounded-xl px-4 py-3 transition-colors',
-                  received > 0 ? 'border-primary' : 'border-border'
-                )}
-              >
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">
-                  Efectivo recibido
-                </p>
-                <p className="text-3xl font-bold">
-                  {received > 0 ? formatCurrency(received) : '—'}
-                </p>
-              </div>
-
-              {/* Change */}
-              {received >= total && (
-                <div className="bg-emerald-950/60 border border-emerald-800 rounded-xl px-4 py-3 flex justify-between items-center">
-                  <span className="text-emerald-400 text-sm font-semibold">💚 Cambio</span>
-                  <span className="text-emerald-400 text-2xl font-bold">
-                    {formatCurrency(change)}
-                  </span>
-                </div>
-              )}
-
-              {/* Quick amounts */}
-              <div className="grid grid-cols-4 gap-1.5">
-                {QUICK_AMOUNTS.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setCashReceived(String(amt))}
-                    className="bg-card border border-border rounded-lg py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    ${(amt / 1000).toFixed(0)}k
-                  </button>
-                ))}
-              </div>
-
-              {/* Numpad */}
-              <Numpad value={cashReceived} onChange={setCashReceived} />
-            </>
+            <CashPaymentSection
+              total={total}
+              cashReceived={cashReceived}
+              onChange={setCashReceived}
+              quickAmounts={QUICK_AMOUNTS}
+            />
           )}
 
           {method === 'card' && (

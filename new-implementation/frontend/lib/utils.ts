@@ -17,6 +17,17 @@ export function formatCurrency(value: number, currency: string = 'USD'): string 
 }
 
 /**
+ * Format a number as Colombian Peso (COP) with no decimal places.
+ */
+export function formatCOP(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
+/**
  * Format date to a readable string
  */
 export function formatDate(date: Date | string): string {
