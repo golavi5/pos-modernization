@@ -5,6 +5,13 @@ import { useSales } from '@/hooks/useSales';
 import { formatCOP } from '@/lib/utils';
 import type { Sale } from '@/types/sale';
 
+const STATUS_MAP: Record<string, { label: string; className: string }> = {
+  paid:     { label: 'Pagado',    className: 'bg-emerald-950/50 text-emerald-500 border-emerald-500/20' },
+  pending:  { label: 'Pendiente', className: 'bg-amber-950/50 text-amber-500 border-amber-500/20' },
+  partial:  { label: 'Parcial',   className: 'bg-blue-950/50 text-blue-500 border-blue-500/20' },
+  refunded: { label: 'Devuelto',  className: 'bg-red-950/50 text-red-500 border-red-500/20' },
+};
+
 export function RecentSales() {
   const router = useRouter();
   const { data } = useSales({ page: 1, pageSize: 8 });
@@ -39,9 +46,14 @@ export function RecentSales() {
                 <td className="py-2 text-foreground">{sale.customer_name ?? 'Sin cliente'}</td>
                 <td className="py-2 text-right font-semibold">{formatCOP(sale.total_amount)}</td>
                 <td className="py-2 text-right">
-                  <span className="bg-emerald-950/50 text-emerald-500 border border-emerald-500/20 text-[9px] font-semibold px-2 py-0.5 rounded-full">
-                    Pagado
-                  </span>
+                  {(() => {
+                    const s = STATUS_MAP[sale.payment_status] ?? STATUS_MAP['pending'];
+                    return (
+                      <span className={`${s.className} border text-[9px] font-semibold px-2 py-0.5 rounded-full`}>
+                        {s.label}
+                      </span>
+                    );
+                  })()}
                 </td>
               </tr>
             ))}

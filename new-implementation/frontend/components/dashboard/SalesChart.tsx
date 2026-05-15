@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { formatCOP } from '@/lib/utils';
 
 interface ChartDay {
   day: string;
@@ -19,7 +20,7 @@ interface SalesChartProps {
 }
 
 export function SalesChart({ data }: SalesChartProps) {
-  const lastIndex = data.length - 1;
+  const lastIndex = data.length > 0 ? data.length - 1 : null;
 
   return (
     <div className="bg-card rounded-xl p-4">
@@ -35,15 +36,15 @@ export function SalesChart({ data }: SalesChartProps) {
             tickLine={false}
           />
           <Tooltip
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value: any) => [
-              new Intl.NumberFormat('es-CO', {
-                style: 'currency',
-                currency: 'COP',
-                minimumFractionDigits: 0,
-              }).format(Number(value ?? 0)),
-              'Ventas',
-            ]}
+            formatter={(value) => {
+              const num =
+                typeof value === 'string'
+                  ? parseFloat(value)
+                  : typeof value === 'number'
+                  ? value
+                  : 0;
+              return [formatCOP(num), 'Ventas'];
+            }}
             contentStyle={{
               background: 'hsl(var(--card))',
               border: '1px solid hsl(var(--border))',
