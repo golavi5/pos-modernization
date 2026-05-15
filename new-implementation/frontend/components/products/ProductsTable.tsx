@@ -1,14 +1,15 @@
 'use client';
 
-import { Pencil, Trash2, Eye } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
+import { formatCOP } from '@/lib/utils';
 import type { Product } from '@/types/product';
 
 interface ProductsTableProps {
   search?: string;
-  onEdit: (product: Product) => void;
+  onEdit?: (product: Product) => void;
 }
 
 export function ProductsTable({ search, onEdit }: ProductsTableProps) {
@@ -16,14 +17,6 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
   const deleteMutation = useDeleteProduct();
 
   const products: Product[] = productsData?.data ?? [];
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const getStockStatus = (product: Product) => {
     if (product.stock_quantity === 0) {
@@ -114,7 +107,7 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
                 </span>
               </td>
               <td className="p-4 text-right">
-                <span className="font-semibold">{formatCurrency(product.price)}</span>
+                <span className="font-semibold">{formatCOP(product.price)}</span>
               </td>
               <td className="p-4 text-center">
                 <div>
@@ -139,7 +132,7 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit(product)}
+                    onClick={() => onEdit?.(product)}
                     title="Editar"
                   >
                     <Pencil className="w-4 h-4" />
