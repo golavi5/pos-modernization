@@ -12,6 +12,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { UsersModule } from './modules/users/users.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { CompaniesModule } from './modules/companies/companies.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SettingsModule } from './modules/settings/settings.module';
     UsersModule,
     NotificationsModule,
     SettingsModule,
+    CompaniesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
