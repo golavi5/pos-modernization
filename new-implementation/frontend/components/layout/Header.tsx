@@ -19,7 +19,9 @@ const ROUTE_LABELS: Record<string, string> = {
 };
 
 function getLabel(pathname: string): string {
-  const key = Object.keys(ROUTE_LABELS).find((k) => pathname.startsWith(k));
+  const key = Object.keys(ROUTE_LABELS).find(
+    (k) => pathname === k || pathname.startsWith(k + '/')
+  );
   return key ? ROUTE_LABELS[key] : '';
 }
 
