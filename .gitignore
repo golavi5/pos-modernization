@@ -46,7 +46,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# ── Claude Code local state ───────────────────────────────────────────────────
+.claude/
+
 # ── Project-specific artifacts ────────────────────────────────────────────────
 dashboard-current.png
 dashboard-light-mode.png
 ui.png
+.gitnexus
