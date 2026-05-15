@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Numpad } from './Numpad';
+import { PaymentSuccessScreen } from './PaymentSuccessScreen';
 import { cn } from '@/lib/utils';
 
 interface PaymentModalProps {
@@ -37,6 +38,8 @@ export function PaymentModal({
   const [cashReceived, setCashReceived] = useState('');
   const [status, setStatus] = useState<ModalStatus>('payment');
   const [countdown, setCountdown] = useState(5);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const received = parseFloat(cashReceived) || 0;
   const change = received - total;
@@ -51,9 +54,14 @@ export function PaymentModal({
 
   const handleConfirm = useCallback(async () => {
     if (!canConfirm || isLoading) return;
-    await onConfirm(method);
-    setStatus('success');
-    setCountdown(5);
+    setConfirmError(null);
+    try {
+      await onConfirm(method);
+      setStatus('success');
+      setCountdown(5);
+    } catch (err) {
+      setConfirmError(err instanceof Error ? err.message : 'Error al procesar el pago');
+    }
   }, [canConfirm, isLoading, method, onConfirm]);
 
   // Enter key → confirm
@@ -83,58 +91,60 @@ export function PaymentModal({
       setStatus('payment');
       setCashReceived('');
       setMethod('cash');
+      setConfirmError(null);
     }
   }, [isOpen]);
 
+  // Focus trap
+  useEffect(() => {
+    if (!isOpen || status !== 'payment') return;
+    const el = overlayRef.current;
+    if (!el) return;
+
+    const focusable = el.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first?.focus();
+
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+
+    el.addEventListener('keydown', trap);
+    return () => el.removeEventListener('keydown', trap);
+  }, [isOpen, status]);
+
   if (!isOpen) return null;
 
-  // Success screen
   if (status === 'success') {
     return (
-      <div
-        className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center p-6"
-        data-testid="payment-success"
-      >
-        <CheckCircle className="w-20 h-20 text-emerald-500 mb-4" />
-        <h2 className="text-2xl font-bold text-emerald-500 mb-1">¡Pago completado!</h2>
-        <p className="text-muted-foreground text-sm mb-8">
-          {new Date().toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-        </p>
-
-        <div className="bg-card rounded-xl border border-border w-full max-w-sm p-4 mb-6 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Total cobrado</span>
-            <span className="font-semibold">{formatCurrency(total)}</span>
-          </div>
-          {method === 'cash' && (
-            <>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Recibido</span>
-                <span className="font-semibold">{formatCurrency(received)}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-border">
-                <span className="text-emerald-500 font-semibold">Cambio</span>
-                <span className="text-emerald-500 text-xl font-bold">
-                  {formatCurrency(change)}
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-
-        <Button onClick={handleNewSale} size="lg" className="w-full max-w-sm">
-          + Nueva venta
-        </Button>
-        <p className="text-muted-foreground text-xs mt-3">
-          Auto-regresa en {countdown}s...
-        </p>
-      </div>
+      <PaymentSuccessScreen
+        total={total}
+        received={received}
+        change={change}
+        method={method}
+        countdown={countdown}
+        onNewSale={handleNewSale}
+      />
     );
   }
 
   // Payment screen
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div ref={overlayRef} className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <button
@@ -236,6 +246,10 @@ export function PaymentModal({
             <div className="text-center py-10 text-muted-foreground">
               <p className="text-xs">Funcionalidad de pago mixto — próximamente</p>
             </div>
+          )}
+
+          {confirmError && (
+            <p className="text-destructive text-xs text-center">{confirmError}</p>
           )}
 
           {/* Confirm button */}
