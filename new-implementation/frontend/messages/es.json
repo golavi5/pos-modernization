@@ -67,7 +67,15 @@
     "collapseSidebar": "Contraer barra lateral",
     "inventory": "Inventario",
     "users": "Usuarios",
-    "notifications": "Notificaciones"
+    "notifications": "Notificaciones",
+    "ventas": "Ventas",
+    "productos": "Productos",
+    "inventario": "Inventario",
+    "clientes": "Clientes",
+    "usuarios": "Usuarios",
+    "reportes": "Reportes",
+    "notificaciones": "Notificaciones",
+    "configuracion": "Configuración"
   },
   "header": {
     "welcomeBack": "Bienvenido de nuevo, {name}",
@@ -122,7 +130,18 @@
     "subtotal": "Subtotal:",
     "discount": "Descuento:",
     "tax": "IVA:",
-    "total": "Total:"
+    "total": "Total:",
+    "cobrar": "Cobrar",
+    "limpiarCarrito": "Limpiar carrito",
+    "sinCliente": "Sin cliente",
+    "agregarProductos": "Agrega productos al carrito",
+    "totalACobrar": "Total a cobrar",
+    "efectivoRecibido": "Efectivo recibido",
+    "cambio": "Cambio",
+    "confirmarPago": "Confirmar pago",
+    "pagoCompletado": "¡Pago completado!",
+    "nuevaVenta": "+ Nueva venta",
+    "autoRegresa": "Auto-regresa en {seconds}s..."
   },
   "products": {
     "title": "Productos",
