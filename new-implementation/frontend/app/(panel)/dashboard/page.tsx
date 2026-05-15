@@ -1,69 +1,68 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { SalesChart } from '@/components/dashboard/SalesChart';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentSales } from '@/components/dashboard/RecentSales';
-import { useAuthStore } from '@/stores/authStore';
+import { useSalesStats } from '@/hooks/useSales';
+import { formatCOP } from '@/lib/utils';
+
+const CHART_DATA = [
+  { day: 'L', sales: 320000 },
+  { day: 'M', sales: 410000 },
+  { day: 'X', sales: 280000 },
+  { day: 'J', sales: 520000 },
+  { day: 'V', sales: 480000 },
+  { day: 'S', sales: 560000 },
+  { day: 'H', sales: 0 },
+];
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
-  const t = useTranslations('dashboard');
+  const { data: stats } = useSalesStats();
 
-  // Mock data for dashboard stats
-  const stats = [
-    {
-      title: t('totalSalesToday'),
-      value: '$12,459.50',
-      description: t('fromTransactions', { count: 156 }),
-      trend: '+12.5%',
-      icon: 'TrendingUp',
-    },
-    {
-      title: t('totalProducts'),
-      value: '1,234',
-      description: t('inInventory'),
-      trend: '+3.2%',
-      icon: 'Package',
-    },
-    {
-      title: t('lowStockAlerts'),
-      value: '23',
-      description: t('itemsNeedRestock'),
-      trend: '-8.1%',
-      icon: 'AlertTriangle',
-    },
-    {
-      title: t('pendingOrders'),
-      value: '7',
-      description: t('awaitingShipment'),
-      trend: '+4.3%',
-      icon: 'ShoppingCart',
-    },
-  ];
+  const chartData = CHART_DATA.map((d, i) =>
+    i === CHART_DATA.length - 1 && stats?.todayRevenue !== undefined
+      ? { ...d, sales: stats.todayRevenue }
+      : d
+  );
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {t('welcome', { name: user?.name || 'Usuario' })}
-        </h1>
-        <p className="text-secondary mt-1">
-          {t('salesSummary')}
-        </p>
+    <div className="p-5 space-y-4 overflow-auto h-full">
+      {/* KPI row */}
+      <div className="grid grid-cols-4 gap-3">
+        <StatsCard
+          title="Ventas hoy"
+          value={stats ? formatCOP(stats.todayRevenue) : '—'}
+          delta="+12% vs ayer"
+          deltaPositive
+          accentClass="border-primary"
+        />
+        <StatsCard
+          title="Transacciones"
+          value={stats ? String(stats.todaySales) : '—'}
+          delta="+5 vs ayer"
+          deltaPositive
+          accentClass="border-emerald-500"
+        />
+        <StatsCard
+          title="Ticket promedio"
+          value={stats ? formatCOP(stats.averageOrderValue) : '—'}
+          accentClass="border-amber-500"
+        />
+        <StatsCard
+          title="Total ventas"
+          value={stats ? String(stats.totalSales) : '—'}
+          accentClass="border-violet-500"
+        />
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <StatsCard key={index} {...stat} />
-        ))}
+      {/* Chart + Quick actions */}
+      <div className="grid grid-cols-[1fr_240px] gap-3">
+        <SalesChart data={chartData} />
+        <QuickActions />
       </div>
 
-      {/* Quick Actions */}
-      <QuickActions />
-
-      {/* Recent Sales */}
+      {/* Recent sales */}
       <RecentSales />
     </div>
   );
