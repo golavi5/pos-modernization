@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useProducts } from '@/hooks/useProducts';
-import { cn } from '@/lib/utils';
+import { cn, formatCOP } from '@/lib/utils';
 import type { Product } from '@/types/product';
 
 interface ProductSearchProps {
@@ -21,24 +21,14 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
   const categories = Array.from(
     new Set(
       products
-        .map((p: Product) => p.category ?? p.category_id)
-        .filter(Boolean)
+        .map((p: Product) => p.category)
+        .filter((c): c is string => Boolean(c))
     )
-  ) as string[];
+  );
 
   const filtered = activeCategory
-    ? products.filter(
-        (p: Product) =>
-          (p.category ?? p.category_id) === activeCategory
-      )
+    ? products.filter((p: Product) => p.category === activeCategory)
     : products;
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
 
   if (isLoading) {
     return (
@@ -115,7 +105,7 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
               </p>
               <div className="flex items-center justify-between w-full mt-1 gap-1">
                 <span className="text-sm font-bold text-primary">
-                  {formatCurrency(product.price)}
+                  {formatCOP(product.price)}
                 </span>
                 <span
                   className={cn(
