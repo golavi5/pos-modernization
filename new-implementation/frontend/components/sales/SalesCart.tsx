@@ -1,157 +1,156 @@
 'use client';
 
-import { Trash2, Plus, Minus } from 'lucide-react';
+import { Minus, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { CustomerSelect } from './CustomerSelect';
+import { formatCOP } from '@/lib/utils';
 import type { CartItem } from '@/types/sale';
 
 interface SalesCartProps {
   items: CartItem[];
-  onUpdateQuantity: (productId: string, quantity: number) => void;
-  onRemoveItem: (productId: string) => void;
   subtotal: number;
   tax: number;
   discount: number;
   total: number;
+  customerId?: string;
+  customerName?: string;
+  onUpdateQuantity: (productId: string, quantity: number) => void;
+  onRemoveItem: (productId: string) => void;
+  onSelectCustomer: (customer: { id: string; name: string } | undefined) => void;
+  onCheckout: () => void;
 }
 
 export function SalesCart({
   items,
-  onUpdateQuantity,
-  onRemoveItem,
   subtotal,
   tax,
   discount,
   total,
+  customerId,
+  customerName,
+  onUpdateQuantity,
+  onRemoveItem,
+  onSelectCustomer,
+  onCheckout,
 }: SalesCartProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  if (items.length === 0) {
-    return (
-      <Card className="p-8 text-center">
-        <div className="text-quaternary mb-2">
-          <svg
-            className="w-16 h-16 mx-auto mb-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-            />
-          </svg>
-        </div>
-        <p className="text-lg font-medium text-secondary">Carrito vacío</p>
-        <p className="text-sm text-quaternary mt-1">
-          Busca productos para agregar al carrito
-        </p>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="flex flex-col h-full">
-      {/* Items list */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border shrink-0">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Carrito · {items.length} {items.length === 1 ? 'item' : 'items'}
+        </p>
+      </div>
+
+      {/* Customer selector */}
+      <div className="px-3 py-2 border-b border-border shrink-0">
+        <CustomerSelect
+          selectedCustomer={
+            customerId && customerName
+              ? { id: customerId, name: customerName }
+              : undefined
+          }
+          onSelect={onSelectCustomer}
+        />
+      </div>
+
+      {/* Items */}
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+        {items.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs gap-2 py-8">
+            <span className="text-3xl">🛒</span>
+            <span>Agrega productos al carrito</span>
+          </div>
+        )}
         {items.map((item) => (
           <div
             key={item.product_id}
-            className="flex items-center gap-3 p-3 bg-surface-1 rounded-lg"
+            className="flex items-center gap-2 py-2 border-b border-border/50 last:border-0"
           >
-            {/* Product image */}
-            {item.image_url ? (
-              <img
-                src={item.image_url}
-                alt={item.product_name}
-                className="w-12 h-12 rounded object-cover"
-              />
-            ) : (
-              <div className="w-12 h-12 rounded bg-gray-200 flex items-center justify-center">
-                <span className="text-quaternary text-xs">IMG</span>
-              </div>
-            )}
-
-            {/* Product info */}
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium truncate">
+              <p className="text-xs font-medium text-foreground truncate">
                 {item.product_name}
-              </h4>
-              <p className="text-sm text-tertiary">
-                {formatCurrency(item.unit_price)} x {item.quantity}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatCOP(item.unit_price)}
               </p>
             </div>
-
-            {/* Quantity controls */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
+            <div className="flex items-center gap-1 shrink-0">
+              <button
                 onClick={() => onUpdateQuantity(item.product_id, item.quantity - 1)}
                 disabled={item.quantity <= 1}
-                className="w-8 h-8 p-0"
+                className="w-5 h-5 rounded bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 transition-colors"
               >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <span className="w-8 text-center font-medium">{item.quantity}</span>
-              <Button
-                variant="outline"
-                size="sm"
+                <Minus size={10} />
+              </button>
+              <span className="text-xs font-semibold w-5 text-center">
+                {item.quantity}
+              </span>
+              <button
                 onClick={() => onUpdateQuantity(item.product_id, item.quantity + 1)}
-                disabled={item.quantity >= item.stock_quantity}
-                className="w-8 h-8 p-0"
+                disabled={item.quantity >= (item.stock_quantity ?? Infinity)}
+                className="w-5 h-5 rounded bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 transition-colors"
               >
-                <Plus className="w-4 h-4" />
-              </Button>
+                <Plus size={10} />
+              </button>
             </div>
-
-            {/* Subtotal and remove */}
-            <div className="text-right">
-              <p className="font-semibold">
-                {formatCurrency(item.subtotal)}
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onRemoveItem(item.product_id)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-1"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+            <p className="text-xs font-bold text-foreground w-14 text-right shrink-0">
+              {formatCOP(item.subtotal)}
+            </p>
+            <button
+              onClick={() => onRemoveItem(item.product_id)}
+              className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+            >
+              <Trash2 size={12} />
+            </button>
           </div>
         ))}
       </div>
 
-      {/* Summary */}
-      <div className="border-t p-4 space-y-2">
-        <div className="flex justify-between text-sm text-secondary">
-          <span>Subtotal:</span>
-          <span>{formatCurrency(subtotal)}</span>
+      {/* Totals + Checkout */}
+      <div className="px-4 py-3 border-t border-border shrink-0 space-y-2">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Subtotal</span>
+          <span>{formatCOP(subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>IVA (19%)</span>
+          <span>{formatCOP(tax)}</span>
         </div>
         {discount > 0 && (
-          <div className="flex justify-between text-sm text-green-600">
-            <span>Descuento:</span>
-            <span>-{formatCurrency(discount)}</span>
+          <div className="flex justify-between text-xs text-emerald-500">
+            <span>Descuento</span>
+            <span>-{formatCOP(discount)}</span>
           </div>
         )}
-        <div className="flex justify-between text-sm text-secondary">
-          <span>IVA:</span>
-          <span>{formatCurrency(tax)}</span>
+        <div className="flex justify-between text-base font-bold text-foreground pt-1 border-t border-border">
+          <span>Total</span>
+          <span>{formatCOP(total)}</span>
         </div>
-        <div className="flex justify-between text-lg font-bold pt-2 border-t">
-          <span>Total:</span>
-          <span>{formatCurrency(total)}</span>
-        </div>
+
+        <Button
+          onClick={onCheckout}
+          disabled={items.length === 0}
+          size="lg"
+          className="w-full font-bold mt-1"
+          data-testid="cobrar-button"
+        >
+          💳 Cobrar {items.length > 0 ? formatCOP(total) : ''}
+        </Button>
+
+        {items.length > 0 && (
+          <button
+            onClick={() => {
+              if (confirm('¿Limpiar el carrito?')) {
+                items.forEach((i) => onRemoveItem(i.product_id));
+              }
+            }}
+            className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+          >
+            Limpiar carrito
+          </button>
+        )}
       </div>
-    </Card>
+    </div>
   );
 }

@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import { ShoppingCart, Receipt, TrendingUp, DollarSign } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { SalesCart } from '@/components/sales/SalesCart';
 import { ProductSearch } from '@/components/sales/ProductSearch';
-import { CustomerSelect } from '@/components/sales/CustomerSelect';
 import { PaymentModal } from '@/components/sales/PaymentModal';
 import { useCreateSale, useSalesStats } from '@/hooks/useSales';
 import type { Product } from '@/types/product';
@@ -229,53 +227,31 @@ export default function SalesPage() {
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side - Product search and customer */}
+        {/* Left side - Product search */}
         <div className="lg:col-span-2 space-y-6">
           {/* Product search */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Buscar Productos</h2>
             <ProductSearch onAddProduct={handleAddProduct} />
           </Card>
-
-          {/* Customer selection */}
-          <CustomerSelect
-            selectedCustomer={
-              cart.customer_id && cart.customer_name
-                ? { id: cart.customer_id, name: cart.customer_name }
-                : undefined
-            }
-            onSelect={handleSelectCustomer}
-          />
         </div>
 
-        {/* Right side - Cart */}
+        {/* Right side - Cart (includes customer selector + checkout) */}
         <div className="space-y-4">
           <div className="lg:sticky lg:top-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5" />
-              Carrito ({cart.items.length})
-            </h2>
-
-            <div className="space-y-4">
-              <SalesCart
-                items={cart.items}
-                onUpdateQuantity={handleUpdateQuantity}
-                onRemoveItem={handleRemoveItem}
-                subtotal={cart.subtotal}
-                tax={cart.tax}
-                discount={cart.discount}
-                total={cart.total}
-              />
-
-              <Button
-                onClick={handleCheckout}
-                disabled={cart.items.length === 0}
-                className="w-full"
-                size="lg"
-              >
-                Procesar Venta
-              </Button>
-            </div>
+            <SalesCart
+              items={cart.items}
+              subtotal={cart.subtotal}
+              tax={cart.tax}
+              discount={cart.discount}
+              total={cart.total}
+              customerId={cart.customer_id}
+              customerName={cart.customer_name}
+              onUpdateQuantity={handleUpdateQuantity}
+              onRemoveItem={handleRemoveItem}
+              onSelectCustomer={handleSelectCustomer}
+              onCheckout={handleCheckout}
+            />
           </div>
         </div>
       </div>
