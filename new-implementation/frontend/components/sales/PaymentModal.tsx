@@ -38,6 +38,11 @@ export function PaymentModal({
   const received = parseFloat(cashReceived) || 0;
   const canConfirm = method !== 'cash' || received >= total;
 
+  const handleMethodChange = useCallback((m: PaymentMethod) => {
+    setMethod(m);
+    setConfirmError(null);
+  }, []);
+
   const handleNewSale = useCallback(() => {
     setStatus('payment');
     setCashReceived('');
@@ -136,7 +141,7 @@ export function PaymentModal({
             {(['cash', 'card', 'mixed'] as PaymentMethod[]).map((m) => (
               <button
                 key={m}
-                onClick={() => setMethod(m)}
+                onClick={() => handleMethodChange(m)}
                 className={cn(
                   'flex-1 py-2 rounded-md text-xs font-semibold transition-colors',
                   method === m
