@@ -1,269 +1,132 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingCart, Receipt, TrendingUp, DollarSign } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { SalesCart } from '@/components/sales/SalesCart';
 import { ProductSearch } from '@/components/sales/ProductSearch';
+import { SalesCart } from '@/components/sales/SalesCart';
 import { PaymentModal } from '@/components/sales/PaymentModal';
-import { useCreateSale, useSalesStats } from '@/hooks/useSales';
+import { useCreateSale } from '@/hooks/useSales';
 import type { Product } from '@/types/product';
 import type { CartItem, Cart } from '@/types/sale';
 
+const TAX_RATE = 0.19;
+
+const EMPTY_CART: Cart = {
+  items: [],
+  subtotal: 0,
+  tax: 0,
+  discount: 0,
+  total: 0,
+};
+
 export default function SalesPage() {
-  const [cart, setCart] = useState<Cart>({
-    items: [],
-    subtotal: 0,
-    tax: 0,
-    discount: 0,
-    total: 0,
-  });
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [cart, setCart] = useState<Cart>(EMPTY_CART);
+  const [showPayment, setShowPayment] = useState(false);
+  const createSale = useCreateSale();
 
-  const { data: stats } = useSalesStats();
-  const createSaleMutation = useCreateSale();
-
-  const TAX_RATE = 0.19; // 19% IVA
-
-  const calculateTotals = (items: CartItem[]) => {
-    const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const recalc = (items: CartItem[], discount = cart.discount): Cart => {
+    const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
     const tax = subtotal * TAX_RATE;
-    const total = subtotal + tax - cart.discount;
-
-    return { subtotal, tax, total };
+    return { ...cart, items, subtotal, tax, discount, total: subtotal + tax - discount };
   };
 
   const handleAddProduct = (product: Product) => {
-    if (product.stock_quantity === 0) {
-      alert('Producto sin stock');
-      return;
-    }
-
-    const existingItem = cart.items.find(
-      (item) => item.product_id === product.id
-    );
-
+    if (product.stock_quantity === 0) return;
+    const existing = cart.items.find((i) => i.product_id === product.id);
     let newItems: CartItem[];
 
-    if (existingItem) {
-      if (existingItem.quantity >= product.stock_quantity) {
-        alert('No hay suficiente stock');
-        return;
-      }
-      newItems = cart.items.map((item) =>
-        item.product_id === product.id
-          ? {
-              ...item,
-              quantity: item.quantity + 1,
-              subtotal: (item.quantity + 1) * item.unit_price,
-            }
-          : item
+    if (existing) {
+      if (existing.quantity >= product.stock_quantity) return;
+      newItems = cart.items.map((i) =>
+        i.product_id === product.id
+          ? { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * i.unit_price }
+          : i
       );
     } else {
-      const newItem: CartItem = {
-        product_id: product.id,
-        product_name: product.name,
-        quantity: 1,
-        unit_price: product.price,
-        tax_rate: product.tax_rate || TAX_RATE * 100,
-        subtotal: product.price,
-        stock_quantity: product.stock_quantity,
-        image_url: product.image_url,
-      };
-      newItems = [...cart.items, newItem];
+      newItems = [
+        ...cart.items,
+        {
+          product_id: product.id,
+          product_name: product.name,
+          quantity: 1,
+          unit_price: product.price,
+          tax_rate: product.tax_rate ?? TAX_RATE * 100,
+          subtotal: product.price,
+          stock_quantity: product.stock_quantity,
+          image_url: product.image_url,
+        },
+      ];
     }
-
-    const totals = calculateTotals(newItems);
-    setCart({ ...cart, items: newItems, ...totals });
+    setCart(recalc(newItems));
   };
 
   const handleUpdateQuantity = (productId: string, quantity: number) => {
     if (quantity < 1) return;
-
-    const newItems = cart.items.map((item) =>
-      item.product_id === productId
-        ? {
-            ...item,
-            quantity,
-            subtotal: quantity * item.unit_price,
-          }
-        : item
+    const newItems = cart.items.map((i) =>
+      i.product_id === productId
+        ? { ...i, quantity, subtotal: quantity * i.unit_price }
+        : i
     );
-
-    const totals = calculateTotals(newItems);
-    setCart({ ...cart, items: newItems, ...totals });
+    setCart(recalc(newItems));
   };
 
   const handleRemoveItem = (productId: string) => {
-    const newItems = cart.items.filter((item) => item.product_id !== productId);
-    const totals = calculateTotals(newItems);
-    setCart({ ...cart, items: newItems, ...totals });
+    const newItems = cart.items.filter((i) => i.product_id !== productId);
+    setCart(recalc(newItems));
   };
 
-  const handleSelectCustomer = (
-    customer: { id: string; name: string } | undefined
-  ) => {
-    setCart({
-      ...cart,
-      customer_id: customer?.id,
-      customer_name: customer?.name,
+  const handleSelectCustomer = (customer: { id: string; name: string } | undefined) => {
+    setCart({ ...cart, customer_id: customer?.id, customer_name: customer?.name });
+  };
+
+  const handleConfirmPayment = async (paymentMethod: string) => {
+    await createSale.mutateAsync({
+      customer_id: cart.customer_id,
+      items: cart.items.map((i) => ({
+        product_id: i.product_id,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        discount: i.discount ?? 0,
+        tax_rate: i.tax_rate ?? TAX_RATE * 100,
+      })),
+      payment_method: paymentMethod,
+      payment_status: 'paid',
+      discount_amount: cart.discount,
     });
-  };
-
-  const handleCheckout = () => {
-    if (cart.items.length === 0) {
-      alert('El carrito está vacío');
-      return;
-    }
-    setShowPaymentModal(true);
-  };
-
-  const handleConfirmPayment = async (
-    paymentMethod: string,
-    notes?: string
-  ) => {
-    try {
-      const saleData = {
-        customer_id: cart.customer_id,
-        items: cart.items.map((item) => ({
-          product_id: item.product_id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          discount: item.discount || 0,
-          tax_rate: item.tax_rate || TAX_RATE * 100,
-        })),
-        payment_method: paymentMethod,
-        payment_status: 'paid' as const,
-        discount_amount: cart.discount,
-        notes,
-      };
-
-      await createSaleMutation.mutateAsync(saleData);
-
-      alert('Venta completada exitosamente');
-      setShowPaymentModal(false);
-      // Reset cart
-      setCart({
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        discount: 0,
-        total: 0,
-      });
-    } catch (error) {
-      alert('Error al procesar la venta');
-      console.error(error);
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
+    setShowPayment(false);
+    setCart(EMPTY_CART);
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Punto de Venta</h1>
-        <p className="text-tertiary mt-1">Gestiona tus ventas y checkout</p>
+    <div className="flex h-full overflow-hidden">
+      {/* Product grid */}
+      <div className="flex-1 overflow-hidden p-4">
+        <ProductSearch onAddProduct={handleAddProduct} />
       </div>
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Ventas Hoy</p>
-                <p className="text-2xl font-bold mt-1">
-                  {stats.todaySales}
-                </p>
-              </div>
-              <ShoppingCart className="w-10 h-10 text-blue-500" />
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Ingresos Hoy</p>
-                <p className="text-2xl font-bold mt-1">
-                  {formatCurrency(stats.todayRevenue)}
-                </p>
-              </div>
-              <DollarSign className="w-10 h-10 text-green-500" />
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Total Ventas</p>
-                <p className="text-2xl font-bold mt-1">
-                  {stats.totalSales}
-                </p>
-              </div>
-              <Receipt className="w-10 h-10 text-purple-500" />
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Ticket Promedio</p>
-                <p className="text-2xl font-bold mt-1">
-                  {formatCurrency(stats.averageOrderValue)}
-                </p>
-              </div>
-              <TrendingUp className="w-10 h-10 text-orange-500" />
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left side - Product search */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Product search */}
-          <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Buscar Productos</h2>
-            <ProductSearch onAddProduct={handleAddProduct} />
-          </Card>
-        </div>
-
-        {/* Right side - Cart (includes customer selector + checkout) */}
-        <div className="space-y-4">
-          <div className="lg:sticky lg:top-6">
-            <SalesCart
-              items={cart.items}
-              subtotal={cart.subtotal}
-              tax={cart.tax}
-              discount={cart.discount}
-              total={cart.total}
-              customerId={cart.customer_id}
-              customerName={cart.customer_name}
-              onUpdateQuantity={handleUpdateQuantity}
-              onRemoveItem={handleRemoveItem}
-              onClearCart={() => setCart({ items: [], subtotal: 0, tax: 0, discount: 0, total: 0 })}
-              onSelectCustomer={handleSelectCustomer}
-              onCheckout={handleCheckout}
-            />
-          </div>
-        </div>
+      {/* Cart panel */}
+      <div className="w-[280px] shrink-0 border-l border-border bg-card flex flex-col overflow-hidden">
+        <SalesCart
+          items={cart.items}
+          subtotal={cart.subtotal}
+          tax={cart.tax}
+          discount={cart.discount}
+          total={cart.total}
+          customerId={cart.customer_id}
+          customerName={cart.customer_name}
+          onUpdateQuantity={handleUpdateQuantity}
+          onRemoveItem={handleRemoveItem}
+          onSelectCustomer={handleSelectCustomer}
+          onClearCart={() => setCart(EMPTY_CART)}
+          onCheckout={() => setShowPayment(true)}
+        />
       </div>
 
-      {/* Payment Modal */}
       <PaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
+        isOpen={showPayment}
+        onClose={() => setShowPayment(false)}
         total={cart.total}
         onConfirm={handleConfirmPayment}
-        isLoading={createSaleMutation.isPending}
+        isLoading={createSale.isPending}
       />
     </div>
   );
