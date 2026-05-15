@@ -2,10 +2,8 @@ import { test, expect } from '@playwright/test';
 import { AuthHelper } from './helpers/auth.helper';
 
 test.describe('Sale golden path', () => {
-  let authHelper: AuthHelper;
-
   test.beforeEach(async ({ page }) => {
-    authHelper = new AuthHelper(page);
+    const authHelper = new AuthHelper(page);
     await authHelper.login(); // admin@test.com / password123
     await page.goto('/sales');
   });
@@ -47,6 +45,7 @@ test.describe('Sale golden path', () => {
     await page.click('[data-testid="cobrar-button"]');
     const quickBtn = page.locator('button').filter({ hasText: /\$100k/ });
     await quickBtn.click();
+    await expect(page.locator('text=Cambio')).toBeVisible();
     await page.keyboard.press('Enter');
     await page.waitForSelector('[data-testid="payment-success"]', { timeout: 8000 });
 
@@ -63,6 +62,7 @@ test.describe('Sale golden path', () => {
     await page.click('[data-testid="product-card"]:not([disabled])');
     await page.click('[data-testid="cobrar-button"]');
     await page.locator('button').filter({ hasText: /\$100k/ }).click();
+    await expect(page.locator('text=Cambio')).toBeVisible();
 
     // Confirm via button instead of Enter key
     await page.click('[data-testid="confirm-payment-button"]');
