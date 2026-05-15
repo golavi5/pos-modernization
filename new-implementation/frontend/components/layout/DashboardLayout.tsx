@@ -2,33 +2,20 @@
 
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
-import { PageToolbar } from './PageToolbar';
-import { useToolbar } from './ToolbarContext';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { config, isHidden, sidebarCollapsed } = useToolbar();
-
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} border-r bg-surface-1 transition-all duration-300`}>
+    <div className="flex h-screen bg-background overflow-hidden">
+      <aside className="group relative flex-shrink-0 w-[52px] hover:w-[220px] transition-[width] duration-200 ease-in-out border-r border-border bg-card overflow-hidden z-30">
         <Sidebar />
       </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <Header />
-
-        {/* Page Toolbar */}
-        {!isHidden && <PageToolbar {...config} />}
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>
