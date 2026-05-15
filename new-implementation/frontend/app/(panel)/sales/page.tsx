@@ -249,6 +249,7 @@ export default function SalesPage() {
               customerName={cart.customer_name}
               onUpdateQuantity={handleUpdateQuantity}
               onRemoveItem={handleRemoveItem}
+              onClearCart={() => setCart({ items: [], subtotal: 0, tax: 0, discount: 0, total: 0 })}
               onSelectCustomer={handleSelectCustomer}
               onCheckout={handleCheckout}
             />

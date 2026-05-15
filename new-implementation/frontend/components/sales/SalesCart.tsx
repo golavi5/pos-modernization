@@ -16,6 +16,7 @@ interface SalesCartProps {
   customerName?: string;
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
+  onClearCart: () => void;
   onSelectCustomer: (customer: { id: string; name: string } | undefined) => void;
   onCheckout: () => void;
 }
@@ -30,6 +31,7 @@ export function SalesCart({
   customerName,
   onUpdateQuantity,
   onRemoveItem,
+  onClearCart,
   onSelectCustomer,
   onCheckout,
 }: SalesCartProps) {
@@ -38,7 +40,7 @@ export function SalesCart({
       {/* Header */}
       <div className="px-4 py-3 border-b border-border shrink-0">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Carrito · {items.length} {items.length === 1 ? 'item' : 'items'}
+          Carrito · {items.length} items
         </p>
       </div>
 
@@ -142,7 +144,7 @@ export function SalesCart({
           <button
             onClick={() => {
               if (confirm('¿Limpiar el carrito?')) {
-                items.forEach((i) => onRemoveItem(i.product_id));
+                onClearCart();
               }
             }}
             className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
