@@ -144,7 +144,7 @@ describe('ProductsController', () => {
     it('should remove a product', async () => {
       const productId = 'test-id';
       
-      jest.spyOn(service, 'remove').mockResolvedValue();
+      jest.spyOn(service, 'remove').mockResolvedValue(undefined);
 
       await controller.remove(productId, mockUser);
       

@@ -26,6 +26,7 @@ describe('CustomersService', () => {
     is_active: true,
     created_at: new Date('2026-01-01'),
     updated_at: new Date('2026-02-01'),
+    deleted_at: null,
   };
 
   const mockRepository = {
@@ -102,6 +103,7 @@ describe('CustomersService', () => {
     it('should throw BadRequestException if phone already exists', async () => {
       const createDto: CreateCustomerDto = {
         name: 'Duplicate Phone',
+        email: 'dummy@example.com',
         phone: '+1234567890',
       };
 
@@ -305,14 +307,9 @@ describe('CustomersService', () => {
   describe('getStats', () => {
     it('should return customer statistics', async () => {
       const customers = [
-        mockCustomer,
+        { ...mockCustomer, is_active: true },
         { ...mockCustomer, id: 'customer-2', is_active: false },
-        {
-          ...mockCustomer,
-          id: 'customer-3',
-          loyalty_points: 200,
-          total_purchases: 1000,
-        },
+        { ...mockCustomer, id: 'customer-3', loyalty_points: 200, total_purchases: 1000, is_active: true },
       ];
 
       const mockQueryBuilder = {

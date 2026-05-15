@@ -41,6 +41,8 @@ describe('AuthService', () => {
     hasRole: jest.fn(),
     hasAnyRole: jest.fn(),
     hasAllRoles: jest.fn(),
+    generateId: jest.fn(),
+    orders: [],
   };
 
   const mockRole: Role = {
@@ -53,6 +55,7 @@ describe('AuthService', () => {
     updated_at: new Date(),
     deleted_at: null,
     users: [],
+    generateId: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -129,7 +132,7 @@ describe('AuthService', () => {
     it('should return null if user is inactive', async () => {
       const email = 'test@example.com';
       const password = 'password123';
-      const inactiveUser = { ...mockUser, is_active: false };
+      const inactiveUser = { ...mockUser, is_active: false } as unknown as User;
 
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(inactiveUser);
 

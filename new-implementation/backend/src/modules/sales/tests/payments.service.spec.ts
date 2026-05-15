@@ -17,7 +17,7 @@ describe('PaymentsService', () => {
     company_id: 1,
     email: 'test@example.com',
     name: 'Test User',
-  };
+  } as any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -53,7 +53,7 @@ describe('PaymentsService', () => {
         company_id: 1,
         total_amount: 1000,
         payments: [],
-      } as Order;
+      } as unknown as Order;
 
       const createPaymentDto: CreatePaymentDto = {
         payment_method: PaymentMethod.CASH,
@@ -65,10 +65,10 @@ describe('PaymentsService', () => {
         id: 1,
         order_id: 1,
         ...createPaymentDto,
-      } as Payment);
+      } as unknown as Payment);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
 
-      const result = await service.recordPayment(1, createPaymentDto, mockUser);
+      const result = await service.recordPayment(1 as any, createPaymentDto, mockUser);
 
       expect(result.amount).toBe(500);
       expect(paymentRepository.save).toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('PaymentsService', () => {
         amount: 500,
       };
 
-      await expect(service.recordPayment(1, createPaymentDto, mockUser)).rejects.toThrow(
+      await expect(service.recordPayment(1 as any, createPaymentDto, mockUser)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -94,7 +94,7 @@ describe('PaymentsService', () => {
         company_id: 1,
         total_amount: 1000,
         payments: [],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
 
@@ -103,7 +103,7 @@ describe('PaymentsService', () => {
         amount: -100,
       };
 
-      await expect(service.recordPayment(1, createPaymentDto, mockUser)).rejects.toThrow(
+      await expect(service.recordPayment(1 as any, createPaymentDto, mockUser)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -113,8 +113,8 @@ describe('PaymentsService', () => {
         id: 1,
         company_id: 1,
         total_amount: 500,
-        payments: [{ amount: 300 } as Payment],
-      } as Order;
+        payments: [{ amount: 300 } as unknown as Payment],
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
 
@@ -123,7 +123,7 @@ describe('PaymentsService', () => {
         amount: 300, // Exceeds remaining balance of 200
       };
 
-      await expect(service.recordPayment(1, createPaymentDto, mockUser)).rejects.toThrow(
+      await expect(service.recordPayment(1 as any, createPaymentDto, mockUser)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -135,10 +135,10 @@ describe('PaymentsService', () => {
         total_amount: 500,
         payment_status: OrderPaymentStatus.UNPAID,
         payments: [],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
-      jest.spyOn(paymentRepository, 'save').mockResolvedValue({} as Payment);
+      jest.spyOn(paymentRepository, 'save').mockResolvedValue({} as unknown as Payment);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
 
       const createPaymentDto: CreatePaymentDto = {
@@ -146,7 +146,7 @@ describe('PaymentsService', () => {
         amount: 500,
       };
 
-      await service.recordPayment(1, createPaymentDto, mockUser);
+      await service.recordPayment(1 as any, createPaymentDto, mockUser);
 
       expect(orderRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -162,10 +162,10 @@ describe('PaymentsService', () => {
         total_amount: 1000,
         payment_status: OrderPaymentStatus.UNPAID,
         payments: [],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
-      jest.spyOn(paymentRepository, 'save').mockResolvedValue({} as Payment);
+      jest.spyOn(paymentRepository, 'save').mockResolvedValue({} as unknown as Payment);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
 
       const createPaymentDto: CreatePaymentDto = {
@@ -173,7 +173,7 @@ describe('PaymentsService', () => {
         amount: 500,
       };
 
-      await service.recordPayment(1, createPaymentDto, mockUser);
+      await service.recordPayment(1 as any, createPaymentDto, mockUser);
 
       expect(orderRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -190,7 +190,7 @@ describe('PaymentsService', () => {
         amount: 500,
       };
 
-      await expect(service.recordPayment(1, createPaymentDto, mockUser)).rejects.toThrow(
+      await expect(service.recordPayment(1 as any, createPaymentDto, mockUser)).rejects.toThrow(
         NotFoundException,
       );
 
@@ -207,10 +207,10 @@ describe('PaymentsService', () => {
         company_id: 1,
         total_amount: 1000,
         payments: [],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
-      jest.spyOn(paymentRepository, 'save').mockResolvedValue({} as Payment);
+      jest.spyOn(paymentRepository, 'save').mockResolvedValue({} as unknown as Payment);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
 
       const createPaymentDto: CreatePaymentDto = {
@@ -219,7 +219,7 @@ describe('PaymentsService', () => {
         transaction_id: 'TXN123456',
       };
 
-      await service.recordPayment(1, createPaymentDto, mockUser);
+      await service.recordPayment(1 as any, createPaymentDto, mockUser);
 
       expect(paymentRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -235,17 +235,17 @@ describe('PaymentsService', () => {
       const mockOrder = {
         id: 1,
         company_id: 1,
-      } as Order;
+      } as unknown as Order;
 
       const mockPayments = [
         { id: 1, order_id: 1, amount: 500 },
         { id: 2, order_id: 1, amount: 300 },
-      ] as Payment[];
+      ] as unknown as Payment[];
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
       jest.spyOn(paymentRepository, 'find').mockResolvedValue(mockPayments);
 
-      const result = await service.getPaymentsByOrderId(1, mockUser);
+      const result = await service.getPaymentsByOrderId(1 as any, mockUser);
 
       expect(result).toEqual(mockPayments);
       expect(paymentRepository.find).toHaveBeenCalledWith(
@@ -258,13 +258,13 @@ describe('PaymentsService', () => {
     it('should throw NotFoundException if order not found', async () => {
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getPaymentsByOrderId(1, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getPaymentsByOrderId(1 as any, mockUser)).rejects.toThrow(NotFoundException);
     });
 
     it('should enforce multi-tenant isolation in getPaymentsByOrderId', async () => {
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getPaymentsByOrderId(1, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getPaymentsByOrderId(1 as any, mockUser)).rejects.toThrow(NotFoundException);
 
       expect(orderRepository.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -281,7 +281,7 @@ describe('PaymentsService', () => {
         amount: 500,
         status: PaymentStatus.COMPLETED,
         order: { id: 1, company_id: 1, total_amount: 1000 },
-      } as Payment;
+      } as unknown as Payment;
 
       jest.spyOn(paymentRepository, 'findOne').mockResolvedValue(mockPayment);
       jest.spyOn(paymentRepository, 'save').mockResolvedValue({
@@ -289,9 +289,9 @@ describe('PaymentsService', () => {
         status: PaymentStatus.REFUNDED,
       });
       jest.spyOn(paymentRepository, 'find').mockResolvedValue([]);
-      jest.spyOn(orderRepository, 'save').mockResolvedValue({} as Order);
+      jest.spyOn(orderRepository, 'save').mockResolvedValue({} as unknown as Order);
 
-      const result = await service.refundPayment(1, mockUser);
+      const result = await service.refundPayment(1 as any, mockUser);
 
       expect(result.status).toBe(PaymentStatus.REFUNDED);
       expect(paymentRepository.save).toHaveBeenCalled();
@@ -300,7 +300,7 @@ describe('PaymentsService', () => {
     it('should throw NotFoundException if payment not found', async () => {
       jest.spyOn(paymentRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.refundPayment(1, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.refundPayment(1 as any, mockUser)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if payment already refunded', async () => {
@@ -308,11 +308,11 @@ describe('PaymentsService', () => {
         id: 1,
         status: PaymentStatus.REFUNDED,
         order: { id: 1, company_id: 1 },
-      } as Payment;
+      } as unknown as Payment;
 
       jest.spyOn(paymentRepository, 'findOne').mockResolvedValue(mockPayment);
 
-      await expect(service.refundPayment(1, mockUser)).rejects.toThrow(BadRequestException);
+      await expect(service.refundPayment(1 as any, mockUser)).rejects.toThrow(BadRequestException);
     });
 
     it('should update order payment status after refund', async () => {
@@ -321,7 +321,7 @@ describe('PaymentsService', () => {
         amount: 500,
         status: PaymentStatus.COMPLETED,
         order: { id: 1, company_id: 1, total_amount: 1000 },
-      } as Payment;
+      } as unknown as Payment;
 
       jest.spyOn(paymentRepository, 'findOne').mockResolvedValue(mockPayment);
       jest.spyOn(paymentRepository, 'save').mockResolvedValue({
@@ -329,9 +329,9 @@ describe('PaymentsService', () => {
         status: PaymentStatus.REFUNDED,
       });
       jest.spyOn(paymentRepository, 'find').mockResolvedValue([]);
-      jest.spyOn(orderRepository, 'save').mockResolvedValue({} as Order);
+      jest.spyOn(orderRepository, 'save').mockResolvedValue({} as unknown as Order);
 
-      await service.refundPayment(1, mockUser);
+      await service.refundPayment(1 as any, mockUser);
 
       expect(orderRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -349,14 +349,14 @@ describe('PaymentsService', () => {
         total_amount: 1000,
         payment_status: OrderPaymentStatus.PARTIALLY_PAID,
         payments: [
-          { amount: 300, status: PaymentStatus.COMPLETED } as Payment,
-          { amount: 200, status: PaymentStatus.COMPLETED } as Payment,
+          { amount: 300, status: PaymentStatus.COMPLETED } as unknown as Payment,
+          { amount: 200, status: PaymentStatus.COMPLETED } as unknown as Payment,
         ],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
 
-      const result = await service.getPaymentSummary(1, mockUser);
+      const result = await service.getPaymentSummary(1 as any, mockUser);
 
       expect(result.order_total).toBe(1000);
       expect(result.total_paid).toBe(500);
@@ -371,14 +371,14 @@ describe('PaymentsService', () => {
         total_amount: 1000,
         payment_status: OrderPaymentStatus.PARTIALLY_PAID,
         payments: [
-          { amount: 500, status: PaymentStatus.COMPLETED } as Payment,
-          { amount: 300, status: PaymentStatus.REFUNDED } as Payment,
+          { amount: 500, status: PaymentStatus.COMPLETED } as unknown as Payment,
+          { amount: 300, status: PaymentStatus.REFUNDED } as unknown as Payment,
         ],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
 
-      const result = await service.getPaymentSummary(1, mockUser);
+      const result = await service.getPaymentSummary(1 as any, mockUser);
 
       expect(result.total_paid).toBe(500);
       expect(result.remaining_balance).toBe(500);
@@ -387,7 +387,7 @@ describe('PaymentsService', () => {
     it('should throw NotFoundException if order not found', async () => {
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getPaymentSummary(1, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getPaymentSummary(1 as any, mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -400,7 +400,7 @@ describe('PaymentsService', () => {
         amount: 100,
       };
 
-      await expect(service.recordPayment(1, createPaymentDto, mockUser)).rejects.toThrow(
+      await expect(service.recordPayment(1 as any, createPaymentDto, mockUser)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -408,7 +408,7 @@ describe('PaymentsService', () => {
     it('should enforce company isolation in getPaymentSummary', async () => {
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getPaymentSummary(1, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getPaymentSummary(1 as any, mockUser)).rejects.toThrow(NotFoundException);
 
       expect(orderRepository.findOne).toHaveBeenCalledWith(
         expect.objectContaining({

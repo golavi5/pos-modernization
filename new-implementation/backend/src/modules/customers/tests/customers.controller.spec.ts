@@ -86,14 +86,14 @@ describe('CustomersController', () => {
     it('should return paginated customers', async () => {
       const query: CustomerQueryDto = {
         page: 1,
-        pageSize: 20,
+        limit: 20,
       };
 
       const paginatedResponse = {
         data: [mockCustomerResponse],
         total: 1,
         page: 1,
-        pageSize: 20,
+        limit: 20,
       };
 
       mockService.findAll.mockResolvedValue(paginatedResponse);
@@ -108,14 +108,14 @@ describe('CustomersController', () => {
       const query: CustomerQueryDto = {
         search: 'john',
         page: 1,
-        pageSize: 20,
+        limit: 20,
       };
 
       mockService.findAll.mockResolvedValue({
         data: [mockCustomerResponse],
         total: 1,
         page: 1,
-        pageSize: 20,
+        limit: 20,
       });
 
       await controller.findAll(query, mockUser);

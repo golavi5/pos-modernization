@@ -9,6 +9,7 @@ import { Order, OrderStatus, PaymentStatus } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
+import { Product } from '../../products/entities/product.entity';
 
 describe('SalesService', () => {
   let service: SalesService;
@@ -22,7 +23,7 @@ describe('SalesService', () => {
     company_id: 1,
     email: 'test@example.com',
     name: 'Test User',
-  };
+  } as any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -66,7 +67,7 @@ describe('SalesService', () => {
   describe('listOrders', () => {
     it('should return orders with pagination', async () => {
       const mockOrders = [
-        { id: 1, order_number: 'ORD20260213001', status: OrderStatus.DRAFT } as Order,
+        { id: 1, order_number: 'ORD20260213001', status: OrderStatus.DRAFT } as unknown as Order,
       ];
 
       jest.spyOn(orderRepository, 'findAndCount').mockResolvedValue([mockOrders, 1]);
@@ -116,11 +117,11 @@ describe('SalesService', () => {
         company_id: 1,
         order_items: [],
         payments: [],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(mockOrder);
 
-      const result = await service.getOrderById(1, mockUser);
+      const result = await service.getOrderById(1 as any, mockUser);
 
       expect(result).toEqual(mockOrder);
       expect(orderRepository.findOne).toHaveBeenCalledWith(
@@ -133,13 +134,13 @@ describe('SalesService', () => {
     it('should throw NotFoundException if order not found', async () => {
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getOrderById(999, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getOrderById(999 as any, mockUser)).rejects.toThrow(NotFoundException);
     });
 
     it('should enforce multi-tenant isolation in getOrderById', async () => {
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getOrderById(1, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getOrderById(1 as any, mockUser)).rejects.toThrow(NotFoundException);
 
       expect(orderRepository.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -152,24 +153,24 @@ describe('SalesService', () => {
   });
 
   describe('createOrder', () => {
-    const createOrderDto: CreateOrderDto = {
+    const createOrderDto = {
       items: [
         {
-          product_id: 1,
+          product_id: '1',
           quantity: 2,
           unit_price: 100,
         },
       ],
       discount_amount: 10,
-    };
+    } as any as CreateOrderDto;
 
     it('should create order with items and calculate totals', async () => {
-      const mockProduct = { id: 1, name: 'Test Product', stock_quantity: 10 };
-      const mockSavedOrder = { id: 1, order_number: 'ORD20260213001' } as Order;
+      const mockProduct = { id: '1', name: 'Test Product', stock_quantity: 10 } as unknown as Product;
+      const mockSavedOrder = { id: 1, order_number: 'ORD20260213001' } as unknown as Order;
 
       jest.spyOn(productsService, 'findOne').mockResolvedValue(mockProduct);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockSavedOrder);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([]);
+      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([] as any);
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockSavedOrder);
 
       const result = await service.createOrder(createOrderDto, mockUser);
@@ -186,19 +187,19 @@ describe('SalesService', () => {
     });
 
     it('should check stock availability before creating order', async () => {
-      const mockProduct = { id: 1, name: 'Test Product', stock_quantity: 1 };
+      const mockProduct = { id: '1', name: 'Test Product', stock_quantity: 1 } as unknown as Product;
 
       jest.spyOn(productsService, 'findOne').mockResolvedValue(mockProduct);
 
-      const dtoWithHighQty: CreateOrderDto = {
+      const dtoWithHighQty = {
         items: [
           {
-            product_id: 1,
+            product_id: '1',
             quantity: 5,
             unit_price: 100,
           },
         ],
-      };
+      } as any as CreateOrderDto;
 
       await expect(service.createOrder(dtoWithHighQty, mockUser)).rejects.toThrow(
         BadRequestException,
@@ -214,12 +215,12 @@ describe('SalesService', () => {
     });
 
     it('should automatically set order status to DRAFT', async () => {
-      const mockProduct = { id: 1, name: 'Test Product', stock_quantity: 10 };
-      const mockSavedOrder = { id: 1, order_number: 'ORD20260213001', status: OrderStatus.DRAFT } as Order;
+      const mockProduct = { id: '1', name: 'Test Product', stock_quantity: 10 } as unknown as Product;
+      const mockSavedOrder = { id: 1, order_number: 'ORD20260213001', status: OrderStatus.DRAFT } as unknown as Order;
 
       jest.spyOn(productsService, 'findOne').mockResolvedValue(mockProduct);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockSavedOrder);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([]);
+      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([] as any);
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockSavedOrder);
 
       await service.createOrder(createOrderDto, mockUser);
@@ -234,12 +235,12 @@ describe('SalesService', () => {
     });
 
     it('should set payment status to UNPAID for new orders', async () => {
-      const mockProduct = { id: 1, name: 'Test Product', stock_quantity: 10 };
-      const mockSavedOrder = { id: 1, order_number: 'ORD20260213001' } as Order;
+      const mockProduct = { id: '1', name: 'Test Product', stock_quantity: 10 } as unknown as Product;
+      const mockSavedOrder = { id: 1, order_number: 'ORD20260213001' } as unknown as Order;
 
       jest.spyOn(productsService, 'findOne').mockResolvedValue(mockProduct);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockSavedOrder);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([]);
+      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([] as any);
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockSavedOrder);
 
       await service.createOrder(createOrderDto, mockUser);
@@ -254,14 +255,14 @@ describe('SalesService', () => {
 
   describe('updateOrderStatus', () => {
     it('should transition from DRAFT to PENDING', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.DRAFT } as Order;
+      const mockOrder = { id: 1, status: OrderStatus.DRAFT } as unknown as Order;
 
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
 
       const dto: UpdateOrderStatusDto = { status: OrderStatus.PENDING };
 
-      await service.updateOrderStatus(1, dto, mockUser);
+      await service.updateOrderStatus(1 as any, dto, mockUser);
 
       expect(orderRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -275,7 +276,7 @@ describe('SalesService', () => {
         id: 1,
         status: OrderStatus.PENDING,
         order_items: [{ product_id: 1, quantity: 2 }],
-      } as Order;
+      } as unknown as Order;
 
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
@@ -283,31 +284,31 @@ describe('SalesService', () => {
 
       const dto: UpdateOrderStatusDto = { status: OrderStatus.CONFIRMED };
 
-      await service.updateOrderStatus(1, dto, mockUser);
+      await service.updateOrderStatus(1 as any, dto, mockUser);
 
       expect(productsService.deductStock).toHaveBeenCalledWith(1, 2, mockUser);
     });
 
     it('should throw ConflictException for invalid transitions', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.COMPLETED } as Order;
+      const mockOrder = { id: 1, status: OrderStatus.COMPLETED } as unknown as Order;
 
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
 
       const dto: UpdateOrderStatusDto = { status: OrderStatus.DRAFT };
 
-      await expect(service.updateOrderStatus(1, dto, mockUser)).rejects.toThrow(
+      await expect(service.updateOrderStatus(1 as any, dto, mockUser)).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should prevent transitions from COMPLETED status', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.COMPLETED } as Order;
+      const mockOrder = { id: 1, status: OrderStatus.COMPLETED } as unknown as Order;
 
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
 
       const dto: UpdateOrderStatusDto = { status: OrderStatus.CANCELLED };
 
-      await expect(service.updateOrderStatus(1, dto, mockUser)).rejects.toThrow(
+      await expect(service.updateOrderStatus(1 as any, dto, mockUser)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -315,13 +316,13 @@ describe('SalesService', () => {
 
   describe('deleteOrder', () => {
     it('should delete DRAFT orders', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.DRAFT, order_number: 'ORD001' } as Order;
+      const mockOrder = { id: 1, status: OrderStatus.DRAFT, order_number: 'ORD001' } as unknown as Order;
 
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
       jest.spyOn(orderItemRepository, 'delete').mockResolvedValue({ affected: 2 } as any);
       jest.spyOn(orderRepository, 'delete').mockResolvedValue({ affected: 1 } as any);
 
-      const result = await service.deleteOrder(1, mockUser);
+      const result = await service.deleteOrder(1 as any, mockUser);
 
       expect(result.message).toContain('deleted');
       expect(orderItemRepository.delete).toHaveBeenCalledWith({ order_id: 1 });
@@ -329,32 +330,32 @@ describe('SalesService', () => {
     });
 
     it('should prevent deletion of non-DRAFT orders', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.PENDING, order_number: 'ORD001' } as Order;
+      const mockOrder = { id: 1, status: OrderStatus.PENDING, order_number: 'ORD001' } as unknown as Order;
 
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
 
-      await expect(service.deleteOrder(1, mockUser)).rejects.toThrow(BadRequestException);
+      await expect(service.deleteOrder(1 as any, mockUser)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('Calculations', () => {
     it('should calculate order totals correctly', async () => {
-      const items: CreateOrderDto = {
+      const items = {
         items: [
-          { product_id: 1, quantity: 2, unit_price: 100 },
-          { product_id: 2, quantity: 1, unit_price: 50 },
+          { product_id: '1', quantity: 2, unit_price: 100 },
+          { product_id: '2', quantity: 1, unit_price: 50 },
         ],
         discount_amount: 10,
-      };
+      } as any as CreateOrderDto;
 
-      const mockProduct1 = { id: 1, stock_quantity: 10 };
-      const mockProduct2 = { id: 2, stock_quantity: 10 };
-      const mockSavedOrder = { id: 1 } as Order;
+      const mockProduct1 = { id: '1', stock_quantity: 10 } as unknown as Product;
+      const mockProduct2 = { id: '2', stock_quantity: 10 } as unknown as Product;
+      const mockSavedOrder = { id: 1 } as unknown as Order;
 
       jest.spyOn(productsService, 'findOne').mockResolvedValueOnce(mockProduct1);
       jest.spyOn(productsService, 'findOne').mockResolvedValueOnce(mockProduct2);
       jest.spyOn(orderRepository, 'save').mockResolvedValue(mockSavedOrder);
-      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([]);
+      jest.spyOn(orderItemRepository, 'save').mockResolvedValue([] as any);
       jest.spyOn(service, 'getOrderById').mockResolvedValue(mockSavedOrder);
 
       await service.createOrder(items, mockUser);
@@ -383,11 +384,11 @@ describe('SalesService', () => {
     });
 
     it('should not allow access to orders from different company', async () => {
-      const otherCompanyOrder = { id: 1, company_id: 2 } as Order;
+      const otherCompanyOrder = { id: 1, company_id: 2 } as unknown as Order;
 
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
-      await expect(service.getOrderById(1, mockUser)).rejects.toThrow(NotFoundException);
+      await expect(service.getOrderById(1 as any, mockUser)).rejects.toThrow(NotFoundException);
     });
   });
 });

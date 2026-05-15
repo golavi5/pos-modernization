@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ProductsService } from './products.service';
+import { ProductsService } from '../products.service';
 import { Product } from '../entities/product.entity';
 import { User } from '../../auth/entities/user.entity';
 import { NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
@@ -54,7 +54,7 @@ describe('ProductsService', () => {
       
       jest.spyOn(repository, 'findAndCount').mockResolvedValue([mockProducts, 1]);
 
-      const result = await service.findAll(mockUser, { offset: 0, limit: 10 });
+      const result = await service.findAll(mockUser, { offset: 0, limit: 10, is_active: true, sort: 'created_at', order: 'DESC' } as any);
       
       expect(result.data).toEqual(mockProducts);
       expect(result.meta.total).toBe(1);
@@ -172,7 +172,9 @@ describe('ProductsService', () => {
         company_id: 'different-company-id',
         created_by: mockUser.id,
       };
-      
+
+      jest.spyOn(repository, 'findOne').mockResolvedValue(undefined); // No SKU conflict
+
       await expect(service.create(createProductDto, mockUser)).rejects.toThrow(
         UnauthorizedException,
       );
