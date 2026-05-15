@@ -1,0 +1,5 @@
+# dist and build artifacts are covered by root .gitignore
+# This file handles backend-specific patterns not caught at root
+
+# Nest CLI cache
+.nest/
