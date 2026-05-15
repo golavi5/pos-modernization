@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,6 @@ import { UsersTable } from '@/components/users/UsersTable';
 import { UserForm } from '@/components/users/UserForm';
 import { AssignRolesModal } from '@/components/users/AssignRolesModal';
 import { ResetPasswordModal } from '@/components/users/ResetPasswordModal';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import {
   useUsers,
   useUserStats,
@@ -25,16 +24,10 @@ import { Users, UserPlus, UserCheck, UserX, Search } from 'lucide-react';
 type ModalType = 'create' | 'edit' | 'assign-roles' | 'reset-password' | null;
 
 export default function UsersPage() {
-  const { setToolbar } = useToolbar();
   const [query, setQuery] = useState<UserQuery>({ page: 1, pageSize: 20 });
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-
-  // Set toolbar config
-  useEffect(() => {
-    setToolbar({ title: 'Usuarios' });
-  }, [setToolbar]);
   const [modal, setModal] = useState<ModalType>(null);
   const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
 

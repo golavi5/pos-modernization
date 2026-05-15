@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import {
   useSettings,
   useUpdateCompany,
@@ -77,11 +75,6 @@ function Section({ title, description, children, onSave, saving }: {
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SectionId>('company');
   const [saved, setSaved] = useState('');
-  const { setToolbar } = useToolbar();
-
-  useEffect(() => {
-    setToolbar({ title: 'Configuración' });
-  }, [setToolbar]);
 
   const { data: settings, isLoading } = useSettings();
   const updateCompany   = useUpdateCompany();

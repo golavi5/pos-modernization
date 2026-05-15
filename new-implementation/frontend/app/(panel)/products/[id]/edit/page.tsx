@@ -1,21 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { useProduct, useUpdateProduct } from '@/hooks/useProducts';
 import { ProductForm } from '@/components/products/ProductForm';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 
 export default function EditProductPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { data: product, isLoading } = useProduct(params.id);
   const updateProduct = useUpdateProduct();
-  const { setToolbar } = useToolbar();
-
-  useEffect(() => {
-    setToolbar({ title: 'Editar Producto', backHref: `/products/${params.id}` });
-  }, [setToolbar, params.id]);
 
   const handleSubmit = async (data: any) => {
     await updateProduct.mutateAsync({ id: params.id, data });

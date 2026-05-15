@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BarChart3, Package, Users, Warehouse } from 'lucide-react';
 import { SalesReportTab } from '@/components/reports/SalesReportTab';
 import { ProductReportTab } from '@/components/reports/ProductReportTab';
 import { CustomerReportTab } from '@/components/reports/CustomerReportTab';
 import { InventoryReportTab } from '@/components/reports/InventoryReportTab';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 
 type TabId = 'sales' | 'products' | 'customers' | 'inventory';
 
@@ -19,11 +18,6 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('sales');
-  const { setToolbar } = useToolbar();
-
-  useEffect(() => {
-    setToolbar({ title: 'Reportes' });
-  }, [setToolbar]);
 
   return (
     <div className="space-y-6">

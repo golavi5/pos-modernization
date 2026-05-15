@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import {
   useNotifications,
   useMarkAsRead,
@@ -42,15 +41,9 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NotificationsPage() {
-  const { setToolbar } = useToolbar();
   const [query, setQuery] = useState<NotificationQuery>({ page: 1, pageSize: 20 });
   const [typeFilter, setTypeFilter] = useState('');
   const [unreadOnly, setUnreadOnly] = useState(false);
-
-  // Set toolbar config
-  useEffect(() => {
-    setToolbar({ title: 'Notificaciones' });
-  }, [setToolbar]);
 
   const { data: list, isLoading } = useNotifications(query);
   const markAsRead = useMarkAsRead();

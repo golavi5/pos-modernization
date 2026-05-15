@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ShoppingCart, Receipt, TrendingUp, DollarSign } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,6 @@ import { SalesCart } from '@/components/sales/SalesCart';
 import { ProductSearch } from '@/components/sales/ProductSearch';
 import { CustomerSelect } from '@/components/sales/CustomerSelect';
 import { PaymentModal } from '@/components/sales/PaymentModal';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import { useCreateSale, useSalesStats } from '@/hooks/useSales';
 import type { Product } from '@/types/product';
 import type { CartItem, Cart } from '@/types/sale';
@@ -22,11 +21,6 @@ export default function SalesPage() {
     total: 0,
   });
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const { setToolbar } = useToolbar();
-
-  useEffect(() => {
-    setToolbar({ title: 'Ventas' });
-  }, [setToolbar]);
 
   const { data: stats } = useSalesStats();
   const createSaleMutation = useCreateSale();

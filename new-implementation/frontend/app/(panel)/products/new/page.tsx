@@ -1,20 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { useCreateProduct } from '@/hooks/useProducts';
 import { ProductForm } from '@/components/products/ProductForm';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 
 export default function NewProductPage() {
   const router = useRouter();
   const createProduct = useCreateProduct();
-  const { setToolbar } = useToolbar();
-
-  useEffect(() => {
-    setToolbar({ title: 'Nuevo Producto', backHref: '/products' });
-  }, [setToolbar]);
 
   const handleSubmit = async (data: any) => {
     await createProduct.mutateAsync(data);

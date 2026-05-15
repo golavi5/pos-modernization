@@ -1,110 +1,59 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { LogOut, Settings, PanelTop, Menu } from 'lucide-react';
-import { useAuthStore } from '@/stores/authStore';
-import { useToolbar } from '@/components/layout/ToolbarContext';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { usePathname } from 'next/navigation';
+import { Search } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { LanguageSwitcher } from '@/components/language/LanguageSwitcher';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
+
+const ROUTE_LABELS: Record<string, string> = {
+  '/dashboard':     'Dashboard',
+  '/sales':         'Ventas',
+  '/products':      'Productos',
+  '/inventory':     'Inventario',
+  '/customers':     'Clientes',
+  '/users':         'Usuarios',
+  '/reports':       'Reportes',
+  '/notifications': 'Notificaciones',
+  '/settings':      'Configuración',
+};
+
+function getLabel(pathname: string): string {
+  const key = Object.keys(ROUTE_LABELS).find((k) => pathname.startsWith(k));
+  return key ? ROUTE_LABELS[key] : '';
+}
 
 export function Header() {
-  const t = useTranslations();
-  const { user, logout } = useAuthStore();
-  const { isHidden, toggleHidden, sidebarCollapsed, toggleSidebar } = useToolbar();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-    router.refresh();
-  };
-
-  const getInitials = (name: string): string => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const pathname = usePathname();
+  const label = getLabel(pathname);
 
   return (
-    <header className="border-b bg-surface-1 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            title={sidebarCollapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-          <h2 className="text-sm text-secondary">
-            {t('header.welcomeBack', { name: user?.name || 'Usuario' })}
-          </h2>
-        </div>
+    <header className="h-[52px] shrink-0 border-b border-border bg-card flex items-center px-4 gap-3">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 text-xs shrink-0">
+        <span className="text-muted-foreground">POS</span>
+        {label && (
+          <>
+            <span className="text-muted-foreground">/</span>
+            <span className="font-semibold text-foreground">{label}</span>
+          </>
+        )}
+      </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleHidden}
-            title={isHidden ? t('header.showToolbar') : t('header.hideToolbar')}
-          >
-            <PanelTop className={`h-4 w-4 ${isHidden ? 'opacity-50' : ''}`} />
-          </Button>
-          <ThemeToggle />
-          <LanguageSwitcher />
-          <NotificationBell />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs font-semibold">
-                  {getInitials(user?.name || 'User')}
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <div className="flex items-center gap-2 px-2 py-1.5">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs font-semibold">
-                  {getInitials(user?.name || 'User')}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-tertiary">{user?.email}</p>
-              </div>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <a href="/settings" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                {t('auth.settings')}
-              </a>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-error">
-              <LogOut className="h-4 w-4" />
-              {t('auth.logout')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Search bar */}
+      <div className="flex-1 flex justify-center">
+        <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-1.5 text-xs text-muted-foreground w-full max-w-xs cursor-text hover:border-primary/50 transition-colors">
+          <Search size={12} className="shrink-0" />
+          <span>Buscar...</span>
+          <kbd className="ml-auto bg-muted border border-border rounded px-1.5 py-0.5 text-[10px] font-mono">⌘K</kbd>
         </div>
+      </div>
+
+      {/* Right actions */}
+      <div className="flex items-center gap-1 shrink-0">
+        <ThemeToggle />
+        <LanguageSwitcher />
+        <NotificationBell />
       </div>
     </header>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Plus, Package, AlertTriangle, TrendingUp, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { ProductsTable } from '@/components/products/ProductsTable';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { ProductForm } from '@/components/products/ProductForm';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import {
   useProducts,
   useProductStats,
@@ -20,7 +19,6 @@ import {
 import type { Product, ProductQueryParams, CreateProductDto } from '@/types/product';
 
 export default function ProductsPage() {
-  const { setToolbar } = useToolbar();
   const t = useTranslations('products');
   const tCommon = useTranslations('common');
   const [queryParams, setQueryParams] = useState<ProductQueryParams>({
@@ -38,10 +36,6 @@ export default function ProductsPage() {
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
-
-  useEffect(() => {
-    setToolbar({ title: t('title') });
-  }, [setToolbar, t]);
 
   const handleFilterChange = (filters: ProductQueryParams) => {
     setQueryParams({ ...filters, page: 1, pageSize: 20 });

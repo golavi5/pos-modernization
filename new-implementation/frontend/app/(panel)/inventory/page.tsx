@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Package, TrendingUp, AlertTriangle, Warehouse as WarehouseIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,6 @@ import { StockTable } from '@/components/inventory/StockTable';
 import { StockMovements } from '@/components/inventory/StockMovements';
 import { AdjustStockModal } from '@/components/inventory/AdjustStockModal';
 import { InventoryFilters } from '@/components/inventory/InventoryFilters';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import {
   useStock,
   useMovements,
@@ -19,7 +18,6 @@ import {
 import type { StockLevel, StockQueryParams, MovementQueryParams } from '@/types/inventory';
 
 export default function InventoryPage() {
-  const { setToolbar } = useToolbar();
   const [stockParams, setStockParams] = useState<StockQueryParams>({
     page: 1,
     pageSize: 20,
@@ -30,11 +28,6 @@ export default function InventoryPage() {
   });
   const [adjustingStock, setAdjustingStock] = useState<StockLevel | null>(null);
   const [activeTab, setActiveTab] = useState<'stock' | 'movements'>('stock');
-
-  // Set toolbar config
-  useEffect(() => {
-    setToolbar({ title: 'Inventario' });
-  }, [setToolbar]);
 
   // Queries
   const { data: stockData, isLoading: stockLoading } = useStock(stockParams);

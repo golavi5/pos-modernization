@@ -1,21 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentSales } from '@/components/dashboard/RecentSales';
 import { useAuthStore } from '@/stores/authStore';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const { setToolbar } = useToolbar();
   const t = useTranslations('dashboard');
-
-  useEffect(() => {
-    setToolbar({ title: t('title') });
-  }, [setToolbar, t]);
 
   // Mock data for dashboard stats
   const stats = [

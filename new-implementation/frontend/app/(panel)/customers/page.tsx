@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Users, Award, TrendingUp, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,7 +8,6 @@ import { CustomersTable } from '@/components/customers/CustomersTable';
 import { CustomerFilters } from '@/components/customers/CustomerFilters';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { LoyaltyPointsModal } from '@/components/customers/LoyaltyPointsModal';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import {
   useCustomers,
   useCustomerStats,
@@ -20,7 +19,6 @@ import {
 import type { Customer, CustomerQueryParams, CreateCustomerDto } from '@/types/customer';
 
 export default function CustomersPage() {
-  const { setToolbar } = useToolbar();
   const [queryParams, setQueryParams] = useState<CustomerQueryParams>({
     page: 1,
     pageSize: 20,
@@ -28,10 +26,6 @@ export default function CustomersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [loyaltyModalCustomer, setLoyaltyModalCustomer] = useState<Customer | null>(null);
-
-  useEffect(() => {
-    setToolbar({ title: 'Clientes' });
-  }, [setToolbar]);
 
   // Queries
   const { data: customersData, isLoading } = useCustomers(queryParams);

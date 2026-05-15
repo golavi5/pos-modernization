@@ -1,20 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useProduct } from '@/hooks/useProducts';
 import { StockBadge } from '@/components/products/StockBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useToolbar } from '@/components/layout/ToolbarContext';
 import Link from 'next/link';
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const { data: product, isLoading } = useProduct(params.id);
-  const { setToolbar } = useToolbar();
-
-  useEffect(() => {
-    setToolbar({ title: 'Detalle del Producto', backHref: '/products' });
-  }, [setToolbar]);
 
   if (isLoading) return <div>Loading...</div>;
   if (!product) return <div>Product not found</div>;
