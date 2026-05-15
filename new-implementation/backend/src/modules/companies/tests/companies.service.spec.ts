@@ -101,7 +101,10 @@ describe('CompaniesService', () => {
   describe('update', () => {
     it('should update and return the company', async () => {
       const updated = { ...mockCompany, name: 'Updated Corp' };
-      jest.spyOn(repo, 'findOne').mockResolvedValue(mockCompany);
+      jest
+        .spyOn(repo, 'findOne')
+        .mockResolvedValueOnce(mockCompany) // fetch by id
+        .mockResolvedValueOnce(null);       // conflict check — name not taken
       jest.spyOn(repo, 'save').mockResolvedValue(updated);
 
       const result = await service.update('company-uuid', { name: 'Updated Corp' });

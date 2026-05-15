@@ -56,6 +56,14 @@ export class CompaniesService {
   async update(id: string, dto: UpdateCompanyDto): Promise<CompanyResponseDto> {
     const company = await this.companyRepo.findOne({ where: { id } });
     if (!company) throw new NotFoundException(`Company ${id} not found`);
+
+    if (dto.name && dto.name !== company.name) {
+      const conflict = await this.companyRepo.findOne({ where: { name: dto.name } });
+      if (conflict) {
+        throw new ConflictException(`Company name "${dto.name}" already exists`);
+      }
+    }
+
     Object.assign(company, dto);
     const saved = await this.companyRepo.save(company);
     return this.toResponse(saved);
@@ -70,7 +78,7 @@ export class CompaniesService {
     return { message: 'Company deactivated successfully' };
   }
 
-  private toResponse(c: Company): CompanyResponseDto {
+  private toResponse = (c: Company): CompanyResponseDto => {
     return {
       id: c.id,
       name: c.name,
