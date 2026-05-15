@@ -3,33 +3,37 @@
 import { Pencil, Trash2, Eye, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useCustomers } from '@/hooks/useCustomers';
+import { formatCOP } from '@/lib/utils';
 import type { Customer } from '@/types/customer';
 
 interface CustomersTableProps {
-  customers: Customer[];
-  onEdit: (customer: Customer) => void;
-  onDelete: (customer: Customer) => void;
-  onView: (customer: Customer) => void;
-  onManageLoyalty: (customer: Customer) => void;
+  /** If provided, the component owns its own data fetch filtered by search */
+  search?: string;
+  /** Legacy: pass data directly */
+  customers?: Customer[];
+  onEdit?: (customer: Customer) => void;
+  onDelete?: (customer: Customer) => void;
+  onView?: (customer: Customer) => void;
+  onManageLoyalty?: (customer: Customer) => void;
   isLoading?: boolean;
 }
 
 export function CustomersTable({
-  customers,
+  search,
+  customers: customersProp,
   onEdit,
   onDelete,
   onView,
   onManageLoyalty,
-  isLoading,
+  isLoading: isLoadingProp,
 }: CustomersTableProps) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
+  const queryEnabled = search !== undefined;
+  const { data: customersData, isLoading: isLoadingQuery } = useCustomers(
+    queryEnabled ? { search: search || undefined, page: 1, pageSize: 50 } : {}
+  );
+  const customers = queryEnabled ? (customersData?.data ?? []) : (customersProp ?? []);
+  const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
@@ -107,7 +111,7 @@ export function CustomersTable({
               <td className="p-4 text-right">
                 <div>
                   <div className="font-semibold">
-                    {formatCurrency(customer.total_purchases)}
+                    {formatCOP(customer.total_purchases)}
                   </div>
                   <div className="text-sm text-tertiary">Total</div>
                 </div>
@@ -137,7 +141,7 @@ export function CustomersTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onView(customer)}
+                    onClick={() => onView?.(customer)}
                     title="Ver detalles"
                   >
                     <Eye className="w-4 h-4" />
@@ -145,7 +149,7 @@ export function CustomersTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onManageLoyalty(customer)}
+                    onClick={() => onManageLoyalty?.(customer)}
                     title="Gestionar puntos"
                     className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                   >
@@ -154,7 +158,7 @@ export function CustomersTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit(customer)}
+                    onClick={() => onEdit?.(customer)}
                     title="Editar"
                   >
                     <Pencil className="w-4 h-4" />
@@ -162,7 +166,7 @@ export function CustomersTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(customer)}
+                    onClick={() => onDelete?.(customer)}
                     title="Eliminar"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >

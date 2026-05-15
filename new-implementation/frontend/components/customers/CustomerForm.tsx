@@ -4,21 +4,34 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useCreateCustomer, useUpdateCustomer } from '@/hooks/useCustomers';
 import type { Customer, CreateCustomerDto } from '@/types/customer';
 
 interface CustomerFormProps {
   customer?: Customer;
-  onSubmit: (data: CreateCustomerDto) => void | Promise<void>;
-  onCancel: () => void;
+  /** Form element id — allows an external submit button via `form={formId}` */
+  formId?: string;
+  /** Called after a successful create/update when using formId mode */
+  onSuccess?: () => void;
+  /** Legacy: called with form data (used when the page owns the mutation) */
+  onSubmit?: (data: CreateCustomerDto) => void | Promise<void>;
+  /** Legacy: called on cancel */
+  onCancel?: () => void;
   isLoading?: boolean;
 }
 
 export function CustomerForm({
   customer,
+  formId,
+  onSuccess,
   onSubmit,
   onCancel,
-  isLoading,
+  isLoading: isLoadingProp,
 }: CustomerFormProps) {
+  const createMutation = useCreateCustomer();
+  const updateMutation = useUpdateCustomer();
+  const isLoadingInternal = createMutation.isPending || updateMutation.isPending;
+  const isLoading = isLoadingProp ?? (formId ? isLoadingInternal : false);
   const [formData, setFormData] = useState<CreateCustomerDto>({
     name: '',
     email: '',
@@ -41,7 +54,7 @@ export function CustomerForm({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Remove empty optional fields
@@ -59,11 +72,27 @@ export function CustomerForm({
       submitData.address = formData.address.trim();
     }
 
-    onSubmit(submitData);
+    if (onSubmit) {
+      // Legacy mode: parent owns the mutation
+      onSubmit(submitData);
+      return;
+    }
+
+    // formId/onSuccess mode: component owns the mutation
+    try {
+      if (customer) {
+        await updateMutation.mutateAsync({ id: customer.id, data: submitData });
+      } else {
+        await createMutation.mutateAsync(submitData);
+      }
+      onSuccess?.();
+    } catch (err) {
+      console.error('CustomerForm submit error:', err);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Nombre */}
         <div className="md:col-span-2">
@@ -155,15 +184,17 @@ export function CustomerForm({
         </div>
       )}
 
-      {/* Botones */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isLoading || !formData.name.trim()}>
-          {isLoading ? 'Guardando...' : customer ? 'Actualizar' : 'Crear cliente'}
-        </Button>
-      </div>
+      {/* Botones — only shown in legacy (non-formId) mode */}
+      {!formId && (
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isLoading || !formData.name.trim()}>
+            {isLoading ? 'Guardando...' : customer ? 'Actualizar' : 'Crear cliente'}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

@@ -2,6 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useUsers } from '@/hooks/useUsers';
 import type { UserResponse } from '@/types/users';
 import { Pencil, Shield, KeyRound, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 
@@ -13,24 +14,34 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 interface UsersTableProps {
-  users: UserResponse[];
-  isLoading: boolean;
-  onEdit: (user: UserResponse) => void;
-  onAssignRoles: (user: UserResponse) => void;
-  onResetPassword: (user: UserResponse) => void;
-  onToggleStatus: (user: UserResponse) => void;
-  onDelete: (user: UserResponse) => void;
+  /** If provided, the component owns its own data fetch filtered by search */
+  search?: string;
+  /** Legacy: pass data directly */
+  users?: UserResponse[];
+  isLoading?: boolean;
+  onEdit?: (user: UserResponse) => void;
+  onAssignRoles?: (user: UserResponse) => void;
+  onResetPassword?: (user: UserResponse) => void;
+  onToggleStatus?: (user: UserResponse) => void;
+  onDelete?: (user: UserResponse) => void;
 }
 
 export function UsersTable({
-  users,
-  isLoading,
+  search,
+  users: usersProp,
+  isLoading: isLoadingProp,
   onEdit,
   onAssignRoles,
   onResetPassword,
   onToggleStatus,
   onDelete,
 }: UsersTableProps) {
+  const queryEnabled = search !== undefined;
+  const { data: usersData, isLoading: isLoadingQuery } = useUsers(
+    queryEnabled ? { search: search || undefined, page: 1, pageSize: 50 } : {}
+  );
+  const users = queryEnabled ? (usersData?.data ?? []) : (usersProp ?? []);
+  const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -114,19 +125,19 @@ export function UsersTable({
               <td className="py-3 px-4 text-tertiary">{formatDate(user.createdAt)}</td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => onEdit(user)} title="Editar">
+                  <Button variant="ghost" size="sm" onClick={() => onEdit?.(user)} title="Editar">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onAssignRoles(user)} title="Asignar roles">
+                  <Button variant="ghost" size="sm" onClick={() => onAssignRoles?.(user)} title="Asignar roles">
                     <Shield className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onResetPassword(user)} title="Resetear contraseña">
+                  <Button variant="ghost" size="sm" onClick={() => onResetPassword?.(user)} title="Resetear contraseña">
                     <KeyRound className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onToggleStatus(user)}
+                    onClick={() => onToggleStatus?.(user)}
                     title={user.isActive ? 'Desactivar' : 'Activar'}
                   >
                     {user.isActive
@@ -136,7 +147,7 @@ export function UsersTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(user)}
+                    onClick={() => onDelete?.(user)}
                     title="Eliminar"
                     className="text-red-500 hover:text-red-700"
                   >

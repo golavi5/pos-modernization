@@ -3,15 +3,32 @@
 import { Package, AlertTriangle, ArrowUpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useStock } from '@/hooks/useInventory';
 import type { StockLevel } from '@/types/inventory';
 
 interface StockTableProps {
-  stock: StockLevel[];
-  onAdjust: (stock: StockLevel) => void;
+  /** If provided, the component owns its own data fetch filtered by search (product name) */
+  search?: string;
+  /** Legacy: pass data directly */
+  stock?: StockLevel[];
+  onAdjust?: (stock: StockLevel) => void;
   isLoading?: boolean;
 }
 
-export function StockTable({ stock, onAdjust, isLoading }: StockTableProps) {
+export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLoadingProp }: StockTableProps) {
+  const queryEnabled = search !== undefined;
+  const { data: stockData, isLoading: isLoadingQuery } = useStock(
+    queryEnabled ? { page: 1, pageSize: 50 } : undefined
+  );
+  // Client-side filter by product name when search is active
+  const rawStock = queryEnabled ? (stockData?.data ?? []) : (stockProp ?? []);
+  const stock = queryEnabled && search
+    ? rawStock.filter((item) =>
+        (item.product_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (item.product_sku ?? '').toLowerCase().includes(search.toLowerCase())
+      )
+    : rawStock;
+  const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);
   const getStockStatus = (item: StockLevel) => {
     if (item.quantity === 0) {
       return { label: 'Sin stock', variant: 'destructive' as const, icon: AlertTriangle };
@@ -119,7 +136,7 @@ export function StockTable({ stock, onAdjust, isLoading }: StockTableProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onAdjust(item)}
+                    onClick={() => onAdjust?.(item)}
                     title="Ajustar stock"
                   >
                     <ArrowUpCircle className="w-4 h-4 mr-1" />

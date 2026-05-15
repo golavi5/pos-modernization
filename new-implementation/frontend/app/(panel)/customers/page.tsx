@@ -1,60 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Users, Award, TrendingUp, DollarSign } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { SlideOver } from '@/components/ui/slide-over';
 import { CustomersTable } from '@/components/customers/CustomersTable';
-import { CustomerFilters } from '@/components/customers/CustomerFilters';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { LoyaltyPointsModal } from '@/components/customers/LoyaltyPointsModal';
-import {
-  useCustomers,
-  useCustomerStats,
-  useCreateCustomer,
-  useUpdateCustomer,
-  useDeleteCustomer,
-  useUpdateLoyaltyPoints,
-} from '@/hooks/useCustomers';
-import type { Customer, CustomerQueryParams, CreateCustomerDto } from '@/types/customer';
+import { useUpdateLoyaltyPoints, useDeleteCustomer } from '@/hooks/useCustomers';
+import type { Customer } from '@/types/customer';
 
 export default function CustomersPage() {
-  const [queryParams, setQueryParams] = useState<CustomerQueryParams>({
-    page: 1,
-    pageSize: 20,
-  });
-  const [showForm, setShowForm] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [search, setSearch] = useState('');
+  const [slideOver, setSlideOver] = useState<'closed' | 'new' | 'edit'>('closed');
+  const [editTarget, setEditTarget] = useState<Customer | null>(null);
   const [loyaltyModalCustomer, setLoyaltyModalCustomer] = useState<Customer | null>(null);
 
-  // Queries
-  const { data: customersData, isLoading } = useCustomers(queryParams);
-  const { data: stats } = useCustomerStats();
-
-  // Mutations
-  const createMutation = useCreateCustomer();
-  const updateMutation = useUpdateCustomer();
   const deleteMutation = useDeleteCustomer();
   const updateLoyaltyMutation = useUpdateLoyaltyPoints();
 
-  const handleFilterChange = (filters: CustomerQueryParams) => {
-    setQueryParams({ ...filters, page: 1, pageSize: 20 });
-  };
-
-  const handleCreateNew = () => {
-    setEditingCustomer(null);
-    setShowForm(true);
-  };
-
-  const handleEdit = (customer: Customer) => {
-    setEditingCustomer(customer);
-    setShowForm(true);
-  };
-
-  const handleView = (customer: Customer) => {
-    // TODO: Implement customer detail modal
-    console.log('View customer:', customer);
-  };
+  const openNew = () => { setEditTarget(null); setSlideOver('new'); };
+  const openEdit = (customer: Customer) => { setEditTarget(customer); setSlideOver('edit'); };
+  const close = () => setSlideOver('closed');
 
   const handleDelete = async (customer: Customer) => {
     if (
@@ -64,38 +32,10 @@ export default function CustomersPage() {
     ) {
       try {
         await deleteMutation.mutateAsync(customer.id);
-        alert('Cliente eliminado exitosamente');
       } catch (error) {
-        alert('Error al eliminar el cliente');
         console.error(error);
       }
     }
-  };
-
-  const handleManageLoyalty = (customer: Customer) => {
-    setLoyaltyModalCustomer(customer);
-  };
-
-  const handleSubmit = async (data: CreateCustomerDto) => {
-    try {
-      if (editingCustomer) {
-        await updateMutation.mutateAsync({ id: editingCustomer.id, data });
-        alert('Cliente actualizado exitosamente');
-      } else {
-        await createMutation.mutateAsync(data);
-        alert('Cliente creado exitosamente');
-      }
-      setShowForm(false);
-      setEditingCustomer(null);
-    } catch (error) {
-      alert(editingCustomer ? 'Error al actualizar el cliente' : 'Error al crear el cliente');
-      console.error(error);
-    }
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingCustomer(null);
   };
 
   const handleLoyaltyConfirm = async (
@@ -103,185 +43,64 @@ export default function CustomersPage() {
     points: number
   ) => {
     if (!loyaltyModalCustomer) return;
-
     try {
       await updateLoyaltyMutation.mutateAsync({
         id: loyaltyModalCustomer.id,
         data: { operation, points },
       });
-      alert('Puntos actualizados exitosamente');
       setLoyaltyModalCustomer(null);
     } catch (error) {
-      alert('Error al actualizar los puntos');
       console.error(error);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-tertiary mt-1">Gestiona tu base de clientes y puntos de lealtad</p>
+    <div className="flex flex-col h-full overflow-hidden p-4 gap-3">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar clientes..."
+            className="pl-8 h-9 text-sm"
+          />
         </div>
-        {!showForm && (
-          <Button onClick={handleCreateNew}>
-            <Plus className="w-5 h-5 mr-2" />
-            Nuevo Cliente
-          </Button>
-        )}
+        <div className="flex-1" />
+        <Button onClick={openNew} size="sm" className="gap-1.5">
+          <Plus size={14} /> Nuevo cliente
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      {stats && !showForm && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Total Clientes</p>
-                <p className="text-2xl font-bold mt-1">
-                  {stats.totalCustomers}
-                </p>
-              </div>
-              <Users className="w-10 h-10 text-blue-500" />
-            </div>
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-sm text-green-600 font-medium">
-                {stats.activeCustomers} activos
-              </span>
-              <span className="text-sm text-quaternary">•</span>
-              <span className="text-sm text-tertiary">
-                {stats.inactiveCustomers} inactivos
-              </span>
-            </div>
-          </Card>
+      {/* Table */}
+      <div className="flex-1 overflow-auto">
+        <CustomersTable
+          search={search}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+          onManageLoyalty={setLoyaltyModalCustomer}
+        />
+      </div>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Puntos Totales</p>
-                <p className="text-2xl font-bold mt-1">
-                  {stats.totalLoyaltyPoints.toLocaleString()}
-                </p>
-              </div>
-              <Award className="w-10 h-10 text-yellow-500" />
-            </div>
-            <p className="text-sm text-tertiary mt-4">
-              Puntos de lealtad acumulados
-            </p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Compra Promedio</p>
-                <p className="text-2xl font-bold mt-1">
-                  {formatCurrency(stats.avgPurchaseValue)}
-                </p>
-              </div>
-              <DollarSign className="w-10 h-10 text-green-500" />
-            </div>
-            <p className="text-sm text-tertiary mt-4">
-              Valor promedio por cliente
-            </p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-tertiary">Clientes Recientes</p>
-                <p className="text-2xl font-bold mt-1">
-                  {stats.recentCustomers}
-                </p>
-              </div>
-              <TrendingUp className="w-10 h-10 text-purple-500" />
-            </div>
-            <p className="text-sm text-tertiary mt-4">
-              Compraron en últimos 30 días
-            </p>
-          </Card>
-        </div>
-      )}
-
-      {/* Form or Table */}
-      {showForm ? (
-        <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-6">
-            {editingCustomer ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
-          </h2>
-          <CustomerForm
-            customer={editingCustomer || undefined}
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-            isLoading={createMutation.isPending || updateMutation.isPending}
-          />
-        </Card>
-      ) : (
-        <>
-          {/* Filters */}
-          <CustomerFilters onFilterChange={handleFilterChange} />
-
-          {/* Customers Table */}
-          <Card className="overflow-hidden">
-            <CustomersTable
-              customers={customersData?.data || []}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-              onManageLoyalty={handleManageLoyalty}
-              isLoading={isLoading}
-            />
-
-            {/* Pagination */}
-            {customersData && customersData.total > 0 && (
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <div className="text-sm text-tertiary">
-                  Mostrando {((customersData.page - 1) * customersData.pageSize) + 1} -{' '}
-                  {Math.min(
-                    customersData.page * customersData.pageSize,
-                    customersData.total
-                  )}{' '}
-                  de {customersData.total} clientes
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={customersData.page === 1}
-                    onClick={() =>
-                      setQueryParams((prev) => ({ ...prev, page: prev.page! - 1 }))
-                    }
-                  >
-                    Anterior
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={
-                      customersData.page >=
-                      Math.ceil(customersData.total / customersData.pageSize)
-                    }
-                    onClick={() =>
-                      setQueryParams((prev) => ({ ...prev, page: prev.page! + 1 }))
-                    }
-                  >
-                    Siguiente
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
-        </>
-      )}
+      {/* Slide-over */}
+      <SlideOver
+        open={slideOver !== 'closed'}
+        onClose={close}
+        title={slideOver === 'new' ? 'Nuevo cliente' : 'Editar cliente'}
+        footer={
+          <>
+            <Button variant="outline" onClick={close} className="flex-1">Cancelar</Button>
+            <Button form="customer-form" type="submit" className="flex-1">Guardar</Button>
+          </>
+        }
+      >
+        <CustomerForm
+          customer={editTarget ?? undefined}
+          formId="customer-form"
+          onSuccess={close}
+        />
+      </SlideOver>
 
       {/* Loyalty Points Modal */}
       <LoyaltyPointsModal

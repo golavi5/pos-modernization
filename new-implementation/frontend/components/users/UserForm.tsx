@@ -1,24 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useRoles } from '@/hooks/useUsers';
+import { useRoles, useCreateUser, useUpdateUser } from '@/hooks/useUsers';
 import type { UserResponse, CreateUserDto, UpdateUserDto, Role } from '@/types/users';
-import { X } from 'lucide-react';
 
 interface UserFormProps {
   user?: UserResponse | null;
-  onSubmit: (dto: CreateUserDto | UpdateUserDto) => void;
-  onCancel: () => void;
+  /** Form element id — allows an external submit button via `form={formId}` */
+  formId?: string;
+  /** Called after a successful create/update when using formId mode */
+  onSuccess?: () => void;
+  /** Legacy: called with form data (used when the page owns the mutation) */
+  onSubmit?: (dto: CreateUserDto | UpdateUserDto) => void;
+  /** Legacy: called on cancel */
+  onCancel?: () => void;
   isLoading?: boolean;
 }
 
-export function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
+export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoading: isLoadingProp }: UserFormProps) {
   const isEdit = !!user;
   const { data: roles = [] } = useRoles();
+
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const isLoadingInternal = createUser.isPending || updateUser.isPending;
+  const isLoading = isLoadingProp ?? (formId ? isLoadingInternal : false);
 
   const [form, setForm] = useState({
     name: '',
@@ -58,31 +67,45 @@ export function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps)
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
-    if (isEdit) {
-      const dto: UpdateUserDto = {
-        name: form.name,
-        firstName: form.firstName || undefined,
-        lastName: form.lastName || undefined,
-        phone: form.phone || undefined,
-        isActive: form.isActive,
-      };
+    const dto: CreateUserDto | UpdateUserDto = isEdit
+      ? {
+          name: form.name,
+          firstName: form.firstName || undefined,
+          lastName: form.lastName || undefined,
+          phone: form.phone || undefined,
+          isActive: form.isActive,
+        } as UpdateUserDto
+      : {
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          firstName: form.firstName || undefined,
+          lastName: form.lastName || undefined,
+          phone: form.phone || undefined,
+          isActive: form.isActive,
+          roleIds: form.roleIds,
+        } as CreateUserDto;
+
+    if (onSubmit) {
+      // Legacy mode: parent owns the mutation
       onSubmit(dto);
-    } else {
-      const dto: CreateUserDto = {
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        firstName: form.firstName || undefined,
-        lastName: form.lastName || undefined,
-        phone: form.phone || undefined,
-        isActive: form.isActive,
-        roleIds: form.roleIds,
-      };
-      onSubmit(dto);
+      return;
+    }
+
+    // formId/onSuccess mode: component owns the mutation
+    try {
+      if (isEdit && user) {
+        await updateUser.mutateAsync({ id: user.id, dto: dto as UpdateUserDto });
+      } else {
+        await createUser.mutateAsync(dto as CreateUserDto);
+      }
+      onSuccess?.();
+    } catch (err) {
+      console.error('UserForm submit error:', err);
     }
   };
 
@@ -101,7 +124,7 @@ export function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps)
       <Input
         id={id}
         type={type}
-        value={(form as any)[id]}
+        value={(form as Record<string, unknown>)[id] as string}
         onChange={(e) => setForm((prev) => ({ ...prev, [id]: e.target.value }))}
         className={errors[id] ? 'border-red-500' : ''}
       />
@@ -110,78 +133,69 @@ export function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps)
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{isEdit ? 'Editar Usuario' : 'Nuevo Usuario'}</CardTitle>
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {field('name', 'Nombre completo', 'text', true)}
-              {!isEdit && field('email', 'Email', 'email', true)}
-              {!isEdit && field('password', 'Contraseña', 'password', true)}
-              {field('firstName', 'Primer nombre')}
-              {field('lastName', 'Apellido')}
-              {field('phone', 'Teléfono')}
-            </div>
+    <form id={formId} onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        {field('name', 'Nombre completo', 'text', true)}
+        {!isEdit && field('email', 'Email', 'email', true)}
+        {!isEdit && field('password', 'Contraseña', 'password', true)}
+        {field('firstName', 'Primer nombre')}
+        {field('lastName', 'Apellido')}
+        {field('phone', 'Teléfono')}
+      </div>
 
-            {/* Status */}
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={form.isActive}
-                onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
-                className="h-4 w-4"
-              />
-              <Label htmlFor="isActive">Usuario activo</Label>
-            </div>
+      {/* Status */}
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          id="isActive"
+          checked={form.isActive}
+          onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+          className="h-4 w-4"
+        />
+        <Label htmlFor="isActive">Usuario activo</Label>
+      </div>
 
-            {/* Roles (only for create) */}
-            {!isEdit && roles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Roles asignados</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {roles.map((role: Role) => (
-                    <label
-                      key={role.id}
-                      className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                        form.roleIds.includes(role.id)
-                          ? 'bg-blue-50 border-blue-300'
-                          : 'bg-white hover:bg-gray-50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={form.roleIds.includes(role.id)}
-                        onChange={() => toggleRole(role.id)}
-                        className="h-4 w-4"
-                      />
-                      <div>
-                        <p className="text-sm font-medium">{role.name}</p>
-                        <p className="text-xs text-tertiary">{role.description}</p>
-                      </div>
-                    </label>
-                  ))}
+      {/* Roles (only for create) */}
+      {!isEdit && roles.length > 0 && (
+        <div className="space-y-2">
+          <Label>Roles asignados</Label>
+          <div className="grid grid-cols-1 gap-2">
+            {roles.map((role: Role) => (
+              <label
+                key={role.id}
+                className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+                  form.roleIds.includes(role.id)
+                    ? 'bg-blue-50 border-blue-300'
+                    : 'bg-white hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={form.roleIds.includes(role.id)}
+                  onChange={() => toggleRole(role.id)}
+                  className="h-4 w-4"
+                />
+                <div>
+                  <p className="text-sm font-medium">{role.name}</p>
+                  <p className="text-xs text-tertiary">{role.description}</p>
                 </div>
-              </div>
-            )}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear usuario'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+      {/* Buttons — only shown in legacy (non-formId) mode */}
+      {!formId && (
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear usuario'}
+          </Button>
+        </div>
+      )}
+    </form>
   );
 }
