@@ -101,6 +101,15 @@ describe('UsersService', () => {
         NotFoundException,
       );
     });
+
+    it('should throw NotFoundException for soft-deleted user', async () => {
+      const deletedUser = { ...mockUser, deleted_at: new Date() } as User;
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(deletedUser);
+
+      await expect(service.findById(userId, companyId)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   describe('create', () => {

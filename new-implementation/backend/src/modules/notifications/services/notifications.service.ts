@@ -41,7 +41,10 @@ export class NotificationsService {
     const [data, total] = await qb.getManyAndCount();
 
     const unreadCount = await this.notificationRepo.count({
-      where: { companyId, isRead: false },
+      where: [
+        { companyId, userId, isRead: false },
+        { companyId, userId: null, isRead: false },
+      ],
     });
 
     return {

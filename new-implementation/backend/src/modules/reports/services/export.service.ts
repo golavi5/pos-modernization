@@ -81,7 +81,7 @@ export class ExportService {
         const value = row[header];
         if (
           typeof value === 'string' &&
-          (value.includes(',') || value.includes('"'))
+          (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r'))
         ) {
           return `"${value.replace(/"/g, '""')}"`;
         }
