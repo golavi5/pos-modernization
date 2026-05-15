@@ -92,6 +92,7 @@ export interface CreateLocationDto {
 export interface StockQueryParams {
   page?: number;
   pageSize?: number;
+  search?: string;
   warehouse_id?: string;
   product_id?: string;
   low_stock?: boolean;

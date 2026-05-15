@@ -35,14 +35,22 @@ export default function UsersPage() {
 
   const handleAssignRoles = async (roleIds: string[]) => {
     if (!assignRolesTarget) return;
-    await assignRoles.mutateAsync({ id: assignRolesTarget.id, dto: { roleIds } });
-    setAssignRolesTarget(null);
+    try {
+      await assignRoles.mutateAsync({ id: assignRolesTarget.id, dto: { roleIds } });
+      setAssignRolesTarget(null);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleResetPassword = async (newPassword: string) => {
     if (!resetPasswordTarget) return;
-    await resetPassword.mutateAsync({ id: resetPasswordTarget.id, dto: { newPassword } });
-    setResetPasswordTarget(null);
+    try {
+      await resetPassword.mutateAsync({ id: resetPasswordTarget.id, dto: { newPassword } });
+      setResetPasswordTarget(null);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleToggleStatus = async (user: UserResponse) => {

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateCustomer, useUpdateCustomer } from '@/hooks/useCustomers';
 import type { Customer, CreateCustomerDto } from '@/types/customer';
+import { formatCOP } from '@/lib/utils';
 
 interface CustomerFormProps {
   customer?: Customer;
@@ -170,11 +171,7 @@ export function CustomerForm({
             <div>
               <span className="text-blue-700">Total compras:</span>
               <span className="ml-2 font-semibold text-blue-900">
-                {new Intl.NumberFormat('es-CO', {
-                  style: 'currency',
-                  currency: 'COP',
-                  minimumFractionDigits: 0,
-                }).format(customer.total_purchases)}
+                {formatCOP(customer.total_purchases)}
               </span>
             </div>
           </div>

@@ -24,6 +24,7 @@ export const inventoryApi = {
 
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.pageSize) searchParams.append('pageSize', params.pageSize.toString());
+    if (params?.search) searchParams.append('search', params.search);
     if (params?.warehouse_id) searchParams.append('warehouse_id', params.warehouse_id);
     if (params?.product_id) searchParams.append('product_id', params.product_id);
     if (params?.low_stock) searchParams.append('low_stock', params.low_stock.toString());

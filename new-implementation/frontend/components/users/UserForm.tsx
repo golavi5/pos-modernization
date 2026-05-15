@@ -121,13 +121,7 @@ export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoadin
   const field = (id: string, label: string, type = 'text', required = false) => (
     <div className="space-y-1">
       <Label htmlFor={id}>{label}{required && <span className="text-red-500 ml-1">*</span>}</Label>
-      <Input
-        id={id}
-        type={type}
-        value={(form as Record<string, unknown>)[id] as string}
-        onChange={(e) => setForm((prev) => ({ ...prev, [id]: e.target.value }))}
-        className={errors[id] ? 'border-red-500' : ''}
-      />
+      <Input id={id} type={type} value={(form as Record<string, unknown>)[id] as string} onChange={(e) => setForm((prev) => ({ ...prev, [id]: e.target.value }))} className={errors[id] ? 'border-red-500' : ''} />
       {errors[id] && <p className="text-xs text-red-500">{errors[id]}</p>}
     </div>
   );

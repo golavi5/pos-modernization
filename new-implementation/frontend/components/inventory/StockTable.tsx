@@ -18,16 +18,9 @@ interface StockTableProps {
 export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLoadingProp }: StockTableProps) {
   const queryEnabled = search !== undefined;
   const { data: stockData, isLoading: isLoadingQuery } = useStock(
-    queryEnabled ? { page: 1, pageSize: 50 } : undefined
+    queryEnabled ? { page: 1, pageSize: 50, search: search || undefined } : undefined
   );
-  // Client-side filter by product name when search is active
-  const rawStock = queryEnabled ? (stockData?.data ?? []) : (stockProp ?? []);
-  const stock = queryEnabled && search
-    ? rawStock.filter((item) =>
-        (item.product_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
-        (item.product_sku ?? '').toLowerCase().includes(search.toLowerCase())
-      )
-    : rawStock;
+  const stock = queryEnabled ? (stockData?.data ?? []) : (stockProp ?? []);
   const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);
   const getStockStatus = (item: StockLevel) => {
     if (item.quantity === 0) {
