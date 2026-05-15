@@ -3,23 +3,20 @@
 import { Pencil, Trash2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
 import type { Product } from '@/types/product';
 
 interface ProductsTableProps {
-  products: Product[];
+  search?: string;
   onEdit: (product: Product) => void;
-  onDelete: (product: Product) => void;
-  onView: (product: Product) => void;
-  isLoading?: boolean;
 }
 
-export function ProductsTable({
-  products,
-  onEdit,
-  onDelete,
-  onView,
-  isLoading,
-}: ProductsTableProps) {
+export function ProductsTable({ search, onEdit }: ProductsTableProps) {
+  const { data: productsData, isLoading } = useProducts({ search, page: 1, pageSize: 50 });
+  const deleteMutation = useDeleteProduct();
+
+  const products: Product[] = productsData?.data ?? [];
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -38,12 +35,18 @@ export function ProductsTable({
     return <Badge variant="success">En stock</Badge>;
   };
 
+  const handleDelete = async (product: Product) => {
+    if (window.confirm(`¿Eliminar "${product.name}"?`)) {
+      await deleteMutation.mutateAsync(product.id);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="animate-pulse">
-        <div className="h-12 bg-gray-200 rounded mb-4"></div>
-        <div className="h-12 bg-gray-200 rounded mb-4"></div>
-        <div className="h-12 bg-gray-200 rounded mb-4"></div>
+      <div className="animate-pulse space-y-2 p-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-12 bg-muted rounded" />
+        ))}
       </div>
     );
   }
@@ -51,9 +54,9 @@ export function ProductsTable({
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-tertiary text-lg">No se encontraron productos</p>
-        <p className="text-quaternary text-sm mt-2">
-          Intenta ajustar los filtros o crear un nuevo producto
+        <p className="text-muted-foreground text-lg">No se encontraron productos</p>
+        <p className="text-muted-foreground/70 text-sm mt-2">
+          Intenta ajustar la búsqueda o crear un nuevo producto
         </p>
       </div>
     );
@@ -63,21 +66,21 @@ export function ProductsTable({
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left p-4 font-semibold text-secondary">Producto</th>
-            <th className="text-left p-4 font-semibold text-secondary">SKU</th>
-            <th className="text-left p-4 font-semibold text-secondary">Categoría</th>
-            <th className="text-right p-4 font-semibold text-secondary">Precio</th>
-            <th className="text-center p-4 font-semibold text-secondary">Stock</th>
-            <th className="text-center p-4 font-semibold text-secondary">Estado</th>
-            <th className="text-center p-4 font-semibold text-secondary">Acciones</th>
+          <tr className="border-b border-border bg-muted/50">
+            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">Producto</th>
+            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">SKU</th>
+            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">Categoría</th>
+            <th className="text-right p-4 font-semibold text-muted-foreground text-sm">Precio</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">Stock</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">Estado</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {products.map((product) => (
             <tr
               key={product.id}
-              className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+              className="border-b border-border hover:bg-muted/30 transition-colors"
             >
               <td className="p-4">
                 <div className="flex items-center gap-3">
@@ -88,14 +91,14 @@ export function ProductsTable({
                       className="w-10 h-10 rounded object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center">
-                      <span className="text-quaternary text-xs">IMG</span>
+                    <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                      <span className="text-muted-foreground text-xs">IMG</span>
                     </div>
                   )}
                   <div>
-                    <div className="font-medium ">{product.name}</div>
+                    <div className="font-medium">{product.name}</div>
                     {product.description && (
-                      <div className="text-sm text-tertiary truncate max-w-xs">
+                      <div className="text-sm text-muted-foreground truncate max-w-xs">
                         {product.description}
                       </div>
                     )}
@@ -103,25 +106,21 @@ export function ProductsTable({
                 </div>
               </td>
               <td className="p-4">
-                <span className="font-mono text-sm text-secondary">{product.sku}</span>
+                <span className="font-mono text-sm text-muted-foreground">{product.sku}</span>
               </td>
               <td className="p-4">
-                <span className="text-sm text-secondary">
+                <span className="text-sm text-muted-foreground">
                   {product.category || '-'}
                 </span>
               </td>
               <td className="p-4 text-right">
-                <span className="font-semibold ">
-                  {formatCurrency(product.price)}
-                </span>
+                <span className="font-semibold">{formatCurrency(product.price)}</span>
               </td>
               <td className="p-4 text-center">
                 <div>
-                  <span className="font-semibold ">
-                    {product.stock_quantity}
-                  </span>
+                  <span className="font-semibold">{product.stock_quantity}</span>
                   {product.unit_of_measure && (
-                    <span className="text-sm text-tertiary ml-1">
+                    <span className="text-sm text-muted-foreground ml-1">
                       {product.unit_of_measure}
                     </span>
                   )}
@@ -140,14 +139,6 @@ export function ProductsTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onView(product)}
-                    title="Ver detalles"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
                     onClick={() => onEdit(product)}
                     title="Editar"
                   >
@@ -156,7 +147,7 @@ export function ProductsTable({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onDelete(product)}
+                    onClick={() => handleDelete(product)}
                     title="Eliminar"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >

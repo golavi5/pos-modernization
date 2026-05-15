@@ -5,23 +5,39 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useCreateProduct, useUpdateProduct } from '@/hooks/useProducts';
 import type { Product, CreateProductDto } from '@/types/product';
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (data: CreateProductDto) => void;
-  onCancel: () => void;
+  /** Form element id — allows an external submit button via `form={formId}` */
+  formId?: string;
+  /** Called after a successful create/update when using formId mode */
+  onSuccess?: () => void;
+  /** Legacy: called with form data (used when the page owns the mutation) */
+  onSubmit?: (data: CreateProductDto) => void;
+  /** Legacy: called on cancel (used when the page owns the mutation) */
+  onCancel?: () => void;
   isLoading?: boolean;
 }
 
 export function ProductForm({
   product,
+  formId,
+  onSuccess,
   onSubmit,
   onCancel,
-  isLoading,
+  isLoading: isLoadingProp,
 }: ProductFormProps) {
   const t = useTranslations('products');
   const tCommon = useTranslations('common');
+
+  // Internal mutations used when formId/onSuccess pattern is active
+  const createMutation = useCreateProduct();
+  const updateMutation = useUpdateProduct();
+  const isLoadingInternal = createMutation.isPending || updateMutation.isPending;
+  const isLoading = isLoadingProp ?? (formId ? isLoadingInternal : false);
+
   const [formData, setFormData] = useState<CreateProductDto>({
     name: '',
     description: '',
@@ -62,13 +78,28 @@ export function ProductForm({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (onSubmit) {
+      // Legacy mode: parent owns the mutation
+      onSubmit(formData);
+      return;
+    }
+    // formId/onSuccess mode: component owns the mutation
+    try {
+      if (product) {
+        await updateMutation.mutateAsync({ id: product.id, data: formData });
+      } else {
+        await createMutation.mutateAsync(formData);
+      }
+      onSuccess?.();
+    } catch (err) {
+      console.error('ProductForm submit error:', err);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Name */}
         <div className="md:col-span-2">
@@ -275,15 +306,17 @@ export function ProductForm({
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-          {tCommon('cancel')}
-        </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? tCommon('saving') : product ? tCommon('update') : tCommon('create')}
-        </Button>
-      </div>
+      {/* Buttons — only shown in legacy (non-formId) mode */}
+      {!formId && (
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+            {tCommon('cancel')}
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? tCommon('saving') : product ? tCommon('update') : tCommon('create')}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
