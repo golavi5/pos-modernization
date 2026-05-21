@@ -1,0 +1,41 @@
+# Maps SPEC filename patterns to module IDs from SPEC-001.
+# Used by Kairos discoveryMode=auto to assign each per-feature SPEC to a
+# module declared in the master design doc.
+#
+# Schema (enforced by src/tools/parser/module-mapping.ts):
+#   default: <module-id>                   # fallback when no pattern matches
+#   mappings:
+#     <module-id>:
+#       - <glob>                            # matched against SPEC filename only
+#       - <glob>
+#
+# Patterns are minimatch globs against the SPEC filename (NOT a path).
+# First match wins, in iteration order of `mappings`.
+
+default: M2                                 # unmatched SPECs go to backend
+
+mappings:
+  M1:                                       # INFRA: Docker, MySQL, Caddy, deploy
+    - "SPEC-*-infra*.md"
+    - "SPEC-*-docker*.md"
+    - "SPEC-*-deploy*.md"
+    - "SPEC-*-mysql*.md"
+    - "SPEC-*-traefik*.md"
+    - "SPEC-*-caddy*.md"
+
+  M2:                                       # BACK: NestJS API
+    - "SPEC-*-backend*.md"
+    - "SPEC-*-api*.md"
+    - "SPEC-*-nestjs*.md"
+    - "SPEC-*-back-*.md"
+
+  M3:                                       # FRONT: Next.js UI
+    - "SPEC-*-frontend*.md"
+    - "SPEC-*-ui*.md"
+    - "SPEC-*-nextjs*.md"
+    - "SPEC-*-front-*.md"
+
+  M4:                                       # MIGR: migration from legacy
+    - "SPEC-*-migrate*.md"
+    - "SPEC-*-legacy*.md"
+    - "SPEC-*-parity*.md"
