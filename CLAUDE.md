@@ -33,10 +33,10 @@ npm run lint
 ### Frontend (Next.js)
 ```bash
 cd new-implementation/frontend
-npm run dev                   # port 3000 (standalone dev server)
+npm run dev                   # port 3000 — collides with backend. Use `PORT=3001 npm run dev` when running both natively.
 npm run build
 npm run lint
-npm run test:e2e              # Playwright (headless)
+npm run test:e2e              # Playwright (headless) — specs in `frontend/tests/e2e/`
 npm run test:e2e:ui           # Playwright UI mode
 npm run test:e2e:headed
 ```
@@ -67,6 +67,7 @@ NestJS module-per-domain pattern:
 | Module | Domain |
 |--------|--------|
 | `modules/auth` | JWT auth, RBAC, user entities |
+| `modules/companies` | Tenant (company) management |
 | `modules/products` | Products + categories |
 | `modules/sales` | Orders + payments |
 | `modules/customers` | Customer management |
@@ -149,6 +150,15 @@ MySQL Docker port is `3308` on the host (maps to 3306 inside).
 - **Feature structure:** Each domain follows the same pattern in both frontend and backend — don't introduce new patterns without good reason.
 - **TypeORM `synchronize`:** Never enable in production. Schema changes go through `database/schema.sql`.
 - **RBAC:** Use decorators from `modules/auth/decorators/` to protect backend routes. Frontend should also guard UI based on user roles from `authStore`.
+
+---
+
+## Project Docs
+
+- `docs/specs/SPEC-001-pos-modernization.md` — master spec (Kairos Plane sync). Active source of truth for scope decisions.
+- `docs/superpowers/plans/` — implementation plans from the brainstorming/planning workflow.
+- `new-implementation/DEPLOYMENT-COOLIFY.md` — production deployment notes (Coolify, not raw docker compose).
+- `new-implementation/frontend/i18n-request.ts` — next-intl 3.x request config (locale resolution lives here, not in `next.config.js`).
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
