@@ -1,4 +1,5 @@
 # Frontend Redesign — Design Spec
+**Issue:** POS-FRONT-001  
 **Date:** 2026-05-15  
 **Status:** Approved  
 **Scope:** Full app redesign — desktop-first, cashier-optimized

@@ -1,5 +1,8 @@
 # M4 — Legacy Migration: Parity-Validation Design
 
+**Issue:** POS-MIGR-001
+**Status:** Approved
+
 - **Spec ID:** 2026-05-21-m4-legacy-migration
 - **Module:** M4 (MIGR) of SPEC-001
 - **Status:** approved
