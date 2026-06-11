@@ -39,3 +39,8 @@ mappings:
     - "SPEC-*-migrate*.md"
     - "SPEC-*-legacy*.md"
     - "SPEC-*-parity*.md"
+
+  M5:                                       # FISC: fiscal platform & accounting agent
+    - "SPEC-FISC-*.md"
+    - "SPEC-*-fiscal*.md"
+    - "SPEC-*-dian*.md"

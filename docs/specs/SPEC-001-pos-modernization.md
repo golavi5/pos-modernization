@@ -19,7 +19,7 @@ version: "1.0"
 # ============================================================
 plane:
   workspace: gor                       # same Plane workspace as Kairos
-  project_id: null                     # null = Kairos will create it
+  project_id: "ff10b5ea-863d-4b34-9da8-039ecb47a0bf"   # existing Plane project, adopted (SPEC-006 §3.3 bootstrap)
   project_name: "POS Modernization"
   project_identifier: POS              # Plane project prefix
   description: "Full-stack POS replacing legacy .NET apps — Next.js + NestJS + MySQL"
@@ -66,6 +66,19 @@ modules:
       Data migration scripts, parity testing, gradual cutover plan for the
       legacy .NET stack in `legacy-implementations/`.
     priority: medium
+    target_date: null
+    status: planned
+
+  - id: M5
+    code: FISC
+    name: "Fiscal Platform & Accounting Agent"
+    description: >
+      New bounded context (DESIGN-001, 2026-06-10): own DIAN emission engine
+      behind EmissionPort (Plemsi bridge + direct adapter), reception via
+      email ingestion, ledger (sales/purchases books, VAT, retefuente),
+      tenant fiscal profiles, Wira accounting domain pack. Shifts the repo
+      identity from POS to Automatizate platform (rename pending, OQ-5).
+    priority: high
     target_date: null
     status: planned
 
