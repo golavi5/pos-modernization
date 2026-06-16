@@ -2,6 +2,13 @@
 -- Version: 1.0
 -- Created: 2026-02-13
 -- Description: Complete database schema for POS system with user management, sales, inventory, and reporting
+--
+-- ⚠️  SUPERSEDED — NOT the source of truth. The production schema is owned by
+--     TypeORM migrations (backend/src/database/migrations/), generated from the
+--     entities. This file is historical and DIVERGES from the running schema
+--     (different table names e.g. categories→product_categories, warehouse→
+--     warehouses, no notifications table; extra designed tables not yet modelled).
+--     Do not load it on deploy. Kept for reference only. See SPEC-CUT-001 B-05/B-06.
 
 SET FOREIGN_KEY_CHECKS=0;
 

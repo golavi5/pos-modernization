@@ -73,12 +73,34 @@ JWT_EXPIRES_IN=1h
 JWT_REFRESH_SECRET=<generar: openssl rand -base64 48>
 JWT_REFRESH_EXPIRES_IN=7d
 CORS_ORIGINS=https://app.tu-dominio.com
+DB_RUN_MIGRATIONS=true
 ```
 
 > 💡 Generar secretos seguros:
 > ```bash
 > openssl rand -base64 48
 > ```
+
+> ⚠️ El backend valida estas variables al arrancar en `NODE_ENV=production`:
+> falla de inmediato si `JWT_SECRET`, `JWT_REFRESH_SECRET`, `DB_PASSWORD` o
+> `CORS_ORIGINS` faltan o siguen con el placeholder `CHANGE_ME...`.
+
+### Migraciones de base de datos (esquema)
+
+El esquema de producción lo gestionan **migraciones TypeORM**
+(`backend/src/database/migrations/`), generadas a partir de las entidades —
+`synchronize` está desactivado en producción. `database/schema.sql` quedó
+**obsoleto** y no debe cargarse (ver SPEC-CUT-001 B-05).
+
+Con `DB_RUN_MIGRATIONS=true` (arriba), el backend ejecuta las migraciones
+pendientes **al arrancar** — no se requiere paso aparte. Es la opción
+recomendada para el despliegue de una sola instancia en Coolify.
+
+Alternativa (correr migraciones como release command, sin auto-run):
+```bash
+# omitir DB_RUN_MIGRATIONS y, tras el build, ejecutar:
+npm run migration:run:prod   # = typeorm migration:run -d dist/database/data-source.js
+```
 
 ✅ Click **Deploy**
 
@@ -244,9 +266,13 @@ docker exec -it pos_mysql mysql -u pos_user -p pos_db
 - Verifica que `output: 'standalone'` esté en `next.config.js`
 - Asegúrate de pasar `NEXT_PUBLIC_API_URL` como Build Arg además de env var
 
-### TypeORM no crea las tablas
-- Verifica que `synchronize: true` esté activo en `app.module.ts` (solo para dev/primera vez)
-- Para producción: usar `synchronize: false` y correr migrations
+### No se crean las tablas en producción
+- En producción `synchronize` está **desactivado** a propósito; el esquema lo
+  crean las migraciones. Verifica que `DB_RUN_MIGRATIONS=true` esté en las env
+  vars del backend (o corre `npm run migration:run:prod` como release command).
+- Revisa los logs de arranque del backend: debe aparecer
+  `Migration InitialSchema… has been executed successfully` en el primer deploy.
+- No cargues `database/schema.sql` (obsoleto/divergente).
 
 ---
 

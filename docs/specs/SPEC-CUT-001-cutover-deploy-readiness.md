@@ -42,39 +42,46 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 
 ## 3. Remaining blockers (must fix before go-live)
 
-### B-05 — No production database initialization path  🔴 *the headline gap*
-- **Evidence:** `backend/src/app.module.ts:28` sets `synchronize: false` in prod
-  (correct), but there are **no migrations** (no `migrations/` dir, no
-  `typeorm` npm scripts). `docker-compose.yml:22` loads `schema.sql` via
-  `docker-entrypoint-initdb.d` **(dev MySQL only)**; the Coolify guide
-  (`DEPLOYMENT-COOLIFY.md:249`) says "para producción … correr migrations" — a
-  process that does not exist. `seed-data.sql` and `constraints-and-indexes.sql`
-  are never run in any deploy path.
-- **Impact:** fresh prod DB is empty → no tables → no login → system
-  non-functional.
-- **Fix (decision required):**
-  1. **(Recommended)** Adopt TypeORM migrations: add `data-source.ts`, the
-     `typeorm` + `migration:run` npm scripts, generate an initial migration
-     from entities, run it on deploy (release step / container entrypoint).
-     Becomes the long-term schema-change story.
-  2. Or: document an explicit, ordered `schema.sql` → `constraints-and-indexes.sql`
-     manual load step in the Coolify guide (faster, but no forward evolution path).
-- **Acceptance:** a clean Coolify MySQL goes from empty → fully migrated by a
-  documented, repeatable command; verified in the staging dry-run.
+### B-05 — Production database initialization path  ✅ *DONE (TypeORM migrations)*
+- **Decision:** adopted TypeORM migrations. The **initial migration is generated
+  from the entities**, not from `database/schema.sql` — because the app provably
+  runs on the entity schema (dev `synchronize:true`), while `schema.sql` is
+  divergent (different table names: `categories`→`product_categories`,
+  `warehouse`→`warehouses`; no `notifications` table at all) and, critically,
+  declares several columns the app **writes to** as `GENERATED … STORED`
+  (`order_items.subtotal`/`tax_amount`, `orders.remaining_balance`,
+  `products.margin_percent`). A `schema.sql`-mirrored migration would reject the
+  sale write path (MySQL error 3105). Generating from entities sidesteps that and
+  guarantees the schema matches the running code.
+- **Implementation:** `backend/src/database/data-source.ts` (shared
+  `dataSourceOptions`, reused by the app and CLI; `synchronize:false`,
+  `migrationsRun` gated on `DB_RUN_MIGRATIONS`); initial migration
+  `database/migrations/*-InitialSchema.ts` (15 tables incl. the `user_roles`
+  join); npm scripts `migration:generate|run|revert|run:prod`; `app.module.ts`
+  consumes the shared options; Coolify runs migrations on boot via
+  `DB_RUN_MIGRATIONS=true`; CI step fixed; `database/schema.sql` marked
+  superseded; compose preload replaced with migrations-on-boot.
+- **Verified** against a real MySQL 8: applies (15 tables + tracking row),
+  idempotent re-run, **full sale-chain write succeeds in prod mode** (the
+  generated-column risk), reverts cleanly, and `schema:log` shows **zero drift**
+  between the migration and the entities. Unit suite 158/158.
 
-### B-06 — Schema ↔ entity drift
-- **Evidence:** `database/schema.sql` defines ~21 tables; backend has ~14
-  entities. Unmapped: `permissions`, `user_roles` (join, may be intentional),
-  `role_permissions`, `customer_addresses`, `customer_contacts`, `audit_log`,
-  `reports`.
-- **Impact:** with `synchronize:false`, any code path touching an unmapped table
-  fails at runtime; manual `schema.sql` load creates orphan tables with no ORM
-  alignment.
-- **Fix:** audit each — generate the entity, or confirm it's intentionally
-  external (raw SQL / join-only) and document why. Resolve **before** B-05's
-  initial migration is generated, so the migration is authoritative.
-- **Acceptance:** entities and the initialized schema agree (a one-time
-  `synchronize:true` against a scratch DB produces **no** diff).
+### B-06 — Schema ↔ entity drift (residual, deferred)
+- **Decision (from B-05):** production schema = **entity-derived**. The 8 designed
+  tables no code uses yet — `permissions`, `role_permissions`,
+  `customer_addresses`, `customer_contacts`, `audit_log`, `reports`,
+  `transactions`, `invoices` — are intentionally **deferred** (grep confirmed no
+  raw-SQL usage). Add each per-feature, with its entity, in a future migration.
+- **Residual drifts worth fixing at cutover (not blockers):**
+  - `products.sku` is **globally unique** (entity `unique:true`) rather than
+    company-scoped (`uk_company_sku`) → two tenants can't share a SKU. Real
+    multi-tenant constraint bug, pre-existing in the entity.
+  - `customers.email` is `NOT NULL UNIQUE` in the entity — blocks customers
+    without email / duplicate-email tenants.
+  - Duplicate unique indexes on `users.email` and `settings.companyId` (named
+    `@Index` + column `unique:true`); harmless, cosmetic.
+- **Acceptance:** each deferred table either has an entity + migration or a
+  documented reason; the sku/email constraints are decided (scoped vs global).
 
 ### B-07 — Mocked customer data in the sales path
 - **Evidence:** `frontend/components/sales/CustomerSelect.tsx` uses a hardcoded
