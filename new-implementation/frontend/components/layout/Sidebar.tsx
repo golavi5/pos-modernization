@@ -15,6 +15,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { canAccessRoute } from '@/lib/auth/roles';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -70,6 +71,11 @@ export function Sidebar() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
 
+  const visibleNav = NAV_ITEMS.filter((item) =>
+    canAccessRoute(item.href, user?.roles),
+  );
+  const canSeeSettings = canAccessRoute('/settings', user?.roles);
+
   const getInitials = (name: string) =>
     name.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2);
 
@@ -90,7 +96,7 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-1 p-2 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, icon, label }) => (
+        {visibleNav.map(({ href, icon, label }) => (
           <NavItem
             key={href}
             href={href}
@@ -103,12 +109,14 @@ export function Sidebar() {
 
       {/* Settings + Avatar */}
       <div className="p-2 border-t border-border flex flex-col gap-1">
-        <NavItem
-          href="/settings"
-          icon={Settings}
-          label="Configuración"
-          active={pathname.startsWith('/settings')}
-        />
+        {canSeeSettings && (
+          <NavItem
+            href="/settings"
+            icon={Settings}
+            label="Configuración"
+            active={pathname.startsWith('/settings')}
+          />
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
