@@ -155,6 +155,9 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 
 ## 5. Go-live runbook (staging dry-run gate)
 
+> **Executable checklist:** [`new-implementation/STAGING-DRY-RUN.md`](../../new-implementation/STAGING-DRY-RUN.md)
+> — concrete commands + pass-gates + sign-off. The summary below is the outline.
+
 Run the entire sequence on a **staging** Coolify instance; all steps green = go.
 
 1. Provision MySQL (no exposed port); generate strong `DB_PASSWORD`.
