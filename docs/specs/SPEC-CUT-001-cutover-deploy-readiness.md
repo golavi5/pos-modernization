@@ -101,15 +101,23 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 - **Acceptance:** `docker compose up -d` boots all three services from a clean
   checkout + documented env.
 
-### B-09 — Frontend route role-based access control
-- **Evidence:** `frontend/app/(panel)/layout.tsx` guards only on
-  `isAuthenticated`; roles (`admin`/`manager`/`staff`/`cashier`) exist but are
-  unenforced — a cashier can open `/users` and `/settings`.
-- **Impact:** privilege escalation in the UI (backend `@Roles` still guards the
-  API, so this is UI exposure, not data breach — keep as blocker for go-live
-  posture).
-- **Fix:** role guard per route group; hide nav items by role.
-- **Acceptance:** a cashier session cannot reach `/users` or `/settings`.
+### B-09 — Frontend route role-based access control  ✅ *DONE*
+- **Was:** `(panel)/layout.tsx` guarded only on `isAuthenticated`; roles existed
+  but were unenforced — a cashier could open `/users` and `/settings`.
+- **Fix:** central `lib/auth/roles.ts` policy (`ROUTE_ROLES`) mirroring each
+  module's backend `@Roles` read access, plus an admin/superadmin bypass.
+  `(panel)/layout.tsx` enforces it (redirect → `/dashboard`), gated on `user`
+  being hydrated to avoid bouncing allowed users during Zustand rehydration.
+  `Sidebar.tsx` hides nav items + the Settings link by role.
+- **Verified (by logic, not test — no frontend unit runner):** cashier
+  (`roles:['cashier']`) → `/users` and `/settings` both resolve to
+  `['admin','manager']` → denied → redirected to `/dashboard`; keeps
+  `/sales`/`/customers`/`/dashboard`/`/products`. Frontend `tsc --noEmit` clean.
+- **Backend `RolesGuard` remains the real security boundary** — this is UX gating.
+- **Deferred nicety:** edge-level (middleware) role gating to avoid a brief
+  restricted-shell flash before client redirect. Low value (the shell renders no
+  data — API 403s), real risk (edge JWT parsing + legacy non-JWT cookies). Not
+  done by choice.
 
 ---
 
