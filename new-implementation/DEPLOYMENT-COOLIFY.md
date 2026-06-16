@@ -174,6 +174,45 @@ SHOW TABLES;
 
 ---
 
+## Backups, restauración y rollback
+
+### Backups (primario: Coolify nativo)
+En Coolify → `pos-mysql` → **Backups**: programa backups automáticos (cron) y,
+de preferencia, destino **S3** off-host. Recomendado: diario + retención ≥ 7 días.
+Verifica periódicamente que un backup **restaura** (un backup sin restore probado
+no es un backup).
+
+### Backups (fallback portable / hosts sin Coolify)
+Scripts en [`scripts/`](./scripts) — conexión por las mismas env vars del backend
+(`DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME`):
+```bash
+# Backup → gzip con timestamp + poda por retención (RETENTION_DAYS, def. 7)
+DB_PASSWORD=*** BACKUP_DIR=/backups ./scripts/db-backup.sh
+
+# Cron diario 02:17 (evita el minuto :00)
+17 2 * * *  cd /opt/pos && DB_HOST=pos-mysql DB_USERNAME=pos_user \
+  DB_PASSWORD=*** DB_NAME=pos_db BACKUP_DIR=/backups ./scripts/db-backup.sh >> /var/log/pos-backup.log 2>&1
+```
+
+### Restauración (⚠️ destructiva)
+Restaura **primero en una base scratch** para validar el backup antes de tocar prod:
+```bash
+DB_PASSWORD=*** DB_NAME=pos_scratch ./scripts/db-restore.sh /backups/pos_db_YYYYMMDD-HHMMSS.sql.gz
+# tras validar, repetir con DB_NAME=pos_db (CONFIRM=yes para automatizar)
+```
+
+### Rollback de un deploy
+En Coolify → aplicación → **Deployments** → **Redeploy** del commit anterior.
+
+> ⚠️ **Las migraciones son forward-only.** Hacer rollback del *código* no revierte
+> el *esquema*. Si el commit anterior es incompatible con el esquema ya migrado:
+> 1. restaura el backup **previo a esa migración**, **o**
+> 2. añade y aplica una migración de reversa (`npm run migration:revert`) antes
+>    de bajar el código.
+> Para cambios de esquema riesgosos: backup **inmediatamente antes** del deploy.
+
+---
+
 ## Auto-deploy en cada push (GitHub Webhook)
 
 En Coolify → tu aplicación → **Webhooks**:
