@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 
 /**
  * Fail fast in production if required secrets/config are missing or still set
@@ -47,8 +48,10 @@ function validateProductionEnv() {
 async function bootstrap() {
   validateProductionEnv();
 
-  const app = await NestFactory.create(AppModule);
-  const logger = new Logger('Bootstrap');
+  // bufferLogs so early-boot logs aren't lost before the pino logger is wired.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const logger = app.get(Logger);
+  app.useLogger(logger);
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 

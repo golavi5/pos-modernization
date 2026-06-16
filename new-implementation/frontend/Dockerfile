@@ -24,6 +24,11 @@ FROM node:20-slim AS production
 WORKDIR /app
 
 ENV NODE_ENV=production
+# Next.js standalone server binds to $HOSTNAME; Docker sets that to the container
+# id, so it would listen only on the container IP and the localhost healthcheck
+# would fail. Bind to all interfaces and pin the port.
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
 # Install wget for healthcheck
 RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
