@@ -93,7 +93,17 @@
     "lowStockAlerts": "Low Stock Alerts",
     "itemsNeedRestock": "items need restock",
     "pendingOrders": "Pending Orders",
-    "awaitingShipment": "awaiting shipment"
+    "awaitingShipment": "awaiting shipment",
+    "recentSales": "Recent sales",
+    "customer": "Customer",
+    "total": "Total",
+    "status": "Status",
+    "noCustomer": "No customer",
+    "viewAll": "View all",
+    "statusPaid": "Paid",
+    "statusPending": "Pending",
+    "statusPartial": "Partial",
+    "statusRefunded": "Refunded"
   },
   "sales": {
     "title": "Sales",
@@ -145,7 +155,7 @@
   },
   "products": {
     "title": "Products",
-    "description": "Manage your product catalog",
+    "description": "Description",
     "newProduct": "New Product",
     "totalProducts": "Total Products",
     "totalValue": "Total Value",
@@ -163,7 +173,6 @@
     "createError": "Error creating product",
     "productName": "Product name *",
     "productNamePlaceholder": "E.g.: Dell Inspiron 15 Laptop",
-    "description": "Description",
     "descriptionPlaceholder": "Product description...",
     "sku": "SKU *",
     "skuPlaceholder": "PRD-001",
@@ -204,7 +213,13 @@
     "productNotFound": "Product not found",
     "noDescription": "No description",
     "stockStatus": "Stock status",
-    "status": "Status"
+    "status": "Status",
+    "updateProductInfo": "Update product information",
+    "loadingCategories": "Loading categories...",
+    "categoryManagement": "Category Management",
+    "categoryNamePlaceholder": "Category name",
+    "categoryDescriptionPlaceholder": "Description (optional)",
+    "addCategory": "Add Category"
   },
   "customers": {
     "title": "Customers",
