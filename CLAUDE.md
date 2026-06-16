@@ -26,6 +26,10 @@ docker compose logs -f backend
 > `CHANGE_ME...`. The `env_file`s are `required: false`, so a missing file is a
 > clear runtime error, not a compose parse failure. Generate secrets with
 > `openssl rand -base64 48`.
+>
+> The DB starts **empty** (migrations only, no demo seed). Set
+> `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` (min 12) in `backend/.env`
+> so the backend creates the first admin on boot — otherwise no one can log in.
 
 ### Backend (NestJS)
 ```bash

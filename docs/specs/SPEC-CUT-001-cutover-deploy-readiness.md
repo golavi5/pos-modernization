@@ -143,7 +143,7 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 | S-01 | **CI is broken & ungated** | `.github/workflows/e2e-tests.yml:53` runs `npm run typeorm migration:run` (script doesn't exist). Add lint + unit + build gates; align Node 18→20 (Dockerfiles use 20). |
 | S-02 | **No observability** | Structured logging (Pino/Winston), error tracking (Sentry), richer `/health` (DB check). Backend `/health` exists; **frontend has none** — add one + a compose healthcheck for the frontend service. |
 | S-03 | **No backup / rollback** | `DEPLOYMENT-COOLIFY.md` documents neither. Add `mysqldump` cron + restore + redeploy-rollback steps. |
-| S-04 | **Weak seed / no bootstrap** | `seed-data.sql` ships `password123` admins. Add a first-run admin bootstrap (or documented secure-seed + forced password change); never seed demo users in prod. |
+| S-04 | ✅ **DONE — first-run admin bootstrap** | `BootstrapService` (`OnApplicationBootstrap`): on an **empty** users table, creates one company + `admin` role + admin user from `BOOTSTRAP_ADMIN_EMAIL`/`PASSWORD` (min 12) env, then never again; fail-safe (logs, never crashes boot). `seed-data.sql` marked dev-only. **Verified end-to-end:** fresh migrated DB → admin created → `POST /auth/login` → 200 + token with `roles:['admin']`; restart → no second admin. Backend 173/173. |
 | S-05 | **Committed `.env`** | `new-implementation/.env` is tracked with no `.gitignore`. Add ignore + scrub history; rotate any real secret. |
 | S-06 | **Weak password policy** | `auth.constants.ts`: `MIN_LENGTH:6`, all complexity off. Raise length, enable some complexity. |
 | S-07 | **Reports zero test coverage** | No `reports/**/*.spec.ts`; the B-01 tenant bug went uncaught. Add tenant-scoping tests. |
@@ -158,8 +158,11 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 Run the entire sequence on a **staging** Coolify instance; all steps green = go.
 
 1. Provision MySQL (no exposed port); generate strong `DB_PASSWORD`.
-2. Initialize schema via the **B-05** mechanism; load constraints; **no demo seed**.
-3. Bootstrap one admin (**S-04**).
+2. Schema runs automatically on first boot via `DB_RUN_MIGRATIONS=true` (**B-05**);
+   **no demo seed**.
+3. Set `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD` (min 12) so the backend
+   creates the first admin on boot (**S-04**) — confirm the
+   `Bootstrapped admin user "…"` log line on the first deploy.
 4. Deploy backend with full prod env (`JWT_SECRET`, `JWT_REFRESH_SECRET`,
    `CORS_ORIGINS`, …); confirm `validateProductionEnv()` passes and `/health` is green.
 5. Deploy frontend (`NEXT_PUBLIC_API_URL` → backend domain); frontend healthcheck green.

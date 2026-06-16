@@ -1,6 +1,12 @@
 -- POS Modernization - Initial Seed Data
 -- Version: 1.0
 -- Description: Sample data for development and testing
+--
+-- ⚠️  DEV/TEST ONLY — NEVER load in production. Contains demo users with the
+--     known password `password123`. Production gets its first admin from the
+--     env-driven boot bootstrap (BOOTSTRAP_ADMIN_*), not this file.
+--     See SPEC-CUT-001 S-04. Also note table names here are the legacy
+--     schema.sql names, which diverge from the entity/migration schema (B-05).
 
 -- ============================================
 -- INITIAL DATA SETUP

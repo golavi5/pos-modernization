@@ -14,6 +14,7 @@ import { UsersModule } from './modules/users/users.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { CompaniesModule } from './modules/companies/companies.module';
+import { BootstrapModule } from './modules/bootstrap/bootstrap.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { CompaniesModule } from './modules/companies/companies.module';
     NotificationsModule,
     SettingsModule,
     CompaniesModule,
+    BootstrapModule,
   ],
   controllers: [AppController],
   providers: [AppService],

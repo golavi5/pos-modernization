@@ -5,6 +5,8 @@
 #      → rellena DB_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, CORS_ORIGINS
 #        (el backend corre en NODE_ENV=production y FALLA si quedan en CHANGE_ME).
 #        Genera secretos: openssl rand -base64 48
+#      → rellena BOOTSTRAP_ADMIN_EMAIL/PASSWORD (min 12) para crear el primer
+#        admin en la base vacía — si no, nadie puede iniciar sesión.
 #   3. cp frontend/.env.local.example frontend/.env.local   (opcional)
 #   4. docker compose up -d
 # En Coolify se despliega cada servicio por separado (ver DEPLOYMENT-COOLIFY.md).
