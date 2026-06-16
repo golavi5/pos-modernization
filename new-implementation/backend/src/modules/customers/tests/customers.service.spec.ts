@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomersService } from '../customers.service';
 import { Customer } from '../customer.entity';
+import { Order } from '../../sales/entities/order.entity';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
@@ -37,6 +38,10 @@ describe('CustomersService', () => {
     createQueryBuilder: jest.fn(),
   };
 
+  const mockOrderRepository = {
+    find: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -44,6 +49,10 @@ describe('CustomersService', () => {
         {
           provide: getRepositoryToken(Customer),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(Order),
+          useValue: mockOrderRepository,
         },
       ],
     }).compile();
@@ -328,24 +337,6 @@ describe('CustomersService', () => {
     });
   });
 
-  describe('getPurchaseHistory', () => {
-    it('should return empty array (placeholder until sales integration)', async () => {
-      mockRepository.findOne.mockResolvedValue(mockCustomer);
-
-      const result = await service.getPurchaseHistory('customer-1', mockCompanyId, 10);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should throw NotFoundException if customer not found', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      await expect(
-        service.getPurchaseHistory('non-existent', mockCompanyId, 10),
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
   describe('updatePurchaseStats', () => {
     it('should update customer purchase stats', async () => {
       mockRepository.findOne.mockResolvedValue(mockCustomer);
@@ -371,6 +362,50 @@ describe('CustomersService', () => {
       await expect(
         service.updatePurchaseStats('non-existent', mockCompanyId, 100),
       ).resolves.not.toThrow();
+    });
+  });
+
+  describe('getPurchaseHistory', () => {
+    it('returns the customer orders mapped to history, scoped to the company', async () => {
+      mockRepository.findOne.mockResolvedValue(mockCustomer);
+      mockOrderRepository.find.mockResolvedValue([
+        {
+          id: 'order-1',
+          order_number: 'ORD-1',
+          total_amount: 120.5,
+          status: 'completed',
+          created_at: new Date('2026-02-10'),
+        },
+      ]);
+
+      const result = await service.getPurchaseHistory(
+        'customer-1',
+        mockCompanyId,
+        10,
+      );
+
+      expect(mockOrderRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { customer_id: 'customer-1', company_id: mockCompanyId },
+          take: 10,
+        }),
+      );
+      expect(result).toEqual([
+        expect.objectContaining({
+          id: 'order-1',
+          order_number: 'ORD-1',
+          total: 120.5,
+          status: 'completed',
+        }),
+      ]);
+    });
+
+    it('throws NotFoundException for an unknown customer', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      await expect(
+        service.getPurchaseHistory('nope', mockCompanyId, 10),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockOrderRepository.find).not.toHaveBeenCalled();
     });
   });
 });

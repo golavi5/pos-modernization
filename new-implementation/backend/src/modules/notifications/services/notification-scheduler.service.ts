@@ -1,8 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { NotificationsService } from './notifications.service';
-import { Notification } from '../entities/notification.entity';
+import {
+  Notification,
+  NotificationType,
+  NotificationPriority,
+} from '../entities/notification.entity';
+import { Product } from '../../products/entities/product.entity';
 
 /**
  * NotificationSchedulerService
@@ -23,21 +28,74 @@ export class NotificationSchedulerService {
     private readonly notificationsService: NotificationsService,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    @InjectRepository(Product)
+    private readonly productRepo: Repository<Product>,
   ) {}
 
   /**
-   * Check for low stock and generate notifications.
+   * Check for low stock and generate notifications for the company.
    * Call this manually or schedule with @Cron('0 * * * *') // every hour
+   *
+   * Dedupes against existing UNREAD low/out-of-stock notifications so repeated
+   * runs don't spam the same product. Returns how many low-stock products were
+   * found (`checked`) and how many new notifications were created (`notified`).
    */
-  async checkLowStock(companyId: string): Promise<{ checked: number; notified: number }> {
+  async checkLowStock(
+    companyId: string,
+  ): Promise<{ checked: number; notified: number }> {
     this.logger.log(`Checking low stock for company ${companyId}`);
 
-    // This query depends on StockLevel entity from inventory module
-    // For now, return a placeholder response
-    // In production, inject StockLevel repository and query it
-    
-    this.logger.log('Low stock check completed');
-    return { checked: 0, notified: 0 };
+    const products = await this.productRepo.find({
+      where: { company_id: companyId, is_active: true },
+    });
+    const lowStock = products.filter(
+      (p) => p.reorder_level > 0 && p.stock_quantity <= p.reorder_level,
+    );
+
+    // Skip products that already have an open (unread) stock alert.
+    const openAlerts = await this.notificationRepo.find({
+      where: {
+        companyId,
+        isRead: false,
+        type: In([NotificationType.LOW_STOCK, NotificationType.OUT_OF_STOCK]),
+      },
+    });
+    const alreadyAlerted = new Set(
+      openAlerts.map((n) => n.data?.productId).filter(Boolean),
+    );
+
+    let notified = 0;
+    for (const product of lowStock) {
+      if (alreadyAlerted.has(product.id)) continue;
+      const isCritical = product.stock_quantity === 0;
+      await this.notificationsService.create({
+        companyId,
+        type: isCritical
+          ? NotificationType.OUT_OF_STOCK
+          : NotificationType.LOW_STOCK,
+        priority: isCritical
+          ? NotificationPriority.CRITICAL
+          : NotificationPriority.HIGH,
+        title: isCritical
+          ? `⚠️ Sin stock: ${product.name}`
+          : `📦 Stock bajo: ${product.name}`,
+        message: isCritical
+          ? `El producto "${product.name}" (${product.sku}) se quedó sin stock.`
+          : `El producto "${product.name}" (${product.sku}) tiene ${product.stock_quantity} unidades (punto de reorden: ${product.reorder_level}).`,
+        data: {
+          productId: product.id,
+          sku: product.sku,
+          currentStock: product.stock_quantity,
+          reorderPoint: product.reorder_level,
+        },
+      });
+      notified++;
+    }
+
+    this.logger.log(
+      `Low stock check completed: ${lowStock.length} low, ${notified} notified`,
+    );
+    return { checked: lowStock.length, notified };
   }
 
   /**

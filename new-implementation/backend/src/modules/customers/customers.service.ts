@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThan, LessThan, Like, ILike } from 'typeorm';
 import { Customer } from './customer.entity';
+import { Order } from '../sales/entities/order.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CustomerQueryDto } from './dto/customer-query.dto';
@@ -14,6 +15,8 @@ export class CustomersService {
   constructor(
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
   ) {}
 
   /**
@@ -202,9 +205,19 @@ export class CustomersService {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
-    // TODO: Query sales table when sales module is integrated
-    // For now, return placeholder
-    return [];
+    const orders = await this.orderRepository.find({
+      where: { customer_id: id, company_id: companyId },
+      order: { order_date: 'DESC' },
+      take: limit,
+    });
+
+    return orders.map((order) => ({
+      id: order.id,
+      order_number: order.order_number,
+      total: Number(order.total_amount),
+      status: order.status,
+      created_at: order.created_at,
+    }));
   }
 
   /**
