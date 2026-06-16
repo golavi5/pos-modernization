@@ -91,15 +91,23 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 - **Acceptance:** customer selector lists DB customers; a sale persists the real
   `customer_id`.
 
-### B-08 — `backend/.env` missing for compose; PORT inconsistency
-- **Evidence:** `docker-compose.yml` references `env_file: ./backend/.env`
-  (absent → `docker compose up` fails); `main.ts` default port now `3000`, but
-  this must be explicit everywhere (Dockerfile `EXPOSE`, healthcheck, frontend
-  `NEXT_PUBLIC_API_URL`).
-- **Fix:** ship `backend/.env.example` → real `.env` for compose, or move vars
-  into the compose `environment:` block; pin `PORT=3000` consistently.
-- **Acceptance:** `docker compose up -d` boots all three services from a clean
-  checkout + documented env.
+### B-08 — compose env files / PORT  ✅ *DONE*
+- **Was:** `docker-compose.yml` referenced `env_file: ./backend/.env` and
+  `./frontend/.env.local` (both absent) → `docker compose up` hard-failed on a
+  missing-file parse error.
+- **Fix:** made both `env_file`s `required: false` (Compose long-form) so a
+  missing file is a clear runtime error (backend's prod env validation), not a
+  parse failure; pinned `PORT=3000` explicitly in the backend `environment:`;
+  added `DB_RUN_MIGRATIONS` to `backend/.env.example`; documented the one-time
+  `cp .env.example` setup in the compose header + `CLAUDE.md`. Secrets stay
+  out of git (`.env`/`.env.local` are gitignored; examples tracked).
+- **Verified:** `docker compose config` parses with both env files absent;
+  a real `docker compose up --build mysql backend` (test-only secrets) → both
+  **healthy**, migrations ran on boot, `/health`→OK. (Frontend image build not
+  exercised — its `NEXT_PUBLIC_API_URL` is build-arg baked, orthogonal to the
+  env-file fix.)
+- **Note:** the committed root `new-implementation/.env` (MySQL dev creds) is
+  left in place so compose boots out-of-box; scrubbing it is tracked as **S-05**.
 
 ### B-09 — Frontend route role-based access control  ✅ *DONE*
 - **Was:** `(panel)/layout.tsx` guarded only on `isAuthenticated`; roles existed

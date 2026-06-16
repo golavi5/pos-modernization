@@ -1,6 +1,13 @@
 # ── Para desarrollo local ──────────────────────────────────────────────────────
-# Uso: docker compose up -d
-# En Coolify se despliega cada servicio por separado.
+# Setup (una vez, antes de `docker compose up -d`):
+#   1. `.env` (raíz) ya trae las credenciales MYSQL_* para el contenedor MySQL.
+#   2. cp backend/.env.example backend/.env
+#      → rellena DB_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, CORS_ORIGINS
+#        (el backend corre en NODE_ENV=production y FALLA si quedan en CHANGE_ME).
+#        Genera secretos: openssl rand -base64 48
+#   3. cp frontend/.env.local.example frontend/.env.local   (opcional)
+#   4. docker compose up -d
+# En Coolify se despliega cada servicio por separado (ver DEPLOYMENT-COOLIFY.md).
 
 services:
   # ── MySQL ──────────────────────────────────────────────────────────────────
@@ -37,12 +44,17 @@ services:
     container_name: pos_backend
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      # Create from backend/.env.example (see header). Non-fatal if absent so
+      # `docker compose up` doesn't hard-error — the backend then fails fast with
+      # a clear "missing production env vars" message instead.
+      - path: ./backend/.env
+        required: false
     depends_on:
       mysql:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      PORT: "3000"
       DB_RUN_MIGRATIONS: "true"
     ports:
       - "3000:3000"
@@ -65,7 +77,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     env_file:
-      - ./frontend/.env.local
+      # Optional — NEXT_PUBLIC_API_URL is baked at build time via the build arg
+      # above, so the frontend runs without this file.
+      - path: ./frontend/.env.local
+        required: false
     depends_on:
       - backend
     environment:

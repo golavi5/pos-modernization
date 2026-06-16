@@ -15,10 +15,17 @@ POS Modernization — a full-stack Point of Sale system replacing legacy .NET de
 ### Full stack (local)
 ```bash
 cd new-implementation
+cp backend/.env.example backend/.env      # then fill real DB_PASSWORD/JWT_*/CORS_ORIGINS
+cp frontend/.env.local.example frontend/.env.local   # optional
 docker compose up -d          # starts MySQL (port 3308), backend (3000), frontend (3001)
 docker compose down
 docker compose logs -f backend
 ```
+> The backend runs in `NODE_ENV=production` under compose (dogfoods prod +
+> migrations-on-boot) and fails fast if secrets are missing or left as
+> `CHANGE_ME...`. The `env_file`s are `required: false`, so a missing file is a
+> clear runtime error, not a compose parse failure. Generate secrets with
+> `openssl rand -base64 48`.
 
 ### Backend (NestJS)
 ```bash
