@@ -23,11 +23,9 @@ export interface RegisterRequest {
   name: string;
 }
 
-export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  user: User;
-}
+// POST /auth/register returns the created user (no tokens — the user logs in
+// afterward). Was previously typed with dead snake_case token fields.
+export type AuthResponse = User;
 
 export interface RefreshTokenRequest {
   refreshToken: string;

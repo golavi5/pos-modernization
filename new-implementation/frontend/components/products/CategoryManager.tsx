@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useCategories, useCreateCategory } from '@/hooks/useCategories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export function CategoryManager() {
+  const t = useTranslations('products');
   const { data: categories, isLoading } = useCategories();
   const createCategory = useCreateCategory();
   const [newCategory, setNewCategory] = useState({ name: '', description: '' });
@@ -18,27 +20,27 @@ export function CategoryManager() {
     setNewCategory({ name: '', description: '' });
   };
 
-  if (isLoading) return <div>Loading categories...</div>;
+  if (isLoading) return <div>{t('loadingCategories')}</div>;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Category Management</CardTitle>
+        <CardTitle>{t('categoryManagement')}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div className="flex gap-2">
             <Input
-              placeholder="Category name"
+              placeholder={t('categoryNamePlaceholder')}
               value={newCategory.name}
               onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
             />
             <Input
-              placeholder="Description (optional)"
+              placeholder={t('categoryDescriptionPlaceholder')}
               value={newCategory.description}
               onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
             />
-            <Button onClick={handleCreate}>Add Category</Button>
+            <Button onClick={handleCreate}>{t('addCategory')}</Button>
           </div>
 
           <div className="space-y-2">
