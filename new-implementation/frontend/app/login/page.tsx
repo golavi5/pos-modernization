@@ -24,7 +24,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      document.cookie = 'accessToken=true; path=/; max-age=86400';
+      // The auth store sets the accessToken cookie the middleware gates on.
       window.location.replace('/dashboard');
     } catch (err: any) {
       setError(err.message || t('invalidCredentials'));

@@ -26,7 +26,7 @@ export class SettingsController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get all company settings' })
   async getSettings(@CurrentUser() user: any): Promise<Settings> {
-    return this.settingsService.getSettings(user.companyId);
+    return this.settingsService.getSettings(user.company_id);
   }
 
   @Patch('company')
@@ -36,7 +36,7 @@ export class SettingsController {
     @CurrentUser() user: any,
     @Body() dto: UpdateCompanyDto,
   ): Promise<Settings> {
-    return this.settingsService.updateCompany(user.companyId, dto);
+    return this.settingsService.updateCompany(user.company_id, dto);
   }
 
   @Patch('tax')
@@ -46,7 +46,7 @@ export class SettingsController {
     @CurrentUser() user: any,
     @Body() dto: UpdateTaxDto,
   ): Promise<Settings> {
-    return this.settingsService.updateTax(user.companyId, dto);
+    return this.settingsService.updateTax(user.company_id, dto);
   }
 
   @Patch('payment-methods')
@@ -56,7 +56,7 @@ export class SettingsController {
     @CurrentUser() user: any,
     @Body() dto: UpdatePaymentMethodsDto,
   ): Promise<Settings> {
-    return this.settingsService.updatePaymentMethods(user.companyId, dto);
+    return this.settingsService.updatePaymentMethods(user.company_id, dto);
   }
 
   @Patch('inventory')
@@ -66,7 +66,7 @@ export class SettingsController {
     @CurrentUser() user: any,
     @Body() dto: UpdateInventorySettingsDto,
   ): Promise<Settings> {
-    return this.settingsService.updateInventory(user.companyId, dto);
+    return this.settingsService.updateInventory(user.company_id, dto);
   }
 
   @Patch('sales')
@@ -76,7 +76,7 @@ export class SettingsController {
     @CurrentUser() user: any,
     @Body() dto: UpdateSalesSettingsDto,
   ): Promise<Settings> {
-    return this.settingsService.updateSales(user.companyId, dto);
+    return this.settingsService.updateSales(user.company_id, dto);
   }
 
   @Patch('loyalty')
@@ -86,7 +86,7 @@ export class SettingsController {
     @CurrentUser() user: any,
     @Body() dto: UpdateLoyaltySettingsDto,
   ): Promise<Settings> {
-    return this.settingsService.updateLoyalty(user.companyId, dto);
+    return this.settingsService.updateLoyalty(user.company_id, dto);
   }
 
   @Patch('reset')
@@ -94,6 +94,6 @@ export class SettingsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset settings to defaults (admin)' })
   async resetToDefaults(@CurrentUser() user: any): Promise<Settings> {
-    return this.settingsService.resetToDefaults(user.companyId);
+    return this.settingsService.resetToDefaults(user.company_id);
   }
 }

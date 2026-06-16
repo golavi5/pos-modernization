@@ -45,7 +45,7 @@ export class UsersController {
     @CurrentUser() user: any,
     @Query() query: UserQueryDto,
   ): Promise<UserListResponseDto> {
-    return this.usersService.findAll(user.companyId, query);
+    return this.usersService.findAll(user.company_id, query);
   }
 
   @Get('stats')
@@ -53,7 +53,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get user statistics' })
   @ApiResponse({ status: 200, type: UserStatsDto })
   async getStats(@CurrentUser() user: any): Promise<UserStatsDto> {
-    return this.usersService.getStats(user.companyId);
+    return this.usersService.getStats(user.company_id);
   }
 
   @Get(':id')
@@ -65,7 +65,7 @@ export class UsersController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ): Promise<UserResponseDto> {
-    return this.usersService.findById(id, user.companyId);
+    return this.usersService.findById(id, user.company_id);
   }
 
   @Post()
@@ -89,7 +89,7 @@ export class UsersController {
     @CurrentUser() user: any,
     @Body() dto: AdminUpdateUserDto,
   ): Promise<UserResponseDto> {
-    return this.usersService.update(id, user.companyId, dto);
+    return this.usersService.update(id, user.company_id, dto);
   }
 
   @Patch(':id/roles')
@@ -101,7 +101,7 @@ export class UsersController {
     @CurrentUser() user: any,
     @Body() dto: AssignRolesDto,
   ): Promise<UserResponseDto> {
-    return this.usersService.assignRoles(id, user.companyId, dto);
+    return this.usersService.assignRoles(id, user.company_id, dto);
   }
 
   @Patch(':id/toggle-status')
@@ -112,7 +112,7 @@ export class UsersController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ): Promise<UserResponseDto> {
-    return this.usersService.toggleStatus(id, user.companyId, user.id);
+    return this.usersService.toggleStatus(id, user.company_id, user.id);
   }
 
   @Patch(':id/reset-password')
@@ -124,7 +124,7 @@ export class UsersController {
     @CurrentUser() user: any,
     @Body() dto: AdminResetPasswordDto,
   ): Promise<{ message: string }> {
-    return this.usersService.resetPassword(id, user.companyId, dto);
+    return this.usersService.resetPassword(id, user.company_id, dto);
   }
 
   @Delete(':id')
@@ -136,7 +136,7 @@ export class UsersController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: any,
   ): Promise<{ message: string }> {
-    return this.usersService.remove(id, user.companyId, user.id);
+    return this.usersService.remove(id, user.company_id, user.id);
   }
 
   // ==================== ROLES ====================
@@ -146,6 +146,6 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all available roles' })
   @ApiResponse({ status: 200, type: [RoleResponseDto] })
   async getRoles(@CurrentUser() user: any): Promise<RoleResponseDto[]> {
-    return this.usersService.getRoles(user.companyId);
+    return this.usersService.getRoles(user.company_id);
   }
 }

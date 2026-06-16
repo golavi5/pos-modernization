@@ -51,7 +51,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ): Promise<SalesSummaryDto> {
-    return this.salesReportService.getSalesSummary(user.companyId, query);
+    return this.salesReportService.getSalesSummary(user.company_id, query);
   }
 
   @Get('sales/by-period')
@@ -62,7 +62,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ): Promise<SalesReportDto> {
-    return this.salesReportService.getSalesByPeriod(user.companyId, query);
+    return this.salesReportService.getSalesByPeriod(user.company_id, query);
   }
 
   @Get('revenue/trends')
@@ -73,7 +73,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ): Promise<RevenueTrendsDto> {
-    return this.salesReportService.getRevenueTrends(user.companyId, query);
+    return this.salesReportService.getRevenueTrends(user.company_id, query);
   }
 
   // ==================== PRODUCT REPORTS ====================
@@ -87,7 +87,7 @@ export class ReportsController {
     @Query() query: ReportQueryDto,
   ) {
     return this.productReportService.getTopSellingProducts(
-      user.companyId,
+      user.company_id,
       query,
     );
   }
@@ -100,7 +100,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ) {
-    return this.productReportService.getLowStockProducts(user.companyId, query);
+    return this.productReportService.getLowStockProducts(user.company_id, query);
   }
 
   @Get('products/report')
@@ -111,7 +111,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ): Promise<ProductReportDto> {
-    return this.productReportService.getProductReport(user.companyId, query);
+    return this.productReportService.getProductReport(user.company_id, query);
   }
 
   // ==================== INVENTORY REPORTS ====================
@@ -125,7 +125,7 @@ export class ReportsController {
     @Query() query: ReportQueryDto,
   ): Promise<InventoryReportDto> {
     return this.productReportService.getInventoryTurnover(
-      user.companyId,
+      user.company_id,
       query,
     );
   }
@@ -136,7 +136,7 @@ export class ReportsController {
   @ApiResponse({ status: 200, type: [Object] })
   async getInventoryValueByWarehouse(@CurrentUser() user: any) {
     return this.inventoryReportService.getInventoryValueByWarehouse(
-      user.companyId,
+      user.company_id,
     );
   }
 
@@ -150,7 +150,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ) {
-    return this.customerReportService.getTopCustomers(user.companyId, query);
+    return this.customerReportService.getTopCustomers(user.company_id, query);
   }
 
   @Get('customers/segments')
@@ -161,7 +161,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ) {
-    return this.customerReportService.getCustomerSegments(user.companyId, query);
+    return this.customerReportService.getCustomerSegments(user.company_id, query);
   }
 
   @Get('customers/report')
@@ -172,7 +172,7 @@ export class ReportsController {
     @CurrentUser() user: any,
     @Query() query: ReportQueryDto,
   ): Promise<CustomerReportDto> {
-    return this.customerReportService.getCustomerReport(user.companyId, query);
+    return this.customerReportService.getCustomerReport(user.company_id, query);
   }
 
   // ==================== EXPORT ENDPOINTS ====================
@@ -186,7 +186,7 @@ export class ReportsController {
     @Res() res: Response,
   ) {
     const data = await this.salesReportService.getSalesByPeriod(
-      user.companyId,
+      user.company_id,
       query,
     );
 
@@ -221,7 +221,7 @@ export class ReportsController {
     @Res() res: Response,
   ) {
     const data = await this.productReportService.getProductReport(
-      user.companyId,
+      user.company_id,
       query,
     );
 
@@ -256,7 +256,7 @@ export class ReportsController {
     @Res() res: Response,
   ) {
     const data = await this.customerReportService.getCustomerReport(
-      user.companyId,
+      user.company_id,
       query,
     );
 

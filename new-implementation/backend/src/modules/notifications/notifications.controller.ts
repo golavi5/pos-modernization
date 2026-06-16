@@ -45,7 +45,7 @@ export class NotificationsController {
     @CurrentUser() user: any,
     @Query() query: NotificationQueryDto,
   ): Promise<NotificationListDto> {
-    return this.notificationsService.findAll(user.companyId, user.id, query);
+    return this.notificationsService.findAll(user.company_id, user.id, query);
   }
 
   @Get('unread-count')
@@ -53,7 +53,7 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Get unread notification count' })
   @ApiResponse({ status: 200, type: UnreadCountDto })
   async getUnreadCount(@CurrentUser() user: any): Promise<UnreadCountDto> {
-    return this.notificationsService.getUnreadCount(user.companyId, user.id);
+    return this.notificationsService.getUnreadCount(user.company_id, user.id);
   }
 
   @Patch(':id/read')
@@ -64,7 +64,7 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<NotificationResponseDto> {
-    return this.notificationsService.markAsRead(id, user.companyId);
+    return this.notificationsService.markAsRead(id, user.company_id);
   }
 
   @Patch('read-all')
@@ -72,7 +72,7 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark all notifications as read' })
   async markAllAsRead(@CurrentUser() user: any): Promise<{ updated: number }> {
-    return this.notificationsService.markAllAsRead(user.companyId, user.id);
+    return this.notificationsService.markAllAsRead(user.company_id, user.id);
   }
 
   @Delete('clear-read')
@@ -80,7 +80,7 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete all read notifications' })
   async clearRead(@CurrentUser() user: any): Promise<{ deleted: number }> {
-    return this.notificationsService.clearRead(user.companyId);
+    return this.notificationsService.clearRead(user.company_id);
   }
 
   @Delete(':id')
@@ -91,7 +91,7 @@ export class NotificationsController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: any,
   ): Promise<{ message: string }> {
-    return this.notificationsService.remove(id, user.companyId);
+    return this.notificationsService.remove(id, user.company_id);
   }
 
   // ==================== ADMIN TOOLS ====================
@@ -104,7 +104,7 @@ export class NotificationsController {
     @Body() body: { title: string; message: string; type?: string; priority?: string },
   ): Promise<NotificationResponseDto> {
     const notification = await this.notificationsService.create({
-      companyId: user.companyId,
+      companyId: user.company_id,
       type: (body.type as NotificationType) || NotificationType.SYSTEM,
       priority: (body.priority as NotificationPriority) || NotificationPriority.MEDIUM,
       title: body.title,
@@ -128,7 +128,7 @@ export class NotificationsController {
   @Roles('admin')
   @ApiOperation({ summary: 'Trigger low stock check manually (admin)' })
   async checkStock(@CurrentUser() user: any): Promise<{ checked: number; notified: number }> {
-    return this.schedulerService.checkLowStock(user.companyId);
+    return this.schedulerService.checkLowStock(user.company_id);
   }
 
   @Delete('admin/clean-old')

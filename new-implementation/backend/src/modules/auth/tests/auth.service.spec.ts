@@ -267,7 +267,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('refreshToken');
       expect(result).toHaveProperty('user');
       expect(jwtService.verify).toHaveBeenCalledWith(refreshToken, {
-        secret: AUTH_CONSTANTS.JWT.SECRET_KEY,
+        secret: AUTH_CONSTANTS.JWT.REFRESH_SECRET_KEY,
       });
     });
 
