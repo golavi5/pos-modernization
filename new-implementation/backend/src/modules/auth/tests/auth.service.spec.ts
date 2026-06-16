@@ -232,6 +232,12 @@ describe('AuthService', () => {
 
     it('should validate password strength', async () => {
       jest.spyOn(userRepository, 'findOne').mockResolvedValue(null);
+      // Mock the full happy path so the ONLY thing that can reject these is the
+      // password-strength check (otherwise a weak password would "pass" by
+      // failing later at save → false positive).
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed_password');
+      jest.spyOn(userRepository, 'create').mockReturnValue(mockUser);
+      jest.spyOn(userRepository, 'save').mockResolvedValue(mockUser);
 
       const weakPasswords = [
         'short', // Too short

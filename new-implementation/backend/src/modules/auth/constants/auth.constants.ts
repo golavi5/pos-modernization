@@ -2,6 +2,7 @@
  * Authentication Constants
  * Centralized configuration for JWT, timeouts, and security parameters
  */
+import { PASSWORD_MIN_LENGTH } from '../../../common/password-policy';
 
 export const AUTH_CONSTANTS = {
   // JWT Configuration
@@ -17,14 +18,15 @@ export const AUTH_CONSTANTS = {
       'dev-only-refresh-secret-change-in-production',
   },
 
-  // Password Configuration
+  // Password Configuration — mirrors src/common/password-policy.ts. Enforced by
+  // auth.service.validatePasswordStrength (register + change password).
   PASSWORD: {
     BCRYPT_ROUNDS: 10,
-    MIN_LENGTH: 6,
-    REQUIRE_UPPERCASE: false,
-    REQUIRE_LOWERCASE: false,
-    REQUIRE_NUMBERS: false,
-    REQUIRE_SPECIAL_CHARS: false,
+    MIN_LENGTH: PASSWORD_MIN_LENGTH,
+    REQUIRE_UPPERCASE: true,
+    REQUIRE_LOWERCASE: true,
+    REQUIRE_NUMBERS: true,
+    REQUIRE_SPECIAL_CHARS: true,
   },
 
   // Error Messages

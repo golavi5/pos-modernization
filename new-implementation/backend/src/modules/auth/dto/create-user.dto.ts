@@ -6,6 +6,11 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_PATTERN,
+  PASSWORD_RULE_MESSAGE,
+} from '../../../common/password-policy';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -17,11 +22,12 @@ export class CreateUserDto {
   email: string;
 
   @ApiProperty({
-    example: 'Password123!',
-    description: 'User password (min 6 chars)',
+    example: 'SecurePass123!',
+    description: PASSWORD_RULE_MESSAGE,
   })
   @IsNotEmpty({ message: 'Password is required' })
-  @MinLength(6, { message: 'Password must be at least 6 characters' })
+  @MinLength(PASSWORD_MIN_LENGTH, { message: PASSWORD_RULE_MESSAGE })
+  @Matches(PASSWORD_PATTERN, { message: PASSWORD_RULE_MESSAGE })
   password: string;
 
   @ApiProperty({

@@ -2,11 +2,18 @@ import {
   IsString,
   IsOptional,
   MaxLength,
+  MinLength,
+  Matches,
   IsBoolean,
   IsArray,
   IsUUID,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_PATTERN,
+  PASSWORD_RULE_MESSAGE,
+} from '../../../common/password-policy';
 
 export class AdminUpdateUserDto {
   @ApiProperty({ required: false })
@@ -50,9 +57,11 @@ export class AssignRolesDto {
 }
 
 export class AdminResetPasswordDto {
-  @ApiProperty({ example: 'NewSecurePass123!' })
+  @ApiProperty({ example: 'NewSecurePass123!', description: PASSWORD_RULE_MESSAGE })
   @IsString()
   @MaxLength(255)
+  @MinLength(PASSWORD_MIN_LENGTH, { message: PASSWORD_RULE_MESSAGE })
+  @Matches(PASSWORD_PATTERN, { message: PASSWORD_RULE_MESSAGE })
   newPassword: string;
 
   @ApiProperty({ example: false, required: false })
