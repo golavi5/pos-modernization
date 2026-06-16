@@ -10,6 +10,11 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_PATTERN,
+  PASSWORD_RULE_MESSAGE,
+} from '../../../common/password-policy';
 
 export class AdminCreateUserDto {
   @ApiProperty({ example: 'John Doe' })
@@ -21,12 +26,10 @@ export class AdminCreateUserDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'SecurePass123!' })
+  @ApiProperty({ example: 'SecurePass123!', description: PASSWORD_RULE_MESSAGE })
   @IsString()
-  @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message: 'Password must contain uppercase, lowercase and number',
-  })
+  @MinLength(PASSWORD_MIN_LENGTH, { message: PASSWORD_RULE_MESSAGE })
+  @Matches(PASSWORD_PATTERN, { message: PASSWORD_RULE_MESSAGE })
   password: string;
 
   @ApiProperty({ example: 'John', required: false })
