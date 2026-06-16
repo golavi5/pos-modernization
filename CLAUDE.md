@@ -160,10 +160,33 @@ MySQL Docker port is `3308` on the host (maps to 3306 inside).
 - `new-implementation/DEPLOYMENT-COOLIFY.md` — production deployment notes (Coolify, not raw docker compose).
 - `new-implementation/frontend/i18n-request.ts` — next-intl 3.x request config (locale resolution lives here, not in `next.config.js`).
 
+## Plane / Kairos Index Maintenance (MANDATORY — auto-discovery mode)
+
+This repo uses Kairos **discoveryMode: auto**, which works differently from
+the manual-index repos:
+
+- The master doc `docs/specs/SPEC-001-pos-modernization.md` declares modules
+  only — its `issues:` list is **empty by design. NEVER add issues to it.**
+- **New work item → create `docs/specs/SPEC-<MOD>-NNN-<slug>.md`.** Kairos
+  synthesizes one Plane issue per file with id `POS-<MOD>-<NNN>` (taken from
+  the filename). The file needs an H1 title and a `**Status**: WORD` line —
+  colon OUTSIDE the bold (`**Status**: DRAFT|APPROVED|DONE`); the
+  colon-inside form is NOT parsed in SPEC files.
+- Module assignment comes from filename globs in `docs/specs/_modules.yml`
+  (first match wins; unmatched → M2 BACK). New module → add it to the master
+  doc AND a glob block to `_modules.yml`.
+- Superpowers design docs (`docs/superpowers/specs/`) use the OTHER syntax:
+  `**Issue:** POS-<MOD>-NNN` (colon inside) + `**Status:** Word` — add the
+  Issue line so Kairos links the design to its SPEC-file issue.
+- Sync contract: files own structure; **Plane owns per-issue state after
+  creation.** Never hand-create POS issues in the Plane UI.
+- Two SPEC files with the same number abort the sync — numbers are unique
+  per module prefix.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **pos-modernization** (5467 symbols, 8398 relationships, 65 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **pos-modernization** (5574 symbols, 8504 relationships, 64 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
