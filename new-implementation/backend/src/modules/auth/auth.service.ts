@@ -143,7 +143,7 @@ export class AuthService {
     try {
       // Verify refresh token
       const payload = this.jwtService.verify(refreshToken, {
-        secret: AUTH_CONSTANTS.JWT.SECRET_KEY,
+        secret: AUTH_CONSTANTS.JWT.REFRESH_SECRET_KEY,
       });
 
       // Get user from database
@@ -319,7 +319,7 @@ export class AuthService {
     };
 
     return this.jwtService.sign(payload, {
-      secret: AUTH_CONSTANTS.JWT.SECRET_KEY,
+      secret: AUTH_CONSTANTS.JWT.REFRESH_SECRET_KEY,
       expiresIn: AUTH_CONSTANTS.JWT.REFRESH_TOKEN_EXPIRY,
     });
   }

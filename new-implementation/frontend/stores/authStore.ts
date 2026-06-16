@@ -5,6 +5,25 @@ import { persist } from 'zustand/middleware';
 import { User } from '@/types/auth';
 import { authAPI } from '@/lib/api/auth';
 
+// The middleware (server-side) can't read the Zustand store, so it gates
+// (panel) routes on the presence of an `accessToken` cookie. Keep that cookie
+// in lockstep with real auth state: set it with the actual token on login /
+// refresh, and clear it on logout.
+const AUTH_COOKIE = 'accessToken';
+
+function setAuthCookie(token: string) {
+  if (typeof document === 'undefined') return;
+  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  // max-age tracks the refresh-token lifetime (7d); the axios interceptor
+  // renews the access token within that window.
+  document.cookie = `${AUTH_COOKIE}=${token}; path=/; max-age=604800; samesite=lax${secure}`;
+}
+
+function clearAuthCookie() {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0; samesite=lax`;
+}
+
 interface AuthState {
   user: User | null;
   accessToken: string | null;
@@ -37,11 +56,12 @@ export const useAuthStore = create<AuthState>()(
           const response = await authAPI.login({ email, password });
           set({
             user: response.user,
-            accessToken: response.access_token,
-            refreshTokenValue: response.refresh_token,
+            accessToken: response.accessToken,
+            refreshTokenValue: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           });
+          setAuthCookie(response.accessToken);
         } catch (error: any) {
           const errorMessage = error.response?.data?.message || error.message || 'Login failed';
           set({
@@ -61,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           error: null,
         });
+        clearAuthCookie();
       },
 
       refreshTokenMethod: async () => {
@@ -72,9 +93,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response = await authAPI.refreshToken(refreshTokenValue);
           set({
-            accessToken: response.access_token,
+            accessToken: response.accessToken,
+            refreshTokenValue: response.refreshToken ?? refreshTokenValue,
             error: null,
           });
+          setAuthCookie(response.accessToken);
         } catch (error: any) {
           set({ isAuthenticated: false });
           throw error;

@@ -6,9 +6,15 @@
 export const AUTH_CONSTANTS = {
   // JWT Configuration
   JWT: {
-    ACCESS_TOKEN_EXPIRY: '1h', // 1 hour
-    REFRESH_TOKEN_EXPIRY: '7d', // 7 days
-    SECRET_KEY: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    ACCESS_TOKEN_EXPIRY: process.env.JWT_EXPIRES_IN || '1h', // 1 hour
+    REFRESH_TOKEN_EXPIRY: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 days
+    // Dev-only fallbacks. In production, main.ts validateProductionEnv()
+    // throws on startup if these env vars are unset, so the literals below
+    // are never reachable in prod.
+    SECRET_KEY: process.env.JWT_SECRET || 'dev-only-secret-change-in-production',
+    REFRESH_SECRET_KEY:
+      process.env.JWT_REFRESH_SECRET ||
+      'dev-only-refresh-secret-change-in-production',
   },
 
   // Password Configuration

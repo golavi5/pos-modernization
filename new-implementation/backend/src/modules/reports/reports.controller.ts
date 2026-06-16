@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../auth/entities/user.entity';
 import { SalesReportService } from './services/sales-report.service';
 import { ProductReportService } from './services/product-report.service';
 import { CustomerReportService } from './services/customer-report.service';
@@ -48,10 +49,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get sales summary report' })
   @ApiResponse({ status: 200, type: SalesSummaryDto })
   async getSalesSummary(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ): Promise<SalesSummaryDto> {
-    return this.salesReportService.getSalesSummary(user.companyId, query);
+    return this.salesReportService.getSalesSummary(user.company_id, query);
   }
 
   @Get('sales/by-period')
@@ -59,10 +60,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get detailed sales report by period' })
   @ApiResponse({ status: 200, type: SalesReportDto })
   async getSalesByPeriod(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ): Promise<SalesReportDto> {
-    return this.salesReportService.getSalesByPeriod(user.companyId, query);
+    return this.salesReportService.getSalesByPeriod(user.company_id, query);
   }
 
   @Get('revenue/trends')
@@ -70,10 +71,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get revenue trends and payment method breakdown' })
   @ApiResponse({ status: 200, type: RevenueTrendsDto })
   async getRevenueTrends(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ): Promise<RevenueTrendsDto> {
-    return this.salesReportService.getRevenueTrends(user.companyId, query);
+    return this.salesReportService.getRevenueTrends(user.company_id, query);
   }
 
   // ==================== PRODUCT REPORTS ====================
@@ -83,11 +84,11 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get top selling products' })
   @ApiResponse({ status: 200, type: [Object] })
   async getTopSellingProducts(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ) {
     return this.productReportService.getTopSellingProducts(
-      user.companyId,
+      user.company_id,
       query,
     );
   }
@@ -97,10 +98,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get products with low stock levels' })
   @ApiResponse({ status: 200, type: [Object] })
   async getLowStockProducts(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ) {
-    return this.productReportService.getLowStockProducts(user.companyId, query);
+    return this.productReportService.getLowStockProducts(user.company_id, query);
   }
 
   @Get('products/report')
@@ -108,10 +109,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get comprehensive product report' })
   @ApiResponse({ status: 200, type: ProductReportDto })
   async getProductReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ): Promise<ProductReportDto> {
-    return this.productReportService.getProductReport(user.companyId, query);
+    return this.productReportService.getProductReport(user.company_id, query);
   }
 
   // ==================== INVENTORY REPORTS ====================
@@ -121,11 +122,11 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get inventory turnover analysis' })
   @ApiResponse({ status: 200, type: InventoryReportDto })
   async getInventoryTurnover(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ): Promise<InventoryReportDto> {
     return this.productReportService.getInventoryTurnover(
-      user.companyId,
+      user.company_id,
       query,
     );
   }
@@ -134,9 +135,9 @@ export class ReportsController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get inventory value grouped by warehouse' })
   @ApiResponse({ status: 200, type: [Object] })
-  async getInventoryValueByWarehouse(@CurrentUser() user: any) {
+  async getInventoryValueByWarehouse(@CurrentUser() user: User) {
     return this.inventoryReportService.getInventoryValueByWarehouse(
-      user.companyId,
+      user.company_id,
     );
   }
 
@@ -147,10 +148,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get top buying customers' })
   @ApiResponse({ status: 200, type: [Object] })
   async getTopCustomers(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ) {
-    return this.customerReportService.getTopCustomers(user.companyId, query);
+    return this.customerReportService.getTopCustomers(user.company_id, query);
   }
 
   @Get('customers/segments')
@@ -158,10 +159,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get customer segmentation analysis' })
   @ApiResponse({ status: 200, type: [Object] })
   async getCustomerSegments(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ) {
-    return this.customerReportService.getCustomerSegments(user.companyId, query);
+    return this.customerReportService.getCustomerSegments(user.company_id, query);
   }
 
   @Get('customers/report')
@@ -169,10 +170,10 @@ export class ReportsController {
   @ApiOperation({ summary: 'Get comprehensive customer report' })
   @ApiResponse({ status: 200, type: CustomerReportDto })
   async getCustomerReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ReportQueryDto,
   ): Promise<CustomerReportDto> {
-    return this.customerReportService.getCustomerReport(user.companyId, query);
+    return this.customerReportService.getCustomerReport(user.company_id, query);
   }
 
   // ==================== EXPORT ENDPOINTS ====================
@@ -181,12 +182,12 @@ export class ReportsController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Export sales report to PDF/Excel/CSV' })
   async exportSalesReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ExportQueryDto,
     @Res() res: Response,
   ) {
     const data = await this.salesReportService.getSalesByPeriod(
-      user.companyId,
+      user.company_id,
       query,
     );
 
@@ -216,12 +217,12 @@ export class ReportsController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Export product report to PDF/Excel/CSV' })
   async exportProductReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ExportQueryDto,
     @Res() res: Response,
   ) {
     const data = await this.productReportService.getProductReport(
-      user.companyId,
+      user.company_id,
       query,
     );
 
@@ -251,12 +252,12 @@ export class ReportsController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Export customer report to PDF/Excel/CSV' })
   async exportCustomerReport(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ExportQueryDto,
     @Res() res: Response,
   ) {
     const data = await this.customerReportService.getCustomerReport(
-      user.companyId,
+      user.company_id,
       query,
     );
 

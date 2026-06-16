@@ -20,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../auth/entities/user.entity';
 
 @Controller('customers')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,7 +35,7 @@ export class CustomersController {
   @Roles('admin', 'manager', 'cashier')
   async create(
     @Body() createCustomerDto: CreateCustomerDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ) {
     return this.customersService.create(createCustomerDto, user.company_id);
   }
@@ -45,7 +46,7 @@ export class CustomersController {
    */
   @Get()
   @Roles('admin', 'manager', 'cashier', 'viewer')
-  async findAll(@Query() query: CustomerQueryDto, @CurrentUser() user: any) {
+  async findAll(@Query() query: CustomerQueryDto, @CurrentUser() user: User) {
     return this.customersService.findAll(query, user.company_id);
   }
 
@@ -56,7 +57,7 @@ export class CustomersController {
    */
   @Get('stats')
   @Roles('admin', 'manager')
-  async getStats(@CurrentUser() user: any) {
+  async getStats(@CurrentUser() user: User) {
     return this.customersService.getStats(user.company_id);
   }
 
@@ -68,7 +69,7 @@ export class CustomersController {
   @Roles('admin', 'manager')
   async getTopCustomers(
     @Query('limit') limit: string = '10',
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ) {
     const limitNum = parseInt(limit, 10) || 10;
     return this.customersService.getTopCustomers(user.company_id, limitNum);
@@ -82,7 +83,7 @@ export class CustomersController {
   @Roles('admin', 'manager', 'cashier')
   async advancedSearch(
     @Query() query: CustomerQueryDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ) {
     return this.customersService.advancedSearch(query, user.company_id);
   }
@@ -93,7 +94,7 @@ export class CustomersController {
    */
   @Get(':id')
   @Roles('admin', 'manager', 'cashier', 'viewer')
-  async findOne(@Param('id') id: string, @CurrentUser() user: any) {
+  async findOne(@Param('id') id: string, @CurrentUser() user: User) {
     return this.customersService.findOne(id, user.company_id);
   }
 
@@ -106,7 +107,7 @@ export class CustomersController {
   async getPurchaseHistory(
     @Param('id') id: string,
     @Query('limit') limit: string = '10',
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ) {
     const limitNum = parseInt(limit, 10) || 10;
     return this.customersService.getPurchaseHistory(
@@ -125,7 +126,7 @@ export class CustomersController {
   async update(
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ) {
     return this.customersService.update(id, updateCustomerDto, user.company_id);
   }
@@ -139,7 +140,7 @@ export class CustomersController {
   async updateLoyalty(
     @Param('id') id: string,
     @Body() updateLoyaltyDto: UpdateLoyaltyPointsDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ) {
     return this.customersService.updateLoyaltyPoints(
       id,
@@ -155,7 +156,7 @@ export class CustomersController {
   @Delete(':id')
   @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string, @CurrentUser() user: any) {
+  async remove(@Param('id') id: string, @CurrentUser() user: User) {
     await this.customersService.remove(id, user.company_id);
   }
 }

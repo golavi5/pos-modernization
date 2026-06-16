@@ -6,6 +6,7 @@ import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { UpdateLoyaltyPointsDto } from '../dto/loyalty.dto';
 import { CustomerQueryDto } from '../dto/customer-query.dto';
 import { CustomerResponseDto } from '../dto/customer-response.dto';
+import { User } from '../../auth/entities/user.entity';
 
 describe('CustomersController', () => {
   let controller: CustomersController;
@@ -16,7 +17,7 @@ describe('CustomersController', () => {
     id: 'user-1',
     company_id: mockCompanyId,
     role: 'admin',
-  };
+  } as unknown as User;
 
   const mockCustomerResponse: CustomerResponseDto = {
     id: 'customer-1',

@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../auth/entities/user.entity';
 import { SettingsService } from './services/settings.service';
 import {
   UpdateCompanyDto,
@@ -25,75 +26,75 @@ export class SettingsController {
   @Get()
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get all company settings' })
-  async getSettings(@CurrentUser() user: any): Promise<Settings> {
-    return this.settingsService.getSettings(user.companyId);
+  async getSettings(@CurrentUser() user: User): Promise<Settings> {
+    return this.settingsService.getSettings(user.company_id);
   }
 
   @Patch('company')
   @Roles('admin')
   @ApiOperation({ summary: 'Update company information' })
   async updateCompany(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: UpdateCompanyDto,
   ): Promise<Settings> {
-    return this.settingsService.updateCompany(user.companyId, dto);
+    return this.settingsService.updateCompany(user.company_id, dto);
   }
 
   @Patch('tax')
   @Roles('admin')
   @ApiOperation({ summary: 'Update tax configuration' })
   async updateTax(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: UpdateTaxDto,
   ): Promise<Settings> {
-    return this.settingsService.updateTax(user.companyId, dto);
+    return this.settingsService.updateTax(user.company_id, dto);
   }
 
   @Patch('payment-methods')
   @Roles('admin')
   @ApiOperation({ summary: 'Update payment method settings' })
   async updatePaymentMethods(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: UpdatePaymentMethodsDto,
   ): Promise<Settings> {
-    return this.settingsService.updatePaymentMethods(user.companyId, dto);
+    return this.settingsService.updatePaymentMethods(user.company_id, dto);
   }
 
   @Patch('inventory')
   @Roles('admin')
   @ApiOperation({ summary: 'Update inventory settings' })
   async updateInventory(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: UpdateInventorySettingsDto,
   ): Promise<Settings> {
-    return this.settingsService.updateInventory(user.companyId, dto);
+    return this.settingsService.updateInventory(user.company_id, dto);
   }
 
   @Patch('sales')
   @Roles('admin')
   @ApiOperation({ summary: 'Update sales settings' })
   async updateSales(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: UpdateSalesSettingsDto,
   ): Promise<Settings> {
-    return this.settingsService.updateSales(user.companyId, dto);
+    return this.settingsService.updateSales(user.company_id, dto);
   }
 
   @Patch('loyalty')
   @Roles('admin')
   @ApiOperation({ summary: 'Update loyalty program settings' })
   async updateLoyalty(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: UpdateLoyaltySettingsDto,
   ): Promise<Settings> {
-    return this.settingsService.updateLoyalty(user.companyId, dto);
+    return this.settingsService.updateLoyalty(user.company_id, dto);
   }
 
   @Patch('reset')
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reset settings to defaults (admin)' })
-  async resetToDefaults(@CurrentUser() user: any): Promise<Settings> {
-    return this.settingsService.resetToDefaults(user.companyId);
+  async resetToDefaults(@CurrentUser() user: User): Promise<Settings> {
+    return this.settingsService.resetToDefaults(user.company_id);
   }
 }
