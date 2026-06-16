@@ -15,7 +15,8 @@ POS Modernization — a full-stack Point of Sale system replacing legacy .NET de
 ### Full stack (local)
 ```bash
 cd new-implementation
-cp backend/.env.example backend/.env      # then fill real DB_PASSWORD/JWT_*/CORS_ORIGINS
+cp .env.example .env                      # root MySQL creds for the compose db (gitignored)
+cp backend/.env.example backend/.env      # then fill real DB_PASSWORD/JWT_*/CORS_ORIGINS + BOOTSTRAP_ADMIN_*
 cp frontend/.env.local.example frontend/.env.local   # optional
 docker compose up -d          # starts MySQL (port 3308), backend (3000), frontend (3001)
 docker compose down

@@ -1,6 +1,7 @@
 # ── Para desarrollo local ──────────────────────────────────────────────────────
 # Setup (una vez, antes de `docker compose up -d`):
-#   1. `.env` (raíz) ya trae las credenciales MYSQL_* para el contenedor MySQL.
+#   1. cp .env.example .env   → credenciales MYSQL_* del contenedor MySQL
+#      (.env está gitignored; nunca subas secretos reales).
 #   2. cp backend/.env.example backend/.env
 #      → rellena DB_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET, CORS_ORIGINS
 #        (el backend corre en NODE_ENV=production y FALLA si quedan en CHANGE_ME).
