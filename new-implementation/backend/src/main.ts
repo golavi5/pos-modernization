@@ -17,10 +17,22 @@ function validateProductionEnv() {
     'DB_PASSWORD',
     'CORS_ORIGINS',
   ];
+  // Reject anything that is unset, a CHANGE_ME placeholder, or one of the
+  // in-code dev fallbacks (auth.constants.ts) — otherwise a value copied from
+  // the committed dev config would silently pass in production.
+  const placeholders = [
+    'dev-only-secret-change-in-production',
+    'dev-only-refresh-secret-change-in-production',
+    'your-secret-key-change-in-production',
+  ];
   const problems: string[] = [];
   for (const key of required) {
     const value = process.env[key];
-    if (!value || value.startsWith('CHANGE_ME')) {
+    if (
+      !value ||
+      value.startsWith('CHANGE_ME') ||
+      placeholders.includes(value)
+    ) {
       problems.push(key);
     }
   }

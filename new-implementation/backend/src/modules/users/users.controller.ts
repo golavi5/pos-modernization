@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../auth/entities/user.entity';
 import { UsersService } from './services/users.service';
 import { AdminCreateUserDto } from './dto/create-user.dto';
 import { AdminUpdateUserDto, AssignRolesDto, AdminResetPasswordDto } from './dto/update-user.dto';
@@ -42,7 +43,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all users with pagination and filters' })
   @ApiResponse({ status: 200, type: UserListResponseDto })
   async findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: UserQueryDto,
   ): Promise<UserListResponseDto> {
     return this.usersService.findAll(user.company_id, query);
@@ -52,7 +53,7 @@ export class UsersController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get user statistics' })
   @ApiResponse({ status: 200, type: UserStatsDto })
-  async getStats(@CurrentUser() user: any): Promise<UserStatsDto> {
+  async getStats(@CurrentUser() user: User): Promise<UserStatsDto> {
     return this.usersService.getStats(user.company_id);
   }
 
@@ -63,7 +64,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found' })
   async findById(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ): Promise<UserResponseDto> {
     return this.usersService.findById(id, user.company_id);
   }
@@ -74,10 +75,10 @@ export class UsersController {
   @ApiResponse({ status: 201, type: UserResponseDto })
   @ApiResponse({ status: 409, description: 'Email already in use' })
   async create(
-    @CurrentUser() currentUser: any,
+    @CurrentUser() currentUser: User,
     @Body() dto: AdminCreateUserDto,
   ): Promise<UserResponseDto> {
-    return this.usersService.create(currentUser.companyId, dto);
+    return this.usersService.create(currentUser.company_id, dto);
   }
 
   @Patch(':id')
@@ -86,7 +87,7 @@ export class UsersController {
   @ApiResponse({ status: 200, type: UserResponseDto })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: AdminUpdateUserDto,
   ): Promise<UserResponseDto> {
     return this.usersService.update(id, user.company_id, dto);
@@ -98,7 +99,7 @@ export class UsersController {
   @ApiResponse({ status: 200, type: UserResponseDto })
   async assignRoles(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: AssignRolesDto,
   ): Promise<UserResponseDto> {
     return this.usersService.assignRoles(id, user.company_id, dto);
@@ -110,7 +111,7 @@ export class UsersController {
   @ApiResponse({ status: 200, type: UserResponseDto })
   async toggleStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ): Promise<UserResponseDto> {
     return this.usersService.toggleStatus(id, user.company_id, user.id);
   }
@@ -121,7 +122,7 @@ export class UsersController {
   @ApiResponse({ status: 200 })
   async resetPassword(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() dto: AdminResetPasswordDto,
   ): Promise<{ message: string }> {
     return this.usersService.resetPassword(id, user.company_id, dto);
@@ -134,7 +135,7 @@ export class UsersController {
   @ApiResponse({ status: 200 })
   async remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ): Promise<{ message: string }> {
     return this.usersService.remove(id, user.company_id, user.id);
   }
@@ -145,7 +146,7 @@ export class UsersController {
   @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get all available roles' })
   @ApiResponse({ status: 200, type: [RoleResponseDto] })
-  async getRoles(@CurrentUser() user: any): Promise<RoleResponseDto[]> {
+  async getRoles(@CurrentUser() user: User): Promise<RoleResponseDto[]> {
     return this.usersService.getRoles(user.company_id);
   }
 }

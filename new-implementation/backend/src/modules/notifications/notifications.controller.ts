@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../auth/entities/user.entity';
 import { NotificationsService } from './services/notifications.service';
 import { NotificationSchedulerService } from './services/notification-scheduler.service';
 import {
@@ -42,7 +43,7 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Get notifications for current user' })
   @ApiResponse({ status: 200, type: NotificationListDto })
   async findAll(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: NotificationQueryDto,
   ): Promise<NotificationListDto> {
     return this.notificationsService.findAll(user.company_id, user.id, query);
@@ -52,7 +53,7 @@ export class NotificationsController {
   @Roles('admin', 'manager', 'staff')
   @ApiOperation({ summary: 'Get unread notification count' })
   @ApiResponse({ status: 200, type: UnreadCountDto })
-  async getUnreadCount(@CurrentUser() user: any): Promise<UnreadCountDto> {
+  async getUnreadCount(@CurrentUser() user: User): Promise<UnreadCountDto> {
     return this.notificationsService.getUnreadCount(user.company_id, user.id);
   }
 
@@ -62,7 +63,7 @@ export class NotificationsController {
   @ApiResponse({ status: 200, type: NotificationResponseDto })
   async markAsRead(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ): Promise<NotificationResponseDto> {
     return this.notificationsService.markAsRead(id, user.company_id);
   }
@@ -71,7 +72,7 @@ export class NotificationsController {
   @Roles('admin', 'manager', 'staff')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark all notifications as read' })
-  async markAllAsRead(@CurrentUser() user: any): Promise<{ updated: number }> {
+  async markAllAsRead(@CurrentUser() user: User): Promise<{ updated: number }> {
     return this.notificationsService.markAllAsRead(user.company_id, user.id);
   }
 
@@ -79,7 +80,7 @@ export class NotificationsController {
   @Roles('admin', 'manager')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete all read notifications' })
-  async clearRead(@CurrentUser() user: any): Promise<{ deleted: number }> {
+  async clearRead(@CurrentUser() user: User): Promise<{ deleted: number }> {
     return this.notificationsService.clearRead(user.company_id);
   }
 
@@ -89,7 +90,7 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Delete a notification' })
   async remove(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
   ): Promise<{ message: string }> {
     return this.notificationsService.remove(id, user.company_id);
   }
@@ -100,7 +101,7 @@ export class NotificationsController {
   @Roles('admin')
   @ApiOperation({ summary: 'Create test notification (admin)' })
   async createTest(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Body() body: { title: string; message: string; type?: string; priority?: string },
   ): Promise<NotificationResponseDto> {
     const notification = await this.notificationsService.create({
@@ -127,7 +128,7 @@ export class NotificationsController {
   @Post('check-stock')
   @Roles('admin')
   @ApiOperation({ summary: 'Trigger low stock check manually (admin)' })
-  async checkStock(@CurrentUser() user: any): Promise<{ checked: number; notified: number }> {
+  async checkStock(@CurrentUser() user: User): Promise<{ checked: number; notified: number }> {
     return this.schedulerService.checkLowStock(user.company_id);
   }
 
