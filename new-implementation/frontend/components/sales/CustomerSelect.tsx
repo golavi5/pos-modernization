@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { User, Search, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Search, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useCustomers } from '@/hooks/useCustomers';
 
 interface Customer {
   id: string;
@@ -25,37 +26,20 @@ export function CustomerSelect({
 }: CustomerSelectProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
-  // Mock customers - In real app, use useCustomers hook
-  const mockCustomers: Customer[] = [
-    {
-      id: '1',
-      name: 'Cliente General',
-      email: 'general@example.com',
-      loyalty_points: 0,
-    },
-    {
-      id: '2',
-      name: 'Juan Pérez',
-      email: 'juan@example.com',
-      phone: '+57 300 123 4567',
-      loyalty_points: 150,
-    },
-    {
-      id: '3',
-      name: 'María García',
-      email: 'maria@example.com',
-      phone: '+57 301 987 6543',
-      loyalty_points: 320,
-    },
-  ];
+  // Debounce the search box so we don't hit the API on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 250);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
-  const filteredCustomers = mockCustomers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone?.includes(searchQuery)
-  );
+  const { data, isLoading, isError } = useCustomers({
+    search: debouncedQuery || undefined,
+    pageSize: 10,
+    isActive: true,
+  });
+  const customers = data?.data ?? [];
 
   const handleSelect = (customer: Customer) => {
     onSelect(customer);
@@ -128,14 +112,24 @@ export function CustomerSelect({
 
                 {/* Results */}
                 <div className="max-h-64 overflow-y-auto">
-                  {filteredCustomers.length === 0 ? (
+                  {isLoading ? (
+                    <div className="p-8 text-center text-tertiary">
+                      <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-gray-300" />
+                      <p>Cargando clientes...</p>
+                    </div>
+                  ) : isError ? (
+                    <div className="p-8 text-center text-tertiary">
+                      <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <p>No se pudieron cargar los clientes</p>
+                    </div>
+                  ) : customers.length === 0 ? (
                     <div className="p-8 text-center text-tertiary">
                       <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                       <p>No se encontraron clientes</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100">
-                      {filteredCustomers.map((customer) => (
+                      {customers.map((customer) => (
                         <div
                           key={customer.id}
                           className="p-3 hover:bg-surface-1 cursor-pointer transition-colors"

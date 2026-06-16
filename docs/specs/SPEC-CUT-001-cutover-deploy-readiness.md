@@ -83,13 +83,20 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 - **Acceptance:** each deferred table either has an entity + migration or a
   documented reason; the sku/email constraints are decided (scoped vs global).
 
-### B-07 — Mocked customer data in the sales path
-- **Evidence:** `frontend/components/sales/CustomerSelect.tsx` uses a hardcoded
-  `mockCustomers` array, not the real customers API / `useCustomers`.
-- **Impact:** attaching a customer to a sale won't match real records.
-- **Fix:** replace mock with the real API hook; loading/empty states.
-- **Acceptance:** customer selector lists DB customers; a sale persists the real
-  `customer_id`.
+### B-07 — Mocked customer data in the sales path  ✅ *DONE*
+- **Was:** `CustomerSelect.tsx` listed a hardcoded `mockCustomers` array
+  (Juan Pérez, etc.) — selecting one attached a fake id to the sale.
+- **Fix:** swapped to the real `useCustomers` hook with debounced (250 ms)
+  server-side search + loading/empty/error states. The selection already flows
+  `CustomerSelect → SalesCart → page.tsx (cart.customer_id) → createSale`, so the
+  real `customer_id` now persists unchanged.
+- **Also fixed (same path):** backend customer search used `ILIKE` (PostgreSQL)
+  in `customers.service.ts` — invalid on MySQL, so search 500'd DB-wide.
+  Changed to `LIKE` (case-insensitive under `utf8mb4_unicode_ci`).
+- **Verified:** frontend `tsc` clean; backend 168/168; against real MySQL 8,
+  `ILIKE` errors (1064) while `LIKE '%juan%'` matches `Juan Pérez`
+  case-insensitively. (Full authed UI sale not run — no e2e harness here; the
+  selection→`customer_id`→order wiring is unchanged and was traced.)
 
 ### B-08 — compose env files / PORT  ✅ *DONE*
 - **Was:** `docker-compose.yml` referenced `env_file: ./backend/.env` and

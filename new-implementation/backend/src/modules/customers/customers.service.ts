@@ -77,7 +77,7 @@ export class CustomersService {
     // Search filter
     if (search) {
       qb.andWhere(
-        '(customer.name ILIKE :search OR customer.email ILIKE :search OR customer.phone ILIKE :search)',
+        '(customer.name LIKE :search OR customer.email LIKE :search OR customer.phone LIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -311,7 +311,7 @@ export class CustomersService {
 
     if (query.search) {
       qb.andWhere(
-        '(customer.name ILIKE :search OR customer.email ILIKE :search OR customer.phone ILIKE :search)',
+        '(customer.name LIKE :search OR customer.email LIKE :search OR customer.phone LIKE :search)',
         { search: `%${query.search}%` },
       );
     }
