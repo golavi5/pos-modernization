@@ -1,6 +1,6 @@
 # M4 — Legacy Migration: Parity-Validation CLI
 
-**Status**: IN_PROGRESS
+**Status**: DONE_PROGRESS
 
 One Plane issue (`POS-MIGR-001`) tracking the M4 parity-validation work.
 
