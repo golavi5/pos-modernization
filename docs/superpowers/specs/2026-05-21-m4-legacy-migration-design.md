@@ -392,6 +392,7 @@ then calls `runMigrations()`. This dependency runs migration→backend, the
 opposite direction from the "Why standalone" rationale in §4 (which forbids
 *backend importing migration code*), so the decoupling property is preserved.
 `migrate reset` drops + recreates `pos_db_migration`, then runs migrations.
+In implementation, the import targets the **compiled** output (`backend/dist/database/data-source.js`) rather than the TypeScript source, because TypeORM requires emitted decorator metadata; a `pretest` npm hook in `migration/package.json` builds the backend automatically before the test suite runs.
 
 **A2 — `legacy_id` column.** The nullable `legacy_id VARCHAR(64)` + unique
 index is added via a **new TypeORM migration** in
