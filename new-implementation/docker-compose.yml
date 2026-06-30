@@ -96,6 +96,35 @@ services:
       timeout: 10s
       retries: 3
 
+  # ── Legacy source DB (M4 migration only) ───────────────────────────────────
+  # Holds the frozen legacy .NET dump for parity validation. NOT part of the
+  # normal stack — gated behind the `migration` profile so `docker compose up`
+  # never starts it. Drop the dump at migration/dumps/legacy.sql first, then:
+  #   docker compose --profile migration up -d mysql_legacy
+  # The migration CLI (new-implementation/migration) reads it on :3309.
+  mysql_legacy:
+    image: mysql:8.0
+    container_name: pos_mysql_legacy
+    profiles: ["migration"]
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${LEGACY_ROOT_PASSWORD:-legacy_root}
+      MYSQL_DATABASE: pos_legacy
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql_legacy_data:/var/lib/mysql
+      # Any *.sql here is loaded on first boot (alphabetical). legacy.sql is
+      # gitignored; .gitkeep keeps the dir present.
+      - ./migration/dumps:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   mysql_data:
+    driver: local
+  mysql_legacy_data:
     driver: local
