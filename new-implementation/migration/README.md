@@ -125,9 +125,12 @@ dump — gitignored because it holds real customer data; never commit it). Run
 locally after confirming `npm test` is green.
 
 ```bash
-# 1. Load the real legacy dump into pos_legacy on the dev MySQL (port 3308):
+# 1. Load the real legacy dump into pos_legacy on the dev MySQL (port 3308).
+#    The dump is from MySQL 5.7; strip the removed NO_AUTO_CREATE_USER sql_mode
+#    token so it loads on MySQL 8.0:
 mysql -h127.0.0.1 -P3308 -upos_user -p -e "CREATE DATABASE IF NOT EXISTS pos_legacy CHARACTER SET utf8mb4"
-mysql -h127.0.0.1 -P3308 -upos_user -p pos_legacy < ../../info/bd_ex.sql
+sed -e 's/,NO_AUTO_CREATE_USER//g; s/NO_AUTO_CREATE_USER,//g; s/NO_AUTO_CREATE_USER//g' ../../info/bd_ex.sql \
+  | mysql -h127.0.0.1 -P3308 -upos_user -p pos_legacy
 
 # 2. Copy and fill .env (DB_PASSWORD at minimum):
 cp .env.example .env
@@ -142,31 +145,48 @@ NODE_ENV=migration npm run migrate -- report
 Open `reports/<latest>/report.html` to review mismatches. Iterate rule
 transforms in `src/rules/` until `verify` exits `0`.
 
+**Validated:** a full run against `bd_ex.sql` (production: 2 companies, 267
+customers, 30,276 products, 15 users, 255,955 orders, 1,185,238 order items)
+imports with **0 errors** and `verify` reports **0 mismatches / 0 missing** —
+lossless parity across ~1.47M rows.
+
 ---
+
+## Constraint reconciliation (legacy → new)
+
+The new schema enforces UNIQUE / NOT NULL constraints the legacy DB never had,
+and real data violates several. These are handled deterministically (so `verify`
+stays parity-consistent) — but they are **semantic changes** an operator should
+be aware of:
+
+- **`order_number`** (UNIQUE) — legacy `NumDocumento` repeats (6,617 dups, not
+  unique even per company+doc-type). Disambiguated as `"<NumDocumento>-<IdEncab>"`.
+- **`customers.email`** (UNIQUE, NOT NULL) — empties synthesized
+  (`cliente-<id>@migrated.local`); real duplicates plus-addressed
+  (`local+<id>@domain`).
+- **`products.barcode`** (UNIQUE) — non-unique barcodes (53 dups) nulled (a
+  non-unique barcode is not a valid identifier).
+- **`products` numerics** — corrupt rows (barcodes mis-entered into
+  `CantFisica`/`CostoPromedio`, junk `Iva`) overflow the tighter column types;
+  out-of-range values clamped to 0, valid values (incl. negative stock) kept.
+- **`created_at`** — legacy `clientes.FechaCreacion` is null/sentinel for every
+  row; falls back to migration time.
 
 ## Known limitations & follow-ups
 
-The committed e2e proves the machine on a synthetic sample. The following are
-surfaced by `verify` (never silent corruption) but a real-dump operator should
-expect them:
-
-- **`order_number` collisions.** `orders.order_number` is globally UNIQUE, but
-  legacy `encabezados.NumDocumento` can repeat across prefixes / resolutions /
-  document types. On a collision the second order upserts over the first
-  (`ON DUPLICATE KEY UPDATE`) and its `order_items` FK then either aborts
-  import (exit 2) or shows as `missing` in `verify` (exit 1). If the real dump
-  reuses `NumDocumento`, disambiguate it in `orders.rule.ts` (e.g. prefix with
-  `IdDocumento`/`IdResol`) before cutover.
-- **Dropped legacy fields aren't diffed.** `verify` only compares mapped
-  fields, so unmapped columns (e.g. `encabezados_mov.Dcto`) are invisible to
-  parity by construction. This is intentional — line totals are tolerance-
-  checked net of discount — but confirm no business-critical field is silently
-  dropped before cutover.
+- **Scale / speed.** `import` does per-row `INSERT … ON DUPLICATE KEY UPDATE`
+  and loads each table fully into memory first; the 1.18M-row `order_items`
+  import takes ~14 min on a dev box (peak heap well under the 6 GB ceiling).
+  Batched multi-row inserts (with per-row fallback for error isolation) are the
+  top cutover-readiness follow-up.
+- **Dropped legacy fields aren't diffed.** `verify` only compares mapped fields,
+  so unmapped columns (e.g. `encabezados_mov.Dcto`) are invisible to parity by
+  construction. Intentional (line totals are tolerance-checked net of discount);
+  confirm no business-critical field is silently dropped before cutover.
 - **`customers` soft-delete.** `EsActivo=0` sets `deleted_at` but leaves
-  `is_active=true` (the new schema's `customers.deleted_at` is a plain column,
-  not auto-filtering). Inactive legacy customers migrate as active+soft-deleted.
-- **Scale.** `import`/`verify` load each table fully into memory before
-  batching; the real `encabezados_mov` is the bulk of the dump. Fine on a dev
-  box; revisit for streaming if memory is tight.
-- **Namespace pin.** `MIGRATION_NAMESPACE` (in `src/core/idMap.ts`) is frozen —
+  `is_active=true` (a plain column, not auto-filtering). Inactive legacy
+  customers migrate as active + soft-deleted.
+- **`encabezados_pagodet` (payments) is empty** in the current dump, so the
+  payments rule and `mapPaymentMethod` are unexercised on real data.
+- **Namespace pin.** `MIGRATION_NAMESPACE` (`src/core/idMap.ts`) is frozen —
   never change it post-cutover or re-imports desync cross-table references.
