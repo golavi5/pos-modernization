@@ -121,8 +121,8 @@ via the runbook below.
 ## Real-Dump Runbook
 
 Use this to validate parity against `info/bd_ex.sql` (the 232 MB legacy
-dump — gitignored, contains no PII beyond what's in the sample). Run locally
-after confirming `npm test` is green.
+dump — gitignored because it holds real customer data; never commit it). Run
+locally after confirming `npm test` is green.
 
 ```bash
 # 1. Load the real legacy dump into pos_legacy on the dev MySQL (port 3308):
