@@ -163,7 +163,7 @@ MySQL Docker port is `3308` on the host (maps to 3306 inside).
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **pos-modernization** (5574 symbols, 8504 relationships, 64 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **pos-modernization** (5943 symbols, 9060 relationships, 76 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

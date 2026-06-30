@@ -51,12 +51,14 @@ jobs:
       - run: npm run build
 
   e2e:
-    name: E2E — Playwright (non-blocking)
+    name: E2E — Playwright (suspended)
     needs: [backend, frontend]
     runs-on: ubuntu-latest
-    # Non-blocking: the full-stack orchestration below is not yet validated on a
-    # runner (sale flows need seeded catalog data). The backend/frontend jobs are
-    # the gates; this runs for signal until E2E is hardened (S-01 follow-up).
+    # SUSPENDED: this job is disabled via `if: false` and does not run. The
+    # full-stack orchestration below is not yet validated on a runner (sale flows
+    # need seeded catalog data); re-enable by removing `if: false` once E2E is
+    # hardened (S-01 follow-up). The backend/frontend jobs remain the gates.
+    if: false
     continue-on-error: true
     services:
       mysql:
