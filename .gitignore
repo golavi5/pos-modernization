@@ -60,3 +60,12 @@ ui.png
 # info
 
 info/
+
+# M4 migration CLI
+new-implementation/migration/node_modules/
+new-implementation/migration/dist/
+new-implementation/migration/.env
+new-implementation/migration/dumps/*.sql
+new-implementation/migration/reports/*
+!new-implementation/migration/dumps/.gitkeep
+!new-implementation/migration/reports/.gitkeep
