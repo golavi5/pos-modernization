@@ -29,7 +29,9 @@ export async function provisionTarget(conn: TargetConn): Promise<void> {
 
   // Opaque to tsc on purpose: importing backend source as a literal specifier pulls
   // it into this package's tsc program (rootDir violation). The path resolves fine at runtime.
-  const dataSourcePath: string = '../../../backend/src/database/data-source.js';
+  // Points to the compiled CJS dist, not the TypeScript source — Vite/esbuild cannot transform
+  // backend entity files that use legacy @Column() decorators without extra config.
+  const dataSourcePath: string = '../../../backend/dist/database/data-source.js';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { dataSourceOptions } = (await import(dataSourcePath)) as { dataSourceOptions: Record<string, unknown> };
 

@@ -2,10 +2,11 @@ import type { Rule } from '../types/Rule.js';
 import { deterministicId } from '../core/idMap.js';
 import { parseLegacyDate } from '../core/transforms.js';
 export default {
-  kind: 'map', source: 'encabezados', target: 'orders', dependsOn: ['clientes'],
+  kind: 'map', source: 'encabezados', target: 'orders', dependsOn: ['clientes', 'usuarios'],
   idMap: { legacyKey: 'IdEncab', newKey: 'deterministic' },
   fields: [
     { from: null,           to: 'company_id',   transform: (_v, c) => c.companyId },
+    { from: null,           to: 'created_by',   transform: (_v, c) => c.bootstrapUserId },
     { from: 'IdCliente',    to: 'customer_id',  transform: (v) => v == null ? null : deterministicId('clientes', String(v)) },
     { from: 'NumDocumento', to: 'order_number', transform: (v) => String(v) },
     { from: 'Fecha',        to: 'order_date',   transform: parseLegacyDate },
