@@ -18,6 +18,7 @@ export async function runImport(opts: { dryRun?: boolean } = {}): Promise<RuleRe
     for (const rule of ruleOrder()) {
       if ((rule.dependsOn ?? []).some((d) => failed.has(d))) {
         results.push({ source: rule.source, target: rule.target, status: 'blocked_by_dependency', mismatches: [], errors: [] });
+        failed.add(rule.source);   // propagate: dependents of a blocked rule must also block
         continue;
       }
       const res = await importRule(p, legacy, target, rule, lookups, tenant, opts.dryRun ?? false);

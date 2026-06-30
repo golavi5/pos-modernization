@@ -1,7 +1,6 @@
 import { ruleOrder } from '../rules/_registry.js';
 import { compare } from '../core/differ.js';
 import { applyFields } from '../core/applyFields.js';
-import { newId } from '../core/idMap.js';
 import { pool, targetSchema, legacySchema } from '../core/targetDb.js';
 import { loadLookups } from '../core/lookups.js';
 import { resolveTenant } from '../core/legacyDb.js';
@@ -21,7 +20,6 @@ export async function runVerify(): Promise<RuleResult[]> {
       const nonOk: RowResult[] = []; let verified = 0;
       for (let i = 0; i < legacyRows.length; i += BATCH) {
         const slice = legacyRows.slice(i, i + BATCH);
-        const ids = slice.map((r) => newId(rule.idMap, rule.source, r[rule.idMap.legacyKey]));
         const [migrated] = await p.query<any[]>(
           `SELECT * FROM \`${target}\`.\`${rule.target}\` WHERE legacy_id IN (${slice.map(() => '?').join(',')})`,
           slice.map((r) => String(r[rule.idMap.legacyKey])),
