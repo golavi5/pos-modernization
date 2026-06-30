@@ -19,7 +19,6 @@ export async function provisionTarget(conn: TargetConn): Promise<void> {
     port: conn.port,
     user: conn.user,
     password: conn.password,
-    multipleStatements: true,
   });
   try {
     await admin.query(`DROP DATABASE IF EXISTS \`${conn.database}\``);
