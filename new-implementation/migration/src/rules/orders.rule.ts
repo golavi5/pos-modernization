@@ -6,7 +6,7 @@ export default {
   idMap: { legacyKey: 'IdEncab', newKey: 'deterministic' },
   fields: [
     { from: null,           to: 'company_id',   transform: (_v, c) => c.companyId },
-    { from: null,           to: 'created_by',   transform: (_v, c) => c.bootstrapUserId },
+    { from: 'IdUsuario',    to: 'created_by',   transform: (v) => deterministicId('usuarios', String(v)) },
     { from: 'IdCliente',    to: 'customer_id',  transform: (v) => v == null ? null : deterministicId('clientes', String(v)) },
     { from: 'NumDocumento', to: 'order_number', transform: (v) => String(v) },
     { from: 'Fecha',        to: 'order_date',   transform: parseLegacyDate },
