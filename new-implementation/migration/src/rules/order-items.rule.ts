@@ -10,7 +10,7 @@ export default {
     { from: 'IdEncab',       to: 'order_id',   transform: (v) => deterministicId('encabezados', String(v)) },
     { from: 'IdInventario',  to: 'product_id', transform: (v) => deterministicId('inventarios', String(v)) },
     { from: 'Cant',          to: 'quantity',   verify: 'exact',
-      transform: (v) => { const n = Math.trunc(Number(v)); return Number.isFinite(n) && Math.abs(n) <= 2147483647 ? n : 0; } },
+      transform: (v) => { const n = Math.trunc(Number(v)); return Number.isFinite(n) && n >= -2147483648 && n <= 2147483647 ? n : 0; } },
     { from: 'ValorUnit',     to: 'unit_price', verify: { tolerance: 0.01 } },
     { from: 'ValorSubTotal', to: 'subtotal',   verify: { tolerance: 0.01 } },
     { from: 'ValorIva',      to: 'tax_amount', verify: { tolerance: 0.01 } },
