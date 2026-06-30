@@ -55,6 +55,17 @@ npm run test:e2e:headed
 
 > Playwright base URL defaults to `http://localhost:3000`. Set `BASE_URL` env var to override.
 
+### Migration CLI (M4)
+```bash
+cd new-implementation/migration
+npm install
+npm test                      # builds backend first (pretest), then runs Testcontainers e2e
+NODE_ENV=migration npm run migrate -- reset    # provision target DB via TypeORM migrations
+NODE_ENV=migration npm run migrate -- import   # load legacy rows
+NODE_ENV=migration npm run migrate -- verify   # parity diff (exit 0 = clean)
+NODE_ENV=migration npm run migrate -- report   # render HTML report
+```
+
 ---
 
 ## Architecture
@@ -66,6 +77,7 @@ pos-modernization/
 │   ├── frontend/             # Next.js 14
 │   ├── backend/              # NestJS 10
 │   ├── database/             # schema.sql (MySQL init)
+│   ├── migration/            # M4 legacy parity CLI (standalone)
 │   └── docker-compose.yml
 ├── documentation/
 ├── prototypes/               # read-only
@@ -198,7 +210,7 @@ the manual-index repos:
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **pos-modernization** (5574 symbols, 8504 relationships, 64 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **pos-modernization** (5943 symbols, 9060 relationships, 76 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

@@ -67,7 +67,7 @@ modules:
       legacy .NET stack in `legacy-implementations/`.
     priority: medium
     target_date: null
-    status: planned
+    status: in_progress
 
   - id: M5
     code: FISC
