@@ -10,7 +10,10 @@ export default {
     // user so the order still imports (mirrors the customer_id null-guard below).
     { from: 'IdUsuario',    to: 'created_by',   transform: (v, c) => v == null ? c.bootstrapUserId : deterministicId('usuarios', String(v)) },
     { from: 'IdCliente',    to: 'customer_id',  transform: (v) => v == null ? null : deterministicId('clientes', String(v)) },
-    { from: 'NumDocumento', to: 'order_number', transform: (v) => String(v) },
+    // Legacy NumDocumento repeats across prefixes/resolutions/years (6,617 dups in the
+    // real dump; not even (IdEmpresa,IdDocumento,NumDocumento) is unique). order_number is
+    // globally UNIQUE, so disambiguate with the unique legacy PK to avoid upsert collisions.
+    { from: 'NumDocumento', to: 'order_number', transform: (v, c) => `${v}-${c.row.IdEncab}` },
     { from: 'Fecha',        to: 'order_date',   transform: parseLegacyDate },
     { from: 'EsAnulado',    to: 'status',       transform: (v) => Number(v) ? 'cancelled' : 'completed' },
     // subtotal/tax/total derived from the order's lines (ctx.lookups.mov_totals keyed by IdEncab)
