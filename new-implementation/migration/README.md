@@ -111,7 +111,7 @@ npm test          # builds backend, then runs vitest (Testcontainers e2e + unit)
 npm run test:watch
 ```
 
-The committed e2e uses a synthetic fixture (`tests/fixtures/mini-legacy.sql`)
+The committed e2e uses a synthetic fixture (`tests/fixtures/legacy-sample.sql`)
 with no real PII. It proves the migration machine is correct; it does **not**
 prove the actual rules against the real dump. Real data parity is validated
 via the runbook below.
@@ -141,3 +141,32 @@ NODE_ENV=migration npm run migrate -- report
 
 Open `reports/<latest>/report.html` to review mismatches. Iterate rule
 transforms in `src/rules/` until `verify` exits `0`.
+
+---
+
+## Known limitations & follow-ups
+
+The committed e2e proves the machine on a synthetic sample. The following are
+surfaced by `verify` (never silent corruption) but a real-dump operator should
+expect them:
+
+- **`order_number` collisions.** `orders.order_number` is globally UNIQUE, but
+  legacy `encabezados.NumDocumento` can repeat across prefixes / resolutions /
+  document types. On a collision the second order upserts over the first
+  (`ON DUPLICATE KEY UPDATE`) and its `order_items` FK then either aborts
+  import (exit 2) or shows as `missing` in `verify` (exit 1). If the real dump
+  reuses `NumDocumento`, disambiguate it in `orders.rule.ts` (e.g. prefix with
+  `IdDocumento`/`IdResol`) before cutover.
+- **Dropped legacy fields aren't diffed.** `verify` only compares mapped
+  fields, so unmapped columns (e.g. `encabezados_mov.Dcto`) are invisible to
+  parity by construction. This is intentional — line totals are tolerance-
+  checked net of discount — but confirm no business-critical field is silently
+  dropped before cutover.
+- **`customers` soft-delete.** `EsActivo=0` sets `deleted_at` but leaves
+  `is_active=true` (the new schema's `customers.deleted_at` is a plain column,
+  not auto-filtering). Inactive legacy customers migrate as active+soft-deleted.
+- **Scale.** `import`/`verify` load each table fully into memory before
+  batching; the real `encabezados_mov` is the bulk of the dump. Fine on a dev
+  box; revisit for streaming if memory is tight.
+- **Namespace pin.** `MIGRATION_NAMESPACE` (in `src/core/idMap.ts`) is frozen —
+  never change it post-cutover or re-imports desync cross-table references.
