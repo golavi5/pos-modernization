@@ -28,10 +28,11 @@ export async function provisionTarget(conn: TargetConn): Promise<void> {
     await admin.end();
   }
 
-  // Import backend's dataSourceOptions and run TypeORM migrations against target.
-  // Dynamic import keeps tsc from pulling the backend file into rootDir resolution.
+  // Opaque to tsc on purpose: importing backend source as a literal specifier pulls
+  // it into this package's tsc program (rootDir violation). The path resolves fine at runtime.
+  const dataSourcePath: string = '../../../backend/src/database/data-source.js';
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { dataSourceOptions } = await import('../../../backend/src/database/data-source.js') as any;
+  const { dataSourceOptions } = (await import(dataSourcePath)) as { dataSourceOptions: Record<string, unknown> };
 
   const { DataSource } = await import('typeorm');
   const ds = new (DataSource as any)({
