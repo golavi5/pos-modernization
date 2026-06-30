@@ -37,18 +37,26 @@ async function importRule(p: any, legacy: string, target: string, rule: MapRule,
     for (let i = 0; i < rows.length; i += BATCH) {
       for (const row of rows.slice(i, i + BATCH)) {
         const ctx: TransformCtx = { row, source: rule.source, lookups, companyId: tenant.companyId, bootstrapUserId: tenant.bootstrapUserId };
+        const legacyPk = String(row[rule.idMap.legacyKey]);
         const id = newId(rule.idMap, rule.source, row[rule.idMap.legacyKey]);
         const { target: t, errors: rowErrors } = applyFields(rule, row, id, ctx);
         if (rowErrors.length) { errors.push(...rowErrors); continue; }
         if (dryRun) { imported++; continue; }
         const cols = Object.keys(t);
         const updates = cols.filter((c) => c !== 'id' && c !== 'legacy_id').map((c) => `\`${c}\`=VALUES(\`${c}\`)`).join(',');
-        await conn.query(
-          `INSERT INTO \`${target}\`.\`${rule.target}\` (${cols.map((c) => `\`${c}\``).join(',')})
-           VALUES (${cols.map(() => '?').join(',')}) ON DUPLICATE KEY UPDATE ${updates}`,
-          cols.map((c) => t[c] ?? null),
-        );
-        imported++;
+        // A constraint violation (NOT NULL date, FK orphan, length…) is captured per-row, not
+        // thrown: one bad legacy row must not abort the whole migration. InnoDB rolls back only
+        // the failed statement, so the surrounding transaction stays usable for the rest.
+        try {
+          await conn.query(
+            `INSERT INTO \`${target}\`.\`${rule.target}\` (${cols.map((c) => `\`${c}\``).join(',')})
+             VALUES (${cols.map(() => '?').join(',')}) ON DUPLICATE KEY UPDATE ${updates}`,
+            cols.map((c) => t[c] ?? null),
+          );
+          imported++;
+        } catch (e) {
+          errors.push({ rule: rule.source, legacyPk, cause: e instanceof Error ? e.message : String(e) });
+        }
       }
     }
     if (errors.length > maxErrors) { if (!dryRun) await conn.rollback(); return { source: rule.source, target: rule.target, status: 'failed', rowsImported: 0, mismatches: [], errors }; }

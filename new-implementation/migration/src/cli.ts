@@ -24,7 +24,7 @@ program.command('import').option('--dry-run').action(async (o) => {
   console.log(chalk.cyan(`import done — ${report.summary.errors} row errors`)); process.exit(report.exitCode);
 });
 program.command('verify').action(async () => {
-  await preflight();
+  requireMigrationEnv(); await preflight();
   const report = buildReport('verify', await runVerify(), new Date().toISOString());
   await writeReport(`reports/${stamp()}`, report);
   console.log(report.exitCode === 0 ? chalk.green('parity OK') : chalk.red('parity FAILED')); process.exit(report.exitCode);

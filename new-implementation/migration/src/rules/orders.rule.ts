@@ -6,7 +6,9 @@ export default {
   idMap: { legacyKey: 'IdEncab', newKey: 'deterministic' },
   fields: [
     { from: null,           to: 'company_id',   transform: (_v, c) => c.companyId },
-    { from: 'IdUsuario',    to: 'created_by',   transform: (v) => deterministicId('usuarios', String(v)) },
+    // created_by is NOT NULL + FK→users; a null/absent legacy user falls back to the bootstrap
+    // user so the order still imports (mirrors the customer_id null-guard below).
+    { from: 'IdUsuario',    to: 'created_by',   transform: (v, c) => v == null ? c.bootstrapUserId : deterministicId('usuarios', String(v)) },
     { from: 'IdCliente',    to: 'customer_id',  transform: (v) => v == null ? null : deterministicId('clientes', String(v)) },
     { from: 'NumDocumento', to: 'order_number', transform: (v) => String(v) },
     { from: 'Fecha',        to: 'order_date',   transform: parseLegacyDate },
