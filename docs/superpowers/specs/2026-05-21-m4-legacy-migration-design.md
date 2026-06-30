@@ -360,5 +360,69 @@ None at design time. The following are deferred until the real dump arrives:
 ## 10. References
 
 - `SPEC-001-pos-modernization.md` — module M4 declaration.
-- `new-implementation/database/schema.sql` — authoritative target schema.
+- `new-implementation/database/schema.sql` — ~~authoritative target schema~~
+  **SUPERSEDED**, see Amendment §11.
 - `CLAUDE.md` — stack overview and dev commands.
+
+## 11. Amendment — 2026-06-29 (schema ownership)
+
+The original design (2026-05-21) treats `database/schema.sql` as the
+authoritative target schema. Since then (SPEC-CUT-001 B-05/B-06) the schema
+is owned by **TypeORM migrations** (`backend/src/database/migrations/`),
+generated from the entities. `schema.sql` is now explicitly marked
+SUPERSEDED, "do not load on deploy," and **divergent** from the running
+schema (e.g. `categories`→`product_categories`, `warehouse`→`warehouses`,
+no `notifications` table). Validating parity against `schema.sql` would test
+against a schema that does not match production. This amendment supersedes
+every `schema.sql` reference in §3, §6, and §8.3.
+
+**Authoritative target tables** (from entities): `companies`, `customers`,
+`products`, `product_categories`, `orders`, `order_items`, `payments`,
+`warehouses`, `warehouse_locations`, `stock_movements`, `users`, `roles`,
+`settings`, `notifications`.
+
+**A1 — Target provisioning.** The migration target DB (default
+`pos_db_migration`) and the e2e Testcontainer target are provisioned by
+**running the backend's TypeORM migrations**, not by loading `schema.sql`.
+Mechanism: the standalone CLI imports the backend's exported
+`dataSourceOptions` (`new-implementation/backend/src/database/data-source.ts`,
+already documented as the single source of truth) and constructs a
+`DataSource` with `host`/`port`/`database` overridden to point at the target,
+then calls `runMigrations()`. This dependency runs migration→backend, the
+opposite direction from the "Why standalone" rationale in §4 (which forbids
+*backend importing migration code*), so the decoupling property is preserved.
+`migrate reset` drops + recreates `pos_db_migration`, then runs migrations.
+
+**A2 — `legacy_id` column.** The nullable `legacy_id VARCHAR(64)` + unique
+index is added via a **new TypeORM migration** in
+`backend/src/database/migrations/`, NOT by editing `schema.sql`. Caveat: that
+migration is picked up by `migrationsRun` on the next production deploy
+(`DB_RUN_MIGRATIONS=true`), so live `pos_db` also gains these columns — the
+design's "shared shape" intent, but a production-touching change riding in on
+M4. The column is scoped to tables with an actual legacy source, NOT all 14
+(scope decided at plan-review).
+
+**A3 — Real dump located (supersedes §9 "deferred").** The legacy dump
+**exists** at `info/bd_ex.sql` (232 MB, gitignored, MySQL `utf8mb3_spanish_ci`)
+— a **representative sample** of a Colombian POS + DIAN fiscal system, not the
+frozen cutover extract. §9's "deferred until the dump arrives" is void. Real
+per-table rules are authored now (Spanish→English): `clientes`→customers,
+`inventarios`→products, `encabezados`→orders, `encabezados_mov`→order_items,
+`encabezados_pagodet`→payments, `usuarios`→users, `empresas`→companies. The
+DIAN fiscal subsystem (`e_invoice_response`, `config_plemsi`,
+`empresas_resoluciones`, `prefijos`, `documentos`, `payloads`, fiscal `clientes_*`)
+is **deferred to M5** via explicit `skip` rules (frozen dump ⇒ nothing lost).
+All 47 legacy tables get a map or skip rule (runner halts otherwise).
+
+**A4 — Verify colocation.** §6's verify JOIN (`legacy.<src> LEFT JOIN
+target.<tgt>`) is impossible across two MySQL servers. Legacy (`pos_legacy`)
+and target (`pos_db_migration`) run as **two schemas in one MySQL instance**;
+verify fetches per-batch and compares in-memory (scales to the real extract).
+
+**A5 — Tenancy & passwords.** Legacy `clientes`/`inventarios`/`usuarios` carry
+no company → all rows assigned ONE `company_id` (single-tenant; the dump is one
+merchant). `usuarios.Clave` is a .NET hash, not bcrypt → not migrated; users
+reset on cutover.
+
+Full task-by-task plan:
+[`docs/superpowers/plans/2026-06-29-m4-legacy-migration.md`](../../superpowers/plans/2026-06-29-m4-legacy-migration.md).
