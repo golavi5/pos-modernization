@@ -78,7 +78,7 @@ export class UsersController {
     @CurrentUser() currentUser: User,
     @Body() dto: AdminCreateUserDto,
   ): Promise<UserResponseDto> {
-    return this.usersService.create(currentUser.company_id, dto);
+    return this.usersService.create(currentUser.company_id, dto, currentUser);
   }
 
   @Patch(':id')
@@ -102,7 +102,7 @@ export class UsersController {
     @CurrentUser() user: User,
     @Body() dto: AssignRolesDto,
   ): Promise<UserResponseDto> {
-    return this.usersService.assignRoles(id, user.company_id, dto);
+    return this.usersService.assignRoles(id, user.company_id, dto, user);
   }
 
   @Patch(':id/toggle-status')
@@ -147,6 +147,6 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all available roles' })
   @ApiResponse({ status: 200, type: [RoleResponseDto] })
   async getRoles(@CurrentUser() user: User): Promise<RoleResponseDto[]> {
-    return this.usersService.getRoles(user.company_id);
+    return this.usersService.getRoles(user.company_id, user);
   }
 }
