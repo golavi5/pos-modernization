@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../auth/entities/user.entity';
-import { Role } from '../auth/entities/role.entity';
 import { Company } from '../companies/entities/company.entity';
 import { AUTH_CONSTANTS } from '../auth/constants/auth.constants';
+import { SystemRolesService } from './system-roles.service';
 
 /**
  * First-run admin bootstrap.
@@ -27,15 +27,16 @@ export class BootstrapService implements OnApplicationBootstrap {
 
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(Role) private readonly roleRepo: Repository<Role>,
-    @InjectRepository(Company)
-    private readonly companyRepo: Repository<Company>,
+    @InjectRepository(Company) private readonly companyRepo: Repository<Company>,
+    private readonly systemRoles: SystemRolesService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     try {
+      const systemRoles = await this.systemRoles.ensureSystemRoles();
+
       const userCount = await this.userRepo.count();
-      if (userCount > 0) return; // already initialized — never re-seed
+      if (userCount > 0) return; // already initialized — never re-seed users
 
       const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim();
       const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
@@ -63,23 +64,13 @@ export class BootstrapService implements OnApplicationBootstrap {
         }),
       );
 
-      // Reuse a system-wide `admin` role if one already exists.
-      let adminRole = await this.roleRepo.findOne({ where: { name: 'admin' } });
-      if (!adminRole) {
-        adminRole = await this.roleRepo.save(
-          this.roleRepo.create({
-            name: 'admin',
-            description: 'System administrator (bootstrap)',
-            is_system_role: true,
-            company_id: null,
-          }),
-        );
-      }
-
       const passwordHash = await bcrypt.hash(
         password,
         AUTH_CONSTANTS.PASSWORD.BCRYPT_ROUNDS,
       );
+
+      const adminRole = systemRoles.get(AUTH_CONSTANTS.ROLES.ADMIN);
+      const superadminRole = systemRoles.get(AUTH_CONSTANTS.ROLES.SUPERADMIN);
 
       await this.userRepo.save(
         this.userRepo.create({
@@ -88,19 +79,17 @@ export class BootstrapService implements OnApplicationBootstrap {
           name: process.env.BOOTSTRAP_ADMIN_NAME?.trim() || 'Administrator',
           company_id: company.id,
           is_active: true,
-          roles: [adminRole], // cascade writes the user_roles join
+          roles: [adminRole, superadminRole], // platform operator on first deploy
         }),
       );
 
       this.logger.log(
-        `Bootstrapped admin user "${email}" (company "${company.name}").`,
+        `Bootstrapped admin user "${email}" (company "${company.name}") with roles admin, superadmin.`,
       );
     } catch (error) {
       // Never let a bootstrap hiccup crash app startup. State stays "empty DB,
       // retryable by fixing env / DB and restarting".
-      this.logger.error(
-        `Admin bootstrap failed: ${error?.message ?? error}`,
-      );
+      this.logger.error(`Admin bootstrap failed: ${error?.message ?? error}`);
     }
   }
 }
