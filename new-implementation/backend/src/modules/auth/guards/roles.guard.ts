@@ -4,11 +4,10 @@ import { User } from '../entities/user.entity';
 import { AUTH_CONSTANTS } from '../constants/auth.constants';
 
 /**
- * Roles that sit ABOVE the tenant admin (platform-level, cross-tenant). The
- * admin superuser bypass below does NOT apply to routes guarded by these — an
- * admin must hold the role literally. Keeps tenant admins out of platform ops
- * (e.g. company provisioning) while letting them perform every operational role
- * inside their own tenant.
+ * Roles that sit ABOVE the tenant admin (platform-level, cross-tenant). Seeded
+ * as a real system role (SYSTEM_ROLES) and held by the first bootstrap admin.
+ * The admin superuser bypass below does NOT apply to routes guarded by these —
+ * an admin must hold the role literally.
  */
 const ELEVATED_ROLES: string[] = ['superadmin'];
 
