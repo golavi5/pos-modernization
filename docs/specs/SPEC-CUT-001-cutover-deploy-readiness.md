@@ -1,6 +1,6 @@
 # M1–M3 — Production Cutover Readiness
 
-**Status**: DRAFT
+**Status**: DONE
 **Owner**: gandhi
 **Created**: 2026-06-16
 **Modules**: M1 INFRA (primary), M2 BACK, M3 FRONT
