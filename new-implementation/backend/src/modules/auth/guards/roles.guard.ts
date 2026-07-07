@@ -1,6 +1,16 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { User } from '../entities/user.entity';
+import { AUTH_CONSTANTS } from '../constants/auth.constants';
+
+/**
+ * Roles that sit ABOVE the tenant admin (platform-level, cross-tenant). The
+ * admin superuser bypass below does NOT apply to routes guarded by these — an
+ * admin must hold the role literally. Keeps tenant admins out of platform ops
+ * (e.g. company provisioning) while letting them perform every operational role
+ * inside their own tenant.
+ */
+const ELEVATED_ROLES: string[] = ['superadmin'];
 
 /**
  * RolesGuard
@@ -36,8 +46,14 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User not found in request');
     }
 
-    // Check if user has at least one of the required roles
-    const hasRole = user.hasAnyRole(requiredRoles);
+    // Check if user has at least one of the required roles. The tenant admin is
+    // a superuser for operational routes: it satisfies any required role unless
+    // the route demands an elevated (platform-level) role it does not literally
+    // hold — see ELEVATED_ROLES.
+    const routeIsElevated = requiredRoles.some((r) => ELEVATED_ROLES.includes(r));
+    const hasRole =
+      user.hasAnyRole(requiredRoles) ||
+      (!routeIsElevated && user.hasAnyRole([AUTH_CONSTANTS.ROLES.ADMIN]));
 
     if (!hasRole) {
       throw new ForbiddenException(
