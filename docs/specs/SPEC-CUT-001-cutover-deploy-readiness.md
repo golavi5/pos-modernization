@@ -134,6 +134,35 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
   data — API 403s), real risk (edge JWT parsing + legacy non-JWT cookies). Not
   done by choice.
 
+### B-10 — Fresh DB has no operational roles → admin can't run the smoke flow  ✅ *DONE*
+- **Found by the cutover dry-run** (local prod-parity pre-flight — see
+  `../../new-implementation/STAGING-DRY-RUN-RESULTS.md`). A freshly migrated +
+  bootstrapped DB carries **only the `admin` role**: `BootstrapService` creates
+  one company + `admin` + the admin user and nothing else, and **no path**
+  (bootstrap, `/auth/register` → `roles:[]`, `POST /users` / `PATCH
+  /users/:id/roles` — both assign *existing* roles only) creates or assigns
+  `manager`/`cashier`/`inventory_manager`. `RolesGuard` had no admin-superuser
+  override, so the bootstrap admin got **403** on `POST /products/categories`
+  (needs `manager`), `POST /products`, and `POST /sales/orders` (needs
+  `cashier`/`manager`). The runbook §4 core flow (*"login as admin → add
+  category + product → complete a sale"*) was therefore **impossible as
+  written** — an app-level defect that transfers verbatim to real staging.
+- **Fix (Option A):** `RolesGuard` now treats `admin` as a superuser for
+  operational routes — it satisfies any `@Roles` it does not literally hold,
+  **except** routes requiring an elevated role (`ELEVATED_ROLES = ['superadmin']`),
+  where literal membership still applies. This unblocks catalog/sale for the
+  bootstrap admin **without** granting tenant admins platform-level powers
+  (`POST`/`DELETE /companies` stay `superadmin`-only). Aligns the backend with
+  the admin/superadmin bypass the frontend policy (B-09) already assumed.
+- **Verified:** new `roles.guard.spec.ts` (8 cases incl. the superadmin
+  boundary); backend suite **190/190**; live re-run against rebuilt containers —
+  admin now creates category + product and **completes a sale** (all `201`,
+  previously `403`), while `POST /companies` correctly **stays 403**.
+- **Out of scope (separate, still open):** `superadmin`/`staff`/`viewer` are
+  referenced in `@Roles(...)` but never defined in constants or seeded, so
+  tenant provisioning (`POST`/`DELETE /companies`) is currently unreachable by
+  anyone — a multi-tenant onboarding gap to track on its own.
+
 ---
 
 ## 4. Should-fix before launch
@@ -177,7 +206,7 @@ Run the entire sequence on a **staging** Coolify instance; all steps green = go.
 
 ## 6. Exit criteria
 
-- [ ] B-05 … B-09 closed and verified in staging dry-run
+- [ ] B-05 … B-10 closed and verified in staging dry-run
 - [ ] S-01 (CI green & gating) and S-05 (no committed secrets) closed
 - [ ] Smoke + tenant-isolation checks pass on staging
 - [ ] Backup + rollback demonstrated
