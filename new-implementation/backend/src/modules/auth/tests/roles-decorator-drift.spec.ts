@@ -40,19 +40,16 @@ export function extractRoleNames(src: string): string[] {
   const names: string[] = [];
   for (const m of src.matchAll(/@Roles\(([^)]*)\)/g)) {
     const args = m[1];
-    // Split on commas so each argument is inspected independently.
-    for (const rawArg of args.split(',')) {
-      const arg = rawArg.trim();
-      if (!arg) continue;
-      const quoted = arg.match(/^['"]([^'"]+)['"]$/);
-      if (quoted) {
-        names.push(quoted[1]);
-        continue;
-      }
-      if (/^[A-Za-z_$][\w.$]*$/.test(arg)) {
-        // Bare identifier / dotted constant reference.
-        names.push(resolveConst(arg) ?? arg);
-      }
+    // Tokenize the argument list instead of splitting on commas: a comma inside
+    // a quoted role name (e.g. @Roles('a,b')) must NOT split the token, or the
+    // role would be silently dropped and the guard falsely stays green. The
+    // alternation matches a full quoted string first, then a dotted identifier;
+    // because quoted strings are consumed whole, identifier scanning never
+    // re-enters their interior.
+    for (const t of args.matchAll(/'([^']*)'|"([^"]*)"|([A-Za-z_$][\w.$]*)/g)) {
+      if (t[1] !== undefined) names.push(t[1]); // single-quoted
+      else if (t[2] !== undefined) names.push(t[2]); // double-quoted
+      else if (t[3] !== undefined) names.push(resolveConst(t[3]) ?? t[3]); // ident/const ref
     }
   }
   return names;
@@ -87,6 +84,11 @@ describe('extractRoleNames (drift-guard extractor)', () => {
 
   it('surfaces an unknown quoted role', () => {
     expect(extractRoleNames(`@Roles('wizard')`)).toEqual(['wizard']);
+  });
+
+  it('does not split a comma inside a quoted role name', () => {
+    // Guards against the naive comma-split that would drop the token entirely.
+    expect(extractRoleNames(`@Roles('a,b')`)).toEqual(['a,b']);
   });
 });
 
