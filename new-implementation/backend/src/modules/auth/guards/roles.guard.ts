@@ -2,15 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { User } from '../entities/user.entity';
 import { AUTH_CONSTANTS } from '../constants/auth.constants';
-
-/**
- * Roles that sit ABOVE the tenant admin (platform-level, cross-tenant). The
- * admin superuser bypass below does NOT apply to routes guarded by these — an
- * admin must hold the role literally. Keeps tenant admins out of platform ops
- * (e.g. company provisioning) while letting them perform every operational role
- * inside their own tenant.
- */
-const ELEVATED_ROLES: string[] = ['superadmin'];
+import { ELEVATED_ROLES } from '../constants/elevated-roles';
 
 /**
  * RolesGuard

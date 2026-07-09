@@ -80,7 +80,7 @@ export class ReportsController {
   // ==================== PRODUCT REPORTS ====================
 
   @Get('products/top-selling')
-  @Roles('admin', 'manager', 'staff')
+  @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get top selling products' })
   @ApiResponse({ status: 200, type: [Object] })
   async getTopSellingProducts(
@@ -94,7 +94,7 @@ export class ReportsController {
   }
 
   @Get('products/low-stock')
-  @Roles('admin', 'manager', 'staff')
+  @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get products with low stock levels' })
   @ApiResponse({ status: 200, type: [Object] })
   async getLowStockProducts(

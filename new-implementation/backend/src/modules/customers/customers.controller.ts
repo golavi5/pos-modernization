@@ -45,7 +45,7 @@ export class CustomersController {
    * Get all customers with pagination and filters
    */
   @Get()
-  @Roles('admin', 'manager', 'cashier', 'viewer')
+  @Roles('admin', 'manager', 'cashier')
   async findAll(@Query() query: CustomerQueryDto, @CurrentUser() user: User) {
     return this.customersService.findAll(query, user.company_id);
   }
@@ -93,7 +93,7 @@ export class CustomersController {
    * Get a single customer by ID
    */
   @Get(':id')
-  @Roles('admin', 'manager', 'cashier', 'viewer')
+  @Roles('admin', 'manager', 'cashier')
   async findOne(@Param('id') id: string, @CurrentUser() user: User) {
     return this.customersService.findOne(id, user.company_id);
   }

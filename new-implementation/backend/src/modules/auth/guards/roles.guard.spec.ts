@@ -74,4 +74,9 @@ describe('RolesGuard', () => {
     reflector.get.mockReturnValue(['admin', 'superadmin']);
     expect(guard.canActivate(contextFor(['admin', 'superadmin'], userWithRoles('admin')))).toBe(true);
   });
+
+  it('lets a superadmin pass a superadmin-only route', () => {
+    reflector.get.mockReturnValue(['superadmin']);
+    expect(guard.canActivate(contextFor(['superadmin'], userWithRoles('superadmin')))).toBe(true);
+  });
 });

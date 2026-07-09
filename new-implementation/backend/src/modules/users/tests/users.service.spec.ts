@@ -9,6 +9,13 @@ import {
 import { UsersService } from '../services/users.service';
 import { User } from '../../auth/entities/user.entity';
 import { Role } from '../../auth/entities/role.entity';
+import { ELEVATED_ROLES } from '../../auth/constants/elevated-roles';
+
+function actorWithRoles(roleNames: string[]): User {
+  const actor = new User();
+  actor.roles = roleNames.map((name) => ({ name }) as Role);
+  return actor;
+}
 
 const mockQb = () => ({
   leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -113,6 +120,9 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
+    const plainAdminActor = actorWithRoles(['admin']);
+    const superadminActor = actorWithRoles(['superadmin']);
+
     it('should create and return a new user', async () => {
       const dto = {
         name: 'Bob',
@@ -136,7 +146,7 @@ describe('UsersService', () => {
         email: 'bob@example.com',
       } as User);
 
-      const result = await service.create(companyId, dto);
+      const result = await service.create(companyId, dto, plainAdminActor);
 
       expect(result.name).toBe('Bob');
     });
@@ -145,11 +155,135 @@ describe('UsersService', () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as User);
 
       await expect(
-        service.create(companyId, {
-          email: 'alice@example.com',
-          password: 'x',
-        } as any),
+        service.create(
+          companyId,
+          { email: 'alice@example.com', password: 'x' } as any,
+          plainAdminActor,
+        ),
       ).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw ForbiddenException when a non-superadmin actor tries to assign an elevated role', async () => {
+      const dto = {
+        name: 'Carla',
+        email: 'carla@example.com',
+        password: 'secret123',
+        firstName: 'Carla',
+        lastName: 'King',
+        roleIds: ['role-superadmin'],
+      } as any;
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(null);
+      jest
+        .spyOn(roleRepo, 'findBy')
+        .mockResolvedValue([{ id: 'role-superadmin', name: 'superadmin' } as Role]);
+
+      await expect(
+        service.create(companyId, dto, plainAdminActor),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow a superadmin actor to assign an elevated role', async () => {
+      const dto = {
+        name: 'Carla',
+        email: 'carla2@example.com',
+        password: 'secret123',
+        firstName: 'Carla',
+        lastName: 'King',
+        roleIds: ['role-superadmin'],
+      } as any;
+
+      const superadminRole = { id: 'role-superadmin', name: 'superadmin' } as Role;
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(null);
+      jest.spyOn(roleRepo, 'findBy').mockResolvedValue([superadminRole]);
+      jest.spyOn(userRepo, 'create').mockReturnValue({
+        ...mockUser,
+        name: 'Carla',
+        email: 'carla2@example.com',
+        roles: [superadminRole],
+      } as User);
+      jest.spyOn(userRepo, 'save').mockResolvedValue({
+        ...mockUser,
+        name: 'Carla',
+        email: 'carla2@example.com',
+        roles: [superadminRole],
+      } as User);
+
+      const result = await service.create(companyId, dto, superadminActor);
+
+      expect(result.name).toBe('Carla');
+      expect(result.roles.map((r) => r.name)).toContain('superadmin');
+    });
+  });
+
+  describe('assignRoles — elevated role guard', () => {
+    const plainAdminActor = actorWithRoles(['admin']);
+    const superadminActor = actorWithRoles(['superadmin']);
+    const superadminRole = { id: 'role-superadmin', name: 'superadmin' } as Role;
+
+    it('throws ForbiddenException when a non-superadmin actor assigns an elevated role', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as User);
+      jest.spyOn(roleRepo, 'findBy').mockResolvedValue([superadminRole]);
+
+      await expect(
+        service.assignRoles(
+          userId,
+          companyId,
+          { roleIds: ['role-superadmin'] } as any,
+          plainAdminActor,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows a superadmin actor to assign an elevated role', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as User);
+      jest.spyOn(roleRepo, 'findBy').mockResolvedValue([superadminRole]);
+      jest.spyOn(userRepo, 'save').mockResolvedValue({
+        ...mockUser,
+        roles: [superadminRole],
+      } as User);
+
+      const result = await service.assignRoles(
+        userId,
+        companyId,
+        { roleIds: ['role-superadmin'] } as any,
+        superadminActor,
+      );
+
+      expect(result.roles.map((r) => r.name)).toContain('superadmin');
+    });
+  });
+
+  describe('getRoles — elevated role visibility', () => {
+    const plainAdminActor = actorWithRoles(['admin']);
+    const superadminActor = actorWithRoles(['superadmin']);
+    const allRoles = [
+      { id: 'role-admin', name: 'admin', description: '', is_system_role: true },
+      { id: 'role-superadmin', name: 'superadmin', description: '', is_system_role: true },
+    ] as Role[];
+
+    it('excludes elevated roles for a non-superadmin actor', async () => {
+      jest.spyOn(roleRepo, 'find').mockResolvedValue(allRoles);
+
+      const result = await service.getRoles(companyId, plainAdminActor);
+      const names = result.map((r) => r.name);
+
+      for (const elevated of ELEVATED_ROLES) {
+        expect(names).not.toContain(elevated);
+      }
+      expect(names).toContain('admin');
+    });
+
+    it('includes elevated roles for a superadmin actor', async () => {
+      jest.spyOn(roleRepo, 'find').mockResolvedValue(allRoles);
+
+      const result = await service.getRoles(companyId, superadminActor);
+      const names = result.map((r) => r.name);
+
+      for (const elevated of ELEVATED_ROLES) {
+        expect(names).toContain(elevated);
+      }
     });
   });
 

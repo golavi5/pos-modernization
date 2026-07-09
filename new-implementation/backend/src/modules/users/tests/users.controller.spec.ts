@@ -71,7 +71,7 @@ describe('UsersController (tenant scoping)', () => {
   it('forwards company_id to create (was the missed `currentUser.companyId` path)', async () => {
     const dto = {} as AdminCreateUserDto;
     await controller.create(mockUser, dto);
-    expect(mockService.create).toHaveBeenCalledWith(mockCompanyId, dto);
+    expect(mockService.create).toHaveBeenCalledWith(mockCompanyId, dto, mockUser);
   });
 
   it('forwards company_id to update', async () => {
@@ -83,7 +83,7 @@ describe('UsersController (tenant scoping)', () => {
   it('forwards company_id to assignRoles', async () => {
     const dto = {} as AssignRolesDto;
     await controller.assignRoles('target-id', mockUser, dto);
-    expect(mockService.assignRoles).toHaveBeenCalledWith('target-id', mockCompanyId, dto);
+    expect(mockService.assignRoles).toHaveBeenCalledWith('target-id', mockCompanyId, dto, mockUser);
   });
 
   it('forwards company_id to toggleStatus', async () => {
@@ -104,6 +104,6 @@ describe('UsersController (tenant scoping)', () => {
 
   it('forwards company_id to getRoles', async () => {
     await controller.getRoles(mockUser);
-    expect(mockService.getRoles).toHaveBeenCalledWith(mockCompanyId);
+    expect(mockService.getRoles).toHaveBeenCalledWith(mockCompanyId, mockUser);
   });
 });

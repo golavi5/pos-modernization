@@ -10,6 +10,7 @@ import { Repository, Like, In, Between } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../auth/entities/user.entity';
 import { Role } from '../../auth/entities/role.entity';
+import { ELEVATED_ROLES } from '../../auth/constants/elevated-roles';
 import { AdminCreateUserDto } from '../dto/create-user.dto';
 import { AdminUpdateUserDto, AssignRolesDto, AdminResetPasswordDto } from '../dto/update-user.dto';
 import { UserQueryDto } from '../dto/user-query.dto';
@@ -101,7 +102,7 @@ export class UsersService {
   /**
    * Create a new user (admin)
    */
-  async create(companyId: string, dto: AdminCreateUserDto): Promise<UserResponseDto> {
+  async create(companyId: string, dto: AdminCreateUserDto, actor: User): Promise<UserResponseDto> {
     // Check email uniqueness
     const existing = await this.userRepository.findOne({
       where: { email: dto.email },
@@ -119,6 +120,7 @@ export class UsersService {
     if (dto.roleIds && dto.roleIds.length > 0) {
       roles = await this.roleRepository.findBy({ id: In(dto.roleIds) });
     }
+    this.assertMayAssign(roles, actor);
 
     const user = this.userRepository.create({
       name: dto.name,
@@ -159,7 +161,7 @@ export class UsersService {
   /**
    * Assign roles to user (replaces existing)
    */
-  async assignRoles(id: string, companyId: string, dto: AssignRolesDto): Promise<UserResponseDto> {
+  async assignRoles(id: string, companyId: string, dto: AssignRolesDto, actor: User): Promise<UserResponseDto> {
     const user = await this.findUserOrFail(id, companyId);
 
     const roles = await this.roleRepository.findBy({ id: In(dto.roleIds) });
@@ -169,6 +171,7 @@ export class UsersService {
       const missing = dto.roleIds.filter((rid) => !found.includes(rid));
       throw new NotFoundException(`Roles not found: ${missing.join(', ')}`);
     }
+    this.assertMayAssign(roles, actor);
 
     user.roles = roles;
     const saved = await this.userRepository.save(user);
@@ -287,13 +290,17 @@ export class UsersService {
   /**
    * Get all available roles for the company
    */
-  async getRoles(companyId: string): Promise<RoleResponseDto[]> {
+  async getRoles(companyId: string, actor: User): Promise<RoleResponseDto[]> {
     const roles = await this.roleRepository.find({
       where: [{ company_id: companyId }, { is_system_role: true }],
       order: { name: 'ASC' },
     });
 
-    return roles.map((r) => ({
+    const visible = actor.hasAnyRole(ELEVATED_ROLES)
+      ? roles
+      : roles.filter((r) => !ELEVATED_ROLES.includes(r.name));
+
+    return visible.map((r) => ({
       id: r.id,
       name: r.name,
       description: r.description,
@@ -304,6 +311,14 @@ export class UsersService {
   // ==============================
   // Private helpers
   // ==============================
+
+  /** Non-elevated actors may not grant elevated roles. */
+  private assertMayAssign(roles: Role[], actor: User): void {
+    const wantsElevated = roles.some((r) => ELEVATED_ROLES.includes(r.name));
+    if (wantsElevated && !actor.hasAnyRole(ELEVATED_ROLES)) {
+      throw new ForbiddenException('You cannot assign an elevated role.');
+    }
+  }
 
   private async findUserOrFail(id: string, companyId: string): Promise<User> {
     const user = await this.userRepository.findOne({

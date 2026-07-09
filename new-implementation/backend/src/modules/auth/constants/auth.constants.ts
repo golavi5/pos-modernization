@@ -51,6 +51,7 @@ export const AUTH_CONSTANTS = {
 
   // Default Roles
   ROLES: {
+    SUPERADMIN: 'superadmin',
     ADMIN: 'admin',
     MANAGER: 'manager',
     CASHIER: 'cashier',

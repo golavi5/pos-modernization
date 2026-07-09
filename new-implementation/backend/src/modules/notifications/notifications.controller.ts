@@ -39,7 +39,7 @@ export class NotificationsController {
   ) {}
 
   @Get()
-  @Roles('admin', 'manager', 'staff')
+  @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get notifications for current user' })
   @ApiResponse({ status: 200, type: NotificationListDto })
   async findAll(
@@ -50,7 +50,7 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
-  @Roles('admin', 'manager', 'staff')
+  @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Get unread notification count' })
   @ApiResponse({ status: 200, type: UnreadCountDto })
   async getUnreadCount(@CurrentUser() user: User): Promise<UnreadCountDto> {
@@ -58,7 +58,7 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  @Roles('admin', 'manager', 'staff')
+  @Roles('admin', 'manager')
   @ApiOperation({ summary: 'Mark notification as read' })
   @ApiResponse({ status: 200, type: NotificationResponseDto })
   async markAsRead(
@@ -69,7 +69,7 @@ export class NotificationsController {
   }
 
   @Patch('read-all')
-  @Roles('admin', 'manager', 'staff')
+  @Roles('admin', 'manager')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark all notifications as read' })
   async markAllAsRead(@CurrentUser() user: User): Promise<{ updated: number }> {
@@ -85,7 +85,7 @@ export class NotificationsController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'manager', 'staff')
+  @Roles('admin', 'manager')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a notification' })
   async remove(
