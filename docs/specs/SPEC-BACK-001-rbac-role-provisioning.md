@@ -1,6 +1,6 @@
 # M2 — RBAC Role Provisioning & Ghost-Role Cleanup
 
-**Status**: DRAFT
+**Status**: DONE
 **Owner**: gandhi
 **Created**: 2026-07-07
 **Modules**: M2 BACK
