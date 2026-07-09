@@ -80,6 +80,8 @@ this is the verification checklist. Tracks SPEC-CUT-001 §5.
 - [ ] **Rollback rehearsal:** in Coolify, redeploy the previous backend image/commit;
       confirm the app comes back healthy (migrations are forward-only — a rollback
       must target a commit whose migrations already ran).
+      → Step-by-step procedure + Case A/Case B decision tree in
+      [`STAGING-ROLLBACK-RUNBOOK.md`](./STAGING-ROLLBACK-RUNBOOK.md).
 - **Pass gate:** restore verified; rollback returns a healthy stack.
 
 ## 7. Observability spot-check
