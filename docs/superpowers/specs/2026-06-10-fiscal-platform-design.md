@@ -168,4 +168,51 @@ wira
 - **OQ-7:** Documento soporte (purchases from non-obligated suppliers) — v1.1 or Phase 2?
 
 ---
+
+## 9. Review-gate engineering assessment (2026-07-09, Claude Code)
+
+**Verdict: architecture is sound and approvable in shape; do NOT flip to TASKS
+until the three gate conditions below close.** The load-bearing decisions —
+emission/reception behind ports (ADR-003/005), fiscal as a bounded context in
+the monolith (ADR-001), the Catalog(global, year-versioned) × Profile(tenant)
+split (§4.3.1), ThirdParty≠Customer (ADR-006), and the D10 "prepare figures,
+don't file" boundary — are the right calls and should not be relitigated.
+
+### Gate conditions (block the TASKS breakdown)
+1. **OQ-1 must yield a v2026 Fiscal Rule Catalog skeleton** — it is a *Phase 1*
+   input, not just Phase 4. The sales/VAT view cannot be correct without it, so
+   Phase 1 is partially blocked on OQ-1, not merely Phase 0.
+2. **Signing / set-de-pruebas spike** — one document accepted in DIAN set de
+   pruebas (UBL 2.1 per anexo técnico + XAdES + CUFE) *before* any Phase 4
+   timeline is committed. This is the single largest schedule risk and §4.1
+   currently lists it as a one-liner.
+3. **Certificate-custody ADR (proposed ADR-007)** — see below.
+
+### Ranked risks / gaps (surfaced at review; not yet reflected in §1–8)
+| # | Gap | Why it matters | Suggested action |
+|---|-----|----------------|------------------|
+| R1 | Unit economics unsolved until Phase 4 | Plemsi 88 COP/doc keeps flowing in prod until `DianDirectAdapter` passes habilitación *per tenant*; at POS DE volume that is a long negative-margin runway | Treat Phase 4 as **not** freely swappable with Phase 3 (revises §6); state interim margin plan at gate |
+| R2 | XAdES/CUFE/set-de-pruebas underspecified | Where most DIAN builds bleed time; unestimated | Gate condition #2 spike |
+| R3 | Certificate custody | Holding tenant signing keys ⇒ ability to emit legally-binding docs on their behalf — larger exposure than the filing boundary | Gate condition #3 (ADR-007): key custody (HSM vs software keystore), issuance, revocation, non-repudiation |
+| R4 | Régimen Simple retención semantics | RST payers are generally **not** agentes de retención de renta; catalog must encode RST exclusions | Add as explicit OQ-1 sub-item |
+| R5 | Email reception is untrusted input (ADR-004) | ZIP/XML from email → XXE, zip bombs, spoofed-sender forged AttachedDocuments; no genuineness check stated | Require CUFE verification vs DIAN + sender allowlist + dedup; verify `radian` already hardens this before "port the parsing libs" |
+| R6 | POS-scale emission mechanics | Failed-emission reconciliation, contingencia numbering when DIAN is down mid-shift, gapless resolución-de-numeración consumption, DIAN rounding rules — all classic set-de-pruebas rejection causes | Add an emission-integrity section to §4.1 before Phase 1 |
+| R7 | Agent write-confirm audit trail | A WhatsApp "sí" authorizing a legally-binding emission needs a non-repudiation record | Immutable confirmation log tied to the emitted CUFE (extends D9) |
+
+### Proposed additions
+- **ADR-007 — Certificate & signing-key custody** (per R3): decide HSM vs
+  encrypted software keystore, key issuance/rotation/revocation, and the
+  non-repudiation record. Blocks Phase 4; should exist before the gate.
+- **OQ-1a** — Régimen Simple retefuente/retención exclusions in the catalog (R4).
+- **OQ-8** — POS emission mode: sync-blocking vs async-on-`SaleClosed` with
+  contingencia fallback and reconciliation (R6).
+
+### Coupling note for this repo
+OQ-5 (rename `pos-modernization` → platform) touches the RBAC / Kairos /
+CLAUDE.md machinery. The `accountant` role parked in PR #25
+(`system-roles.ts`, marked "reserved for M5 fiscal work") is the first fiscal
+footprint already landed in this repo — M5 and the RBAC work are coupled at
+that seam. Gate the `accountant` route wiring on this spec's approval.
+
+---
 *Next step per workflow: review/approval gate (Telegram), then TASKS breakdown synced to Plane.*
