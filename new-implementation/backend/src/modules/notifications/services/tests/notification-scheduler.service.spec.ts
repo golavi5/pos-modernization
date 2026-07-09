@@ -86,4 +86,40 @@ describe('NotificationSchedulerService.checkLowStock', () => {
     expect(result).toEqual({ checked: 0, notified: 0 });
     expect(notificationsService.create).not.toHaveBeenCalled();
   });
+
+  /**
+   * Service-layer tenant-scoping guard: proves both the product scan and the
+   * open-alert dedupe query filter by the caller's company — the query itself,
+   * not just the controller. See SPEC-CUT-001 S-07.
+   */
+  describe('tenant scoping', () => {
+    beforeEach(() => productRepo.find.mockResolvedValue([]));
+
+    it('scopes the product scan to the caller company_id', async () => {
+      await service.checkLowStock('company-A');
+      expect(productRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ company_id: 'company-A' }),
+        }),
+      );
+    });
+
+    it('scopes the open-alert dedupe query to the caller company', async () => {
+      await service.checkLowStock('company-A');
+      expect(notificationRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ companyId: 'company-A' }),
+        }),
+      );
+    });
+
+    it('never queries products for a different tenant', async () => {
+      await service.checkLowStock('company-B');
+      expect(productRepo.find).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ company_id: 'company-A' }),
+        }),
+      );
+    });
+  });
 });
