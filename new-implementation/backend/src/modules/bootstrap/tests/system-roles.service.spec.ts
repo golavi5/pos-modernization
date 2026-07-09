@@ -59,4 +59,26 @@ describe('SystemRolesService.ensureSystemRoles', () => {
     await (await svc(repo)).ensureSystemRoles();
     expect(repo.save).toHaveBeenCalledTimes(SYSTEM_ROLES.length - 1);
   });
+
+  it('returns the exact existing Role object as the map value (no re-creation)', async () => {
+    const adminRole = { name: 'admin', id: 'id-admin', is_system_role: true, company_id: null };
+    const { repo } = build([adminRole]);
+    const result = await (await svc(repo)).ensureSystemRoles();
+
+    // Reference identity: the map must hold the very object findOne returned,
+    // not a copy — proves existing roles are passed through untouched.
+    expect(result.get('admin')).toBe(adminRole);
+  });
+
+  it('creates each missing role with its canonical description', async () => {
+    const { repo } = build([]);
+    await (await svc(repo)).ensureSystemRoles();
+
+    const saved = repo.save.mock.calls.map((c: any[]) => c[0]);
+    for (const def of SYSTEM_ROLES) {
+      const match = saved.find((s: any) => s.name === def.name);
+      expect(match).toBeDefined();
+      expect(match.description).toBe(def.description);
+    }
+  });
 });
