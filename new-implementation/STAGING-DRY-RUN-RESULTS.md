@@ -96,3 +96,79 @@ Coolify staging** — it is not an artifact of the local substitution.
 **NO-GO for production cutover.** Resolve **B-10** (role provisioning), then
 re-run the full sequence on a real Coolify **staging** instance to close the
 remaining exit criteria before `SPEC-CUT-001` can flip to DONE.
+
+---
+
+## Local backup/restore rehearsal
+
+**Date:** 2026-07-09 · **Operator:** Claude Code · **Scope:** exercise
+`scripts/db-backup.sh` + `scripts/db-restore.sh` end-to-end against a MySQL
+8.0 stack (SPEC-CUT-002 non-infra prep). ✅ **PASS — restore verified,
+row counts and per-table checksums match; no script bugs found.**
+
+> **Substitution note.** Run against a standalone `mysql:8.0` container
+> (`rehearsal-db`) with a **representative seeded dataset**, not a full
+> app-boot. This isolates the backup/restore *mechanics* (mysqldump → gzip →
+> gunzip → mysql, cross-DB) without building the backend image or minting
+> secrets. The scripts are schema-agnostic, so a representative multi-table
+> set proves the same code paths as the prior full-stack S-03 check
+> (users/companies/roles = 1/1/1). No host `mysql`/`mysqldump` client exists,
+> so both scripts ran inside a `mysql:8.0` client container joined to the DB's
+> docker network.
+
+### Commands run
+
+```bash
+# 1. Standalone MySQL + seed a representative dataset (as root)
+docker network create posrehearsal
+docker run -d --name rehearsal-db --network posrehearsal \
+  -e MYSQL_ROOT_PASSWORD=rootpw -e MYSQL_DATABASE=pos_db \
+  -e MYSQL_USER=pos_user -e MYSQL_PASSWORD=secretpw mysql:8.0
+# seed companies/roles/users/customers/products with known counts (2/3/2/4/3),
+# create empty pos_scratch, GRANT pos_user on pos_db.* and pos_scratch.*
+
+# 2. Backup — the real script, in a client container on the DB network
+docker run --rm --network posrehearsal \
+  -v "$PWD/scripts:/scripts:ro" -v "$BACKUP_DIR:/backups" \
+  -e DB_HOST=rehearsal-db -e DB_PORT=3306 -e DB_USERNAME=pos_user \
+  -e DB_PASSWORD=secretpw -e DB_NAME=pos_db -e BACKUP_DIR=/backups \
+  -w /scripts mysql:8.0 bash db-backup.sh
+# → Backup written: /backups/pos_db_20260709-034531.sql.gz (4.0K)
+
+# 3. Restore into the pre-created scratch DB — the real script
+docker run --rm --network posrehearsal \
+  -v "$PWD/scripts:/scripts:ro" -v "$BACKUP_DIR:/backups" \
+  -e DB_HOST=rehearsal-db -e DB_PORT=3306 -e DB_USERNAME=pos_user \
+  -e DB_PASSWORD=secretpw -e DB_NAME=pos_scratch -e CONFIRM=yes \
+  -w /scripts mysql:8.0 bash db-restore.sh /backups/pos_db_20260709-034531.sql.gz
+# → Restored 'pos_scratch' from /backups/pos_db_20260709-034531.sql.gz
+```
+
+### Result — source (`pos_db`) vs restored (`pos_scratch`)
+
+| Table | Source rows | Restored rows | `CHECKSUM TABLE` match |
+|---|---|---|---|
+| companies | 2 | 2 | ✅ (2594916727) |
+| roles | 3 | 3 | ✅ (4231426328) |
+| users | 2 | 2 | ✅ (1088811489) |
+| customers | 4 | 4 | ✅ (2443462279) |
+| products | 3 | 3 | ✅ (3741109840) |
+
+Row counts **and** per-table checksums are identical across all five tables —
+the restore is byte-faithful, not merely row-count-equal.
+
+### Findings / script health
+
+- **No bugs found** — `db-backup.sh` and `db-restore.sh` ran unmodified.
+  `--single-transaction --no-tablespaces --routines --triggers --events`
+  dumped cleanly under a scoped `pos_user` (no `PROCESS`/global-privilege
+  errors), confirming the MySQL-8 flag choices are correct.
+- **Observed contract (not a bug):** `db-restore.sh` does **not**
+  `CREATE DATABASE` — the dump is single-schema (no `--databases`), so the
+  target must already exist. This matches the script header ("Restore into a
+  SCRATCH database first") and the destructive-overwrite guard; the operator
+  creates the scratch DB before restoring. Left as-is intentionally.
+
+### Still pending (Coolify-only, out of scope tonight)
+- Rollback-by-redeploy rehearsal (§6 of `STAGING-DRY-RUN.md`) — needs a live
+  Coolify instance and forward-only migration history.
