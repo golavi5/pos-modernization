@@ -66,7 +66,15 @@ this is the verification checklist. Tracks SPEC-CUT-001 §5.
       + a user in it; add a product/sale under each company. Log in as the
       second-company user → its **reports/customers show only its own data**,
       never the first company's.
-- **Pass gate:** zero cross-tenant data visible; cashier cannot reach admin routes.
+- [ ] **Privilege-escalation boundary (PR #24):** as a tenant `admin` (not superadmin):
+      - `POST /companies` → **403** (company create/delete is `superadmin`-only).
+      - `GET /users/roles/list` → the response **omits `superadmin`** (elevated roles
+        are hidden from non-elevated actors).
+      - `POST /users` or `PATCH /users/:id/roles` attempting to grant `superadmin`
+        → **403** `You cannot assign an elevated role.` (admin cannot self-escalate or
+        mint a superadmin).
+- **Pass gate:** zero cross-tenant data visible; cashier cannot reach admin routes;
+  a tenant admin cannot create a company or assign/see the `superadmin` role.
 
 ## 6. Backup / restore / rollback rehearsal
 - [ ] **Backup:**
