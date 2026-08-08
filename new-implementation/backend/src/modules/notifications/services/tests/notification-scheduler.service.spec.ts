@@ -114,13 +114,22 @@ describe('NotificationSchedulerService.checkLowStock', () => {
       );
     });
 
-    it('never queries products for a different tenant', async () => {
+    it('derives the scope from the argument rather than a fixed company', async () => {
+      // A `not.toHaveBeenCalledWith(company-A)` assertion after a single
+      // checkLowStock('company-B') would hold for *any* implementation,
+      // including one with no tenant filter at all. Driving two different
+      // tenants through and comparing the predicates is what actually fails
+      // when the scope is hardcoded or dropped.
+      await service.checkLowStock('company-A');
       await service.checkLowStock('company-B');
-      expect(productRepo.find).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ company_id: 'company-A' }),
-        }),
-      );
+
+      expect(productRepo.find.mock.calls.map((c) => c[0].where.company_id)).toEqual([
+        'company-A',
+        'company-B',
+      ]);
+      expect(
+        notificationRepo.find.mock.calls.map((c) => c[0].where.companyId),
+      ).toEqual(['company-A', 'company-B']);
     });
 
     /**

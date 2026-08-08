@@ -168,10 +168,23 @@ the restore is byte-faithful, not merely row-count-equal.
 
 ### Findings / script health
 
-- **No bugs found** — `db-backup.sh` and `db-restore.sh` ran unmodified.
+- **Happy path clean** — `db-backup.sh` and `db-restore.sh` ran unmodified.
   `--single-transaction --no-tablespaces --routines --triggers --events`
   dumped cleanly under a scoped `pos_user` (no `PROCESS`/global-privilege
   errors), confirming the MySQL-8 flag choices are correct.
+- **B-11 — partial archive on a failed dump (found after this run, FIXED in
+  PR #25).** This rehearsal exercised only the success path. `db-backup.sh`
+  wrote `mysqldump | gzip > "$out"` directly, and the shell truncates the
+  redirect target before `mysqldump` can fail — so a dump killed mid-run (DB
+  restart, dropped connection, disk pressure) left a partial
+  `${DB_NAME}_*.sql.gz` that is indistinguishable by name from a good backup.
+  Retention (`-mtime +RETENTION_DAYS`) would then prune the last known-good
+  archives in its favour and a later `db-restore.sh` would restore an
+  incomplete dataset — silent data loss during the rollback this rehearsal
+  exists to certify. The script now dumps to `$out.partial`, verifies it with
+  `gzip -t`, and only then renames it into place, with an `EXIT` trap removing
+  the scratch file on any failure. Covered by `src/scripts/db-backup.spec.ts`
+  (stub `mysqldump` that dies mid-stream → no file left behind).
 - **Observed contract (not a bug):** `db-restore.sh` does **not**
   `CREATE DATABASE` — the dump is single-schema (no `--databases`), so the
   target must already exist. This matches the script header ("Restore into a

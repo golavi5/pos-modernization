@@ -31,25 +31,86 @@ function resolveConst(path: string): string | undefined {
 }
 
 /**
+ * Read the argument list of the `@Roles(` occurrence starting at `open` (the
+ * index of the `(`), balancing nested parentheses and skipping over quoted
+ * strings. A regex like /@Roles\(([^)]*)\)/ stops at the first `)`, which for
+ * `@Roles(...Object.values(MAP), 'wizard')` truncates the list mid-argument —
+ * fabricating an offender out of the callee and never inspecting 'wizard'.
+ */
+function readArgList(src: string, open: number): { args: string; end: number } {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = open; i < src.length; i++) {
+    const c = src[i];
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') quote = c;
+    else if (c === '(') depth++;
+    else if (c === ')') {
+      depth--;
+      if (depth === 0) return { args: src.slice(open + 1, i), end: i };
+    }
+  }
+  return { args: src.slice(open + 1), end: src.length };
+}
+
+/** Split an argument list on top-level commas only (ignoring nested ones). */
+function splitArgs(args: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let quote: string | null = null;
+  let start = 0;
+  for (let i = 0; i < args.length; i++) {
+    const c = args[i];
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = null;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') quote = c;
+    else if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth--;
+    else if (c === ',' && depth === 0) {
+      out.push(args.slice(start, i));
+      start = i + 1;
+    }
+  }
+  out.push(args.slice(start));
+  return out.map((a) => a.trim()).filter(Boolean);
+}
+
+/**
  * Extract every role name referenced by @Roles(...) in a source string.
  * Handles single-quoted, double-quoted, and AUTH_CONSTANTS.* referenced args.
  * An unresolvable constant reference yields the literal token so it surfaces
  * as an offender against the canonical set.
+ *
+ * A computed argument (spread, call, array — anything not a literal or a plain
+ * dotted reference) is skipped: the extractor cannot resolve it statically, and
+ * guessing would either fabricate offenders out of callee names or hide the
+ * literals sitting beside it.
  */
 export function extractRoleNames(src: string): string[] {
   const names: string[] = [];
-  for (const m of src.matchAll(/@Roles\(([^)]*)\)/g)) {
-    const args = m[1];
-    // Tokenize the argument list instead of splitting on commas: a comma inside
-    // a quoted role name (e.g. @Roles('a,b')) must NOT split the token, or the
-    // role would be silently dropped and the guard falsely stays green. The
-    // alternation matches a full quoted string first, then a dotted identifier;
-    // because quoted strings are consumed whole, identifier scanning never
-    // re-enters their interior.
-    for (const t of args.matchAll(/'([^']*)'|"([^"]*)"|([A-Za-z_$][\w.$]*)/g)) {
-      if (t[1] !== undefined) names.push(t[1]); // single-quoted
-      else if (t[2] !== undefined) names.push(t[2]); // double-quoted
-      else if (t[3] !== undefined) names.push(resolveConst(t[3]) ?? t[3]); // ident/const ref
+  const marker = '@Roles(';
+  for (let at = src.indexOf(marker); at !== -1; at = src.indexOf(marker, at + 1)) {
+    const { args } = readArgList(src, at + marker.length - 1);
+    for (const arg of splitArgs(args)) {
+      // A quoted literal spanning the whole argument — a comma inside it must
+      // not split the token (@Roles('a,b')), which top-level splitting ensures.
+      const quoted = /^'([^']*)'$|^"([^"]*)"$/.exec(arg);
+      if (quoted) {
+        names.push(quoted[1] ?? quoted[2]);
+        continue;
+      }
+      // A plain dotted reference: resolved if it points at AUTH_CONSTANTS,
+      // otherwise surfaced verbatim so unresolvable drift shows up.
+      if (/^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*$/.test(arg)) {
+        names.push(resolveConst(arg) ?? arg);
+      }
     }
   }
   return names;
@@ -90,12 +151,54 @@ describe('extractRoleNames (drift-guard extractor)', () => {
     // Guards against the naive comma-split that would drop the token entirely.
     expect(extractRoleNames(`@Roles('a,b')`)).toEqual(['a,b']);
   });
+
+  describe('arguments containing parentheses', () => {
+    const nested = `@Roles(...Object.values(SOME_MAP), 'wizard')`;
+
+    it('still reaches role literals after a nested call', () => {
+      // A regex stopping at the first ')' would never inspect 'wizard' — real
+      // drift would pass the guard.
+      expect(extractRoleNames(nested)).toContain('wizard');
+    });
+
+    it('does not report a nested callee as a role', () => {
+      // ...and would report 'Object.values' as an offender, failing good code.
+      expect(extractRoleNames(nested)).not.toContain('Object.values');
+    });
+
+    it('skips a computed argument rather than guessing at its contents', () => {
+      // The extractor cannot statically resolve a spread, so it reports nothing
+      // for it — but must not let that hide the literals beside it.
+      expect(extractRoleNames(nested)).toEqual(['wizard']);
+    });
+
+    it('still resolves constant refs alongside a computed argument', () => {
+      expect(
+        extractRoleNames(
+          `@Roles(...Object.values(SOME_MAP), AUTH_CONSTANTS.ROLES.CASHIER)`,
+        ),
+      ).toEqual([AUTH_CONSTANTS.ROLES.CASHIER]);
+    });
+  });
 });
 
 describe('@Roles decorator role names', () => {
   const canonical = new Set(SYSTEM_ROLES.map((r) => r.name));
-  const modulesDir = join(__dirname, '..', '..'); // src/modules
-  const files = walk(modulesDir);
+  // Scan from `src`, not `src/modules`: controllers also live at the top level
+  // (e.g. `src/app.controller.ts`), and a guard that skips them reports green on
+  // real drift.
+  const srcDir = join(__dirname, '..', '..', '..');
+  const files = walk(srcDir);
+
+  it('scans controllers outside src/modules', () => {
+    expect(files).toContain(join(srcDir, 'app.controller.ts'));
+  });
+
+  it('scans controllers inside src/modules', () => {
+    expect(files).toContain(
+      join(srcDir, 'modules', 'companies', 'companies.controller.ts'),
+    );
+  });
 
   it('references only defined system roles', () => {
     const offenders: string[] = [];
@@ -103,7 +206,7 @@ describe('@Roles decorator role names', () => {
       const src = readFileSync(file, 'utf8');
       for (const name of extractRoleNames(src)) {
         if (!canonical.has(name)) {
-          offenders.push(`${file.replace(modulesDir, 'modules')}: '${name}'`);
+          offenders.push(`${file.replace(srcDir, 'src')}: '${name}'`);
         }
       }
     }
