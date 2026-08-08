@@ -86,6 +86,15 @@ Coolify staging** — it is not an artifact of the local substitution.
 - §5 tenant isolation positive path (needs per-company products/sales)
   — note: `@Roles` enforcement itself is **proven working** (the 403s above).
 
+## 🆕 Added after this run — not exercised here (PR #25)
+This record predates two §5 checklist items added with the company-scoping fix.
+Neither was run in this rehearsal; both must be exercised on the staging re-run:
+- **Company read/write scoping** — a tenant `admin` sees only its own row on
+  `GET /companies`, gets **404** on another company's `GET`/`PATCH`, and the other
+  company's row is unchanged; `superadmin` still sees both.
+- **Cross-tenant purge** — `DELETE /notifications/admin/clean-old` as one
+  company's `admin` leaves the other company's old read notifications intact.
+
 ## ⏳ Coolify-only — still pending real staging
 - Subdomain CORS against real `app.`/`api.`; MySQL port-not-exposed;
   rollback-by-redeploy rehearsal; Coolify healthcheck + observability (S-02).

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { NotificationsService } from './notifications.service';
@@ -99,10 +99,19 @@ export class NotificationSchedulerService {
   }
 
   /**
-   * Clean old read notifications (older than 30 days)
-   * Schedule with @Cron('0 2 * * *') // every day at 2am
+   * Clean old read notifications (older than 30 days) for one company.
+   * Schedule with @Cron('0 2 * * *') // every day at 2am, per company
+   *
+   * `companyId` is required: this is a bulk DELETE, so an unscoped call would
+   * purge every tenant's notifications.
    */
-  async cleanOldNotifications(): Promise<{ deleted: number }> {
+  async cleanOldNotifications(companyId: string): Promise<{ deleted: number }> {
+    if (!companyId) {
+      throw new BadRequestException(
+        'cleanOldNotifications requires a company id',
+      );
+    }
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -110,11 +119,14 @@ export class NotificationSchedulerService {
       .createQueryBuilder()
       .delete()
       .from(Notification)
-      .where('isRead = true')
+      .where('companyId = :companyId', { companyId })
+      .andWhere('isRead = true')
       .andWhere('createdAt < :cutoff', { cutoff: thirtyDaysAgo })
       .execute();
 
-    this.logger.log(`Cleaned ${result.affected} old notifications`);
+    this.logger.log(
+      `Cleaned ${result.affected} old notifications for company ${companyId}`,
+    );
     return { deleted: result.affected || 0 };
   }
 }

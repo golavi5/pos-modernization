@@ -88,9 +88,10 @@ describe('NotificationSchedulerService.checkLowStock', () => {
   });
 
   /**
-   * Service-layer tenant-scoping guard: proves both the product scan and the
-   * open-alert dedupe query filter by the caller's company — the query itself,
-   * not just the controller. See SPEC-CUT-001 S-07.
+   * Service-layer tenant-scoping guard: proves every query this service issues
+   * — the product scan, the open-alert dedupe, and the old-notification purge —
+   * filters by the caller's company, at the query itself and not just at the
+   * controller. See SPEC-CUT-001 S-07.
    */
   describe('tenant scoping', () => {
     beforeEach(() => productRepo.find.mockResolvedValue([]));
@@ -120,6 +121,68 @@ describe('NotificationSchedulerService.checkLowStock', () => {
           where: expect.objectContaining({ company_id: 'company-A' }),
         }),
       );
+    });
+
+    /**
+     * cleanOldNotifications issues a bulk DELETE. Without a companyId predicate
+     * one tenant's admin purges every other tenant's read notifications, so the
+     * predicate is asserted here rather than assumed.
+     */
+    describe('cleanOldNotifications', () => {
+      let qb: {
+        delete: jest.Mock;
+        from: jest.Mock;
+        where: jest.Mock;
+        andWhere: jest.Mock;
+        execute: jest.Mock;
+      };
+
+      const predicates = () =>
+        [...qb.where.mock.calls, ...qb.andWhere.mock.calls] as [
+          string,
+          Record<string, unknown>?,
+        ][];
+
+      beforeEach(() => {
+        qb = {
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 3 }),
+        };
+        (notificationRepo as any).createQueryBuilder = jest
+          .fn()
+          .mockReturnValue(qb);
+      });
+
+      it('constrains the purge to the caller company', async () => {
+        const result = await service.cleanOldNotifications('company-A');
+
+        expect(result).toEqual({ deleted: 3 });
+        expect(qb.execute).toHaveBeenCalledTimes(1);
+        expect(
+          predicates().some(
+            ([sql, params]) =>
+              /companyId/.test(sql) && params?.companyId === 'company-A',
+          ),
+        ).toBe(true);
+      });
+
+      it('still filters on read state and the 30-day cutoff', async () => {
+        await service.cleanOldNotifications('company-A');
+
+        const sql = predicates().map(([s]) => s);
+        expect(sql.some((s) => /isRead/.test(s))).toBe(true);
+        expect(sql.some((s) => /createdAt/.test(s))).toBe(true);
+      });
+
+      it('requires a company id', async () => {
+        await expect(
+          (service.cleanOldNotifications as any)(),
+        ).rejects.toThrow();
+        expect(qb.execute).not.toHaveBeenCalled();
+      });
     });
   });
 });
