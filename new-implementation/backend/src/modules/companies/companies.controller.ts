@@ -18,6 +18,8 @@ import { CompaniesQueryDto } from './dto/companies-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../auth/entities/user.entity';
 
 @Controller('companies')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,14 +28,14 @@ export class CompaniesController {
 
   @Get()
   @Roles('admin', 'superadmin')
-  findAll(@Query() query: CompaniesQueryDto) {
-    return this.companiesService.findAll(query);
+  findAll(@Query() query: CompaniesQueryDto, @CurrentUser() user: User) {
+    return this.companiesService.findAll(query, user);
   }
 
   @Get(':id')
   @Roles('admin', 'superadmin')
-  findOne(@Param('id') id: string) {
-    return this.companiesService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.companiesService.findOne(id, user);
   }
 
   @Post()
@@ -45,8 +47,12 @@ export class CompaniesController {
 
   @Patch(':id')
   @Roles('admin', 'superadmin')
-  update(@Param('id') id: string, @Body() dto: UpdateCompanyDto) {
-    return this.companiesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.companiesService.update(id, dto, user);
   }
 
   @Delete(':id')
