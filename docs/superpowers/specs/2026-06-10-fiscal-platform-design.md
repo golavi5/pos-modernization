@@ -67,7 +67,7 @@ wira
   - `PlemsiAdapter` — extracted from `radian` / `ApiFacturame` patterns; operative from day one.
   - `DianDirectAdapter` — UBL 2.1 per anexo técnico, XAdES signing, CUFE/CUDE, set de pruebas, contingencia numbering. Built in parallel; per-tenant switch via config.
 - Document types v1: factura electrónica de venta, notas crédito/débito, documento equivalente electrónico POS. Documento soporte: evaluate for v1.1.
-- Certificate management: per-tenant digital certificate (storage encrypted at rest — reuse AES-256-GCM pattern from Tribuno credentials), renewal alerting.
+- Certificate management: per-tenant digital certificate, renewal alerting. **Custody model is provisional pending ADR-007** — the AES-256-GCM-at-rest pattern from Tribuno credentials is the working assumption, not a decision. Until ADR-007 lands, no real tenant signing key may be persisted: Phase 1 scaffolding uses test certificates only, behind a custody interface that both an encrypted software keystore and an HSM can satisfy.
 
 ### 4.2 Reception
 
@@ -137,6 +137,11 @@ wira
 **Decision:** No shared customer entity across contexts.
 **Rationale:** Different invariants (loyalty vs tax identity); merging them couples contexts and corrupts both models.
 
+### ADR-007: Certificate & signing-key custody — OPEN (blocks Phase 4)
+**Status:** Open. Raised at the review gate (§9, R3); must be decided before Phase 4 and before any real tenant signing key is persisted.
+**Question:** HSM vs encrypted software keystore; key issuance, rotation and revocation; the non-repudiation record tying a signature to the authorizing confirmation.
+**Why it is not already settled by §4.1:** §4.1's AES-256-GCM-at-rest line is a working assumption carried over from Tribuno credentials. Holding tenant signing keys means holding the ability to emit legally binding documents on their behalf — a larger exposure than the D10 filing boundary, and one that a credentials-storage pattern was never scoped to cover.
+
 ## 6. Phasing (high level — TASKS doc to follow after review gate)
 
 - **Phase 0 — Validation (blocking):** accountant session (OQ-1); per-tenant habilitación operational dry run with one real NIT (OQ-2); certificate cost model (OQ-3).
@@ -144,7 +149,7 @@ wira
 - **Phase 2 — Reception & purchases:** manual upload port, email ingestion, purchases book, supplier→SKU matching, inventory stock-in automation.
 - **Phase 3 — Agent:** Wira `domains/accounting/` pack — queries first, then confirmed mutations (emit, register purchase, price adjustment).
 - **Phase 4 — DIAN direct:** DianDirectAdapter through habilitación with tenant zero; per-tenant migration switch; retefuente engine.
-- Ordering of 3 vs 4 may swap based on commercial pressure; both depend only on Phase 1–2 ports.
+- Both 3 and 4 depend only on Phase 1–2 ports, so they are technically independent — but **Phase 4 is not freely swappable with Phase 3** (§9, R1). Every documento equivalente emitted before `DianDirectAdapter` passes habilitación *per tenant* bills at Plemsi's 88 COP/doc, the cost D1 exists to eliminate; deferring Phase 4 behind Phase 3 extends a negative-margin runway at POS volume. Reordering is a commercial decision that requires an interim margin plan stated at the gate, not a free scheduling choice.
 
 ## 7. Risks
 
@@ -160,12 +165,71 @@ wira
 ## 8. Open questions (blocking before TASKS)
 
 - **OQ-1:** Accountant validation — feeds the **Fiscal Rule Catalog v2026**: exact report set per régimen (ordinario vs Simple), VAT periodicity thresholds, retefuente applicability and conceptos. *Owner: Gandhi. External. Output is catalog seed data, not per-tenant config.*
+- **OQ-1a:** Régimen Simple retención/retefuente exclusions in the catalog — RST payers are generally **not** agentes de retención de renta (§9, R4). *Sub-item of OQ-1; must be on the accountant-session agenda.*
 - **OQ-2:** Real habilitación flow timing/cost as software propio for one tenant (set de pruebas, rangos, certificate issuance). *Owner: Gandhi. External.*
 - **OQ-3:** Digital certificate unit cost per tenant per year → pricing model input.
 - **OQ-4:** Product name (commercial) and service namespace.
 - **OQ-5:** Repo rename / identity (`pos-modernization` → platform name) and CLAUDE.md/CONTEXT.md updates for agent consumption.
 - **OQ-6:** Wira domain pack interface contract — confirm against current Wira tool-registration conventions (audit `wira` repo before Phase 3 spec).
 - **OQ-7:** Documento soporte (purchases from non-obligated suppliers) — v1.1 or Phase 2?
+- **OQ-8:** POS emission mode — sync-blocking on the sale path vs async on `SaleClosed`, with contingencia fallback and failed-emission reconciliation (§9, R6). *Answer required before Phase 1 emission is built: the sync choice blocks checkout when DIAN is unavailable mid-shift.*
+
+---
+
+## 9. Review-gate engineering assessment (2026-07-09, Claude Code)
+
+**Verdict: architecture is sound and approvable in shape; do NOT flip to TASKS
+until the three gate conditions below close.** The load-bearing decisions —
+emission/reception behind ports (ADR-003/004), fiscal as a bounded context in
+the monolith (ADR-001), the Catalog(global, year-versioned) × Profile(tenant)
+split (§4.3.1), ThirdParty≠Customer (ADR-006), and the D10 "prepare figures,
+don't file" boundary — are the right calls and should not be relitigated.
+
+### Gate conditions (block the TASKS breakdown)
+1. **OQ-1 must yield a v2026 Fiscal Rule Catalog skeleton** — it is a *Phase 1*
+   input, not just Phase 4. The sales/VAT view cannot be correct without it, so
+   Phase 1 is partially blocked on OQ-1, not merely Phase 0.
+2. **Signing / set-de-pruebas spike** — one document accepted in DIAN set de
+   pruebas (UBL 2.1 per anexo técnico + XAdES + CUFE) *before* any Phase 4
+   timeline is committed. This is the single largest schedule risk and §4.1
+   currently lists it as a one-liner.
+3. **Certificate-custody ADR (ADR-007, now open in §5)** — see below.
+
+### Ranked risks / gaps (surfaced at review)
+R1, R3, R4 and R6 have since been folded into the canonical sections — the
+phase-swap constraint (§6), ADR-007 (§5), OQ-1a and OQ-8 (§8), and the custody
+caveat in §4.1. R2, R5 and R7 remain review-log entries only; §1–8 do not yet
+reflect them.
+
+| # | Gap | Why it matters | Suggested action |
+|---|-----|----------------|------------------|
+| R1 | Unit economics unsolved until Phase 4 | Plemsi 88 COP/doc keeps flowing in prod until `DianDirectAdapter` passes habilitación *per tenant*; at POS DE volume that is a long negative-margin runway | Treat Phase 4 as **not** freely swappable with Phase 3 (revises §6); state interim margin plan at gate |
+| R2 | XAdES/CUFE/set-de-pruebas underspecified | Where most DIAN builds bleed time; unestimated | Gate condition #2 spike |
+| R3 | Certificate custody | Holding tenant signing keys ⇒ ability to emit legally-binding docs on their behalf — larger exposure than the filing boundary | Gate condition #3 (ADR-007): key custody (HSM vs software keystore), issuance, revocation, non-repudiation |
+| R4 | Régimen Simple retención semantics | RST payers are generally **not** agentes de retención de renta; catalog must encode RST exclusions | Add as explicit OQ-1 sub-item |
+| R5 | Email reception is untrusted input (ADR-004) | ZIP/XML from email → XXE, zip bombs, spoofed-sender forged AttachedDocuments; no genuineness check stated | Require CUFE verification vs DIAN + sender allowlist + dedup; verify `radian` already hardens this before "port the parsing libs" |
+| R6 | POS-scale emission mechanics | Failed-emission reconciliation, contingencia numbering when DIAN is down mid-shift, gapless resolución-de-numeración consumption, DIAN rounding rules — all classic set-de-pruebas rejection causes | Add an emission-integrity section to §4.1 before Phase 1 |
+| R7 | Agent write-confirm audit trail | A WhatsApp "sí" authorizing a legally-binding emission needs a non-repudiation record | Immutable confirmation log tied to the emitted CUFE (extends D9) |
+
+### Additions folded into the canonical sections
+- **Phase 3/4 ordering** (per R1): §6 no longer permits a free swap — Phase 4
+  deferral is a commercial decision requiring an interim margin plan at the
+  gate, because Plemsi's 88 COP/doc keeps billing until `DianDirectAdapter`
+  passes habilitación per tenant.
+- **ADR-007 — Certificate & signing-key custody** (per R3): added to §5 as an
+  open ADR blocking Phase 4; §4.1 now marks the custody model provisional and
+  bars persisting real tenant signing keys until it lands.
+- **OQ-1a** — Régimen Simple retefuente/retención exclusions in the catalog
+  (R4): added to §8 as a sub-item of OQ-1.
+- **OQ-8** — POS emission mode: sync-blocking vs async-on-`SaleClosed` with
+  contingencia fallback and reconciliation (R6): added to §8.
+
+### Coupling note for this repo
+OQ-5 (rename `pos-modernization` → platform) touches the RBAC / Kairos /
+CLAUDE.md machinery. The `accountant` role parked in PR #25
+(`system-roles.ts`, marked "reserved for M5 fiscal work") is the first fiscal
+footprint already landed in this repo — M5 and the RBAC work are coupled at
+that seam. Gate the `accountant` route wiring on this spec's approval.
 
 ---
 *Next step per workflow: review/approval gate (Telegram), then TASKS breakdown synced to Plane.*
