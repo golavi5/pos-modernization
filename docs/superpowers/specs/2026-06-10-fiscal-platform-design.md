@@ -149,7 +149,7 @@ wira
 - **Phase 2 — Reception & purchases:** manual upload port, email ingestion, purchases book, supplier→SKU matching, inventory stock-in automation.
 - **Phase 3 — Agent:** Wira `domains/accounting/` pack — queries first, then confirmed mutations (emit, register purchase, price adjustment).
 - **Phase 4 — DIAN direct:** DianDirectAdapter through habilitación with tenant zero; per-tenant migration switch; retefuente engine.
-- Ordering of 3 vs 4 may swap based on commercial pressure; both depend only on Phase 1–2 ports.
+- Both 3 and 4 depend only on Phase 1–2 ports, so they are technically independent — but **Phase 4 is not freely swappable with Phase 3** (§9, R1). Every documento equivalente emitted before `DianDirectAdapter` passes habilitación *per tenant* bills at Plemsi's 88 COP/doc, the cost D1 exists to eliminate; deferring Phase 4 behind Phase 3 extends a negative-margin runway at POS volume. Reordering is a commercial decision that requires an interim margin plan stated at the gate, not a free scheduling choice.
 
 ## 7. Risks
 
@@ -196,9 +196,10 @@ don't file" boundary — are the right calls and should not be relitigated.
 3. **Certificate-custody ADR (ADR-007, now open in §5)** — see below.
 
 ### Ranked risks / gaps (surfaced at review)
-R3, R4 and R6 have since been folded into the canonical sections — ADR-007 (§5),
-OQ-1a and OQ-8 (§8), and the custody caveat in §4.1. R1, R2, R5 and R7 remain
-review-log entries only; §1–8 do not yet reflect them.
+R1, R3, R4 and R6 have since been folded into the canonical sections — the
+phase-swap constraint (§6), ADR-007 (§5), OQ-1a and OQ-8 (§8), and the custody
+caveat in §4.1. R2, R5 and R7 remain review-log entries only; §1–8 do not yet
+reflect them.
 
 | # | Gap | Why it matters | Suggested action |
 |---|-----|----------------|------------------|
@@ -211,6 +212,10 @@ review-log entries only; §1–8 do not yet reflect them.
 | R7 | Agent write-confirm audit trail | A WhatsApp "sí" authorizing a legally-binding emission needs a non-repudiation record | Immutable confirmation log tied to the emitted CUFE (extends D9) |
 
 ### Additions folded into the canonical sections
+- **Phase 3/4 ordering** (per R1): §6 no longer permits a free swap — Phase 4
+  deferral is a commercial decision requiring an interim margin plan at the
+  gate, because Plemsi's 88 COP/doc keeps billing until `DianDirectAdapter`
+  passes habilitación per tenant.
 - **ADR-007 — Certificate & signing-key custody** (per R3): added to §5 as an
   open ADR blocking Phase 4; §4.1 now marks the custody model provisional and
   bars persisting real tenant signing keys until it lands.
