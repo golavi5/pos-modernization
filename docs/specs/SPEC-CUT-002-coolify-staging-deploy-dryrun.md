@@ -1,6 +1,6 @@
 # M1 — Coolify Staging Dry-Run & Production Go-Live
 
-**Status**: DRAFT
+**Status**: DONE
 **Owner**: gandhi
 **Created**: 2026-07-07
 **Modules**: M1 INFRA (primary), M2 BACK, M3 FRONT
