@@ -221,3 +221,37 @@ recorded value rather than assume one.
   Coolify instance and forward-only migration history. The DB mechanics of the
   Case-B path are pre-validated above; what remains is the Coolify stop /
   redeploy / health-gate loop.
+
+---
+
+## Case-B revert rehearsal (runbook §3 B2) — guarded script
+
+**Date:** 2026-08-08 · **Operator:** Claude Code · **Scope:** exercise
+`npm run migration:revert-one:prod` (`dist/database/revert-one-migration.js`)
+against a throwaway `mysql:8.0`, using the **compiled** artefacts the production
+image ships. ✅ **PASS — every guard fires, and a confirmed revert undoes exactly
+one migration.**
+
+Applied the real history with `npm run migration:run:prod` (which also validates
+the new `typeorm:prod` indirection), then drove the script through each path.
+
+| # | Check | Result |
+|---|-------|--------|
+| A | `migration:run:prod` via `npm run typeorm:prod -- migration:run` | ✅ both migrations applied, ledger has 2 rows |
+| B | No TTY on stdin | ✅ exit 1, "Refusing to run without a TTY" — no connection opened |
+| C | `DB_RUN_MIGRATIONS=true` (with TTY) | ✅ exit 1, tells the operator to set it `false` first |
+| D | Wrong text at the prompt (`yes`) | ✅ exit 1, "Nothing was reverted" — ledger still 2 rows |
+| E | Exact head name typed | ✅ exit 1→0, **only** `AddLegacyIdColumns` reverted; `legacy_id` gone from `products`; ledger 1 row; 15 tables intact |
+| F | Re-run with one migration left | ✅ prints the `⚠⚠ only applied migration … drops every table` warning, and lists the reverted one as *pending* |
+| G | Confirmed `InitialSchema` revert (throwaway DB) | ✅ all 15 tables dropped, ledger empty — the destructive path the guards exist to gate |
+| H | `migration:show:prod` | ✅ lists both migrations with applied/pending markers (no mysql client needed) |
+| I | Same run **inside the real production image** — `docker build` of `backend/Dockerfile`, `node:20-alpine`, `USER nestjs`, `npm ci --omit=dev` | ✅ `dist/database/revert-one-migration.js` ships; `npm run` resolves as non-root; no-TTY refusal, `migration:run:prod`, and a confirmed `-it` revert all behave as on the host |
+
+Guards B and C are covered in the unit suite
+(`src/database/revert-one-migration.spec.ts`, 3 cases incl. no-`CONFIRM`-bypass);
+they fire before any `DataSource` is constructed, so they need no database. The
+interactive paths (D–G) require a pty and are the hand-rehearsal recorded here.
+
+> Not rehearsed: a `down()` that throws **mid-way**. MySQL auto-commits DDL, so
+> that leaves the schema half-reverted with the ledger row intact — unrecoverable
+> by script (§5 routes it to B1, exit code `2`).

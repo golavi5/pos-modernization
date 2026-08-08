@@ -236,14 +236,23 @@ Coolify → aplicación → **Deployments** → **Redeploy** del commit anterior
 > deteniendo el backend antes de tocar el esquema. Ver **§3 B1** del runbook.
 >
 > ⚠️ **`npm run migration:revert` no existe en la imagen de producción** (usa
-> ts-node contra `src/`, y la imagen sólo trae `dist` con `--omit=dev`). Además
-> revierte la **última migración registrada**, no "la mala": ejecutado a ciegas
-> puede llegar a `InitialSchema`, cuyo `down()` borra las 15 tablas. La forma
-> correcta, y sólo tras el preflight de **§3 B2** del runbook:
+> ts-node contra `src/`, y la imagen sólo trae `dist` con `--omit=dev`). Para
+> producción hay un script **con guardas**, y revierte **una sola** migración por
+> ejecución — no es el inverso de `migration:run:prod`, que aplica *todas* las
+> pendientes:
 > ```bash
 > # dentro del contenedor backend (Coolify → backend → Terminal)
-> cd /app && ./node_modules/.bin/typeorm migration:revert -d dist/database/data-source.js
+> cd /app && npm run migration:revert-one:prod
 > ```
+> Imprime el ledger, exige tipear el **nombre exacto** de la migración a
+> revertir, y se niega a correr sin terminal o con `DB_RUN_MIGRATIONS=true`
+> (si no, el próximo reinicio del contenedor vuelve a aplicar lo que acabás de
+> revertir). Salidas: `0` revertida · `1` rechazada/abortada, esquema intacto ·
+> `2` falló a mitad → restaurar backup (**§3 B1** del runbook).
+>
+> Sólo tras el preflight de **§3 B2**, y **antes** de redesplegar el commit
+> destino: el `down()` de la migración vive en la imagen del commit *malo*; una
+> vez desplegado el commit viejo ya no se puede revertir, sólo restaurar.
 > Para cambios de esquema riesgosos: backup **inmediatamente antes** del deploy.
 
 ---
