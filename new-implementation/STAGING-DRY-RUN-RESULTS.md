@@ -191,6 +191,33 @@ the restore is byte-faithful, not merely row-count-equal.
   SCRATCH database first") and the destructive-overwrite guard; the operator
   creates the scratch DB before restoring. Left as-is intentionally.
 
+## Case-B restore mechanics rehearsal (runbook §3 B1)
+
+**Date:** 2026-08-08 · **Operator:** Claude Code · **Scope:** validate the DB
+steps of `STAGING-ROLLBACK-RUNBOOK.md` §3 B1 against a `mysql:8.0` stack, using
+the same client-container method as the backup/restore rehearsal above.
+✅ **PASS — the corrected sequence produces a clean pre-migration schema.**
+
+Seeded `pos_db` (`companies`, `typeorm_migrations` with two rows) → backup →
+simulated a bad deploy (`CREATE TABLE payments_v2` + a third ledger row).
+
+| # | Check | Result |
+|---|---|---|
+| A | Plain restore over `pos_db` (no `DROP DATABASE`) | ❌ ledger rolled back to 2 rows **but `payments_v2` survives** — the half-rollback that crash-loops the next forward deploy |
+| B | `DROP DATABASE` + `CREATE … CHARACTER SET/COLLATE` + restore | ✅ `payments_v2` gone, `companies` data intact, ledger at 2 rows |
+| — | `SHOW GRANTS` after `DROP DATABASE` | ✅ `pos_user`'s `pos_db.*` grant survives — no re-GRANT needed |
+| C | Restore into a fresh `pos_scratch` **without** a GRANT | ❌ `ERROR 1044 (42000): Access denied for user 'pos_user'@'%' to database 'pos_scratch'` |
+| D | Same, **with** `GRANT ALL ON pos_scratch.*` | ✅ restored |
+| E | Client container **without** `-it` and without `CONFIRM=yes` | ❌ prompt read hits EOF, `set -e` aborts before any SQL runs — hence `-it` in the runbook |
+
+Also confirmed: the dump contains **no** `CREATE DATABASE` (single-schema), and
+the live `pos_db` default collation is `utf8mb4_0900_ai_ci` (MySQL 8 server
+default via `MYSQL_DATABASE`), **not** the `utf8mb4_unicode_ci` that
+`database/schema.sql` declares per table — so the recreate must copy the
+recorded value rather than assume one.
+
 ### Still pending (Coolify-only, out of scope tonight)
 - Rollback-by-redeploy rehearsal (§6 of `STAGING-DRY-RUN.md`) — needs a live
-  Coolify instance and forward-only migration history.
+  Coolify instance and forward-only migration history. The DB mechanics of the
+  Case-B path are pre-validated above; what remains is the Coolify stop /
+  redeploy / health-gate loop.

@@ -94,13 +94,22 @@ this is the verification checklist. Tracks SPEC-CUT-001 §5.
   read or modify another tenant's company, or purge another tenant's notifications.
 
 ## 6. Backup / restore / rollback rehearsal
+> Use the repo scripts, not ad-hoc `mysqldump`/`mysql` pipelines: a bare
+> `mysqldump | gzip > file` truncates the target before the dump can fail, so a
+> partial archive is indistinguishable from a good one. `db-backup.sh` dumps to
+> `.partial`, runs `gzip -t`, and only then renames. Execution context (client
+> container + `-it`) is in `STAGING-ROLLBACK-RUNBOOK.md` §1.
+
 - [ ] **Backup:**
   ```bash
-  mysqldump -h <db-host> -u <user> -p<pass> <db> | gzip > pos_$(date +%F).sql.gz
+  DB_HOST=<db-host> DB_USERNAME=<user> DB_PASSWORD=<pass> \
+    DB_NAME=<db> BACKUP_DIR=/backups ./scripts/db-backup.sh
   ```
-- [ ] **Restore** into a scratch DB and confirm row counts match:
+- [ ] **Restore** into a scratch DB and confirm row counts match (the scratch DB
+      must already exist and be granted to the restoring user):
   ```bash
-  gunzip < pos_<date>.sql.gz | mysql -h <db-host> -u <user> -p<pass> <scratch_db>
+  DB_HOST=<db-host> DB_USERNAME=<user> DB_PASSWORD=<pass> \
+    DB_NAME=<scratch_db> ./scripts/db-restore.sh /backups/<db>_<ts>.sql.gz
   ```
 - [ ] **Rollback rehearsal:** in Coolify, redeploy the previous backend image/commit;
       confirm the app comes back healthy (migrations are forward-only — a rollback

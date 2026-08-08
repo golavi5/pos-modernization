@@ -24,13 +24,40 @@ one of two cases, and you must classify it first:
   about → the target code may be incompatible with the now-migrated schema.
   Redeploy alone is **not safe**; follow Case B.
 
-**Classify with one command** (from a checkout, comparing the two commits):
+### Classify by asking the DATABASE, not the repo
+
+<a id="ledger-query"></a>The authoritative source is the migration ledger —
+TypeORM's `migrationsTableName` (`backend/src/database/data-source.ts`). This is
+the **canonical ledger query**, referenced again in §3 B2 and §4:
+
 ```bash
-git diff --name-only <target_sha>..<bad_sha> -- \
-  new-implementation/backend/src/database/migrations/
-# empty  → Case A
-# lists a migration file → Case B
+# Coolify → pos-mysql → Terminal (no node tooling needed)
+mysql -uroot -p -D pos_db -e "SELECT name FROM typeorm_migrations ORDER BY timestamp;"
 ```
+
+**Rule:** compare that list against the **target commit's**
+`new-implementation/backend/src/database/migrations/` directory.
+- Every ledger name exists in the target commit → **Case A**.
+- Any ledger name the target commit does **not** have → **Case B**.
+
+> A `git diff` between the two commits is a *hint only* — it reports what the
+> repo gained, not what ran on this environment. It says "Case A" whenever the
+> migration was already committed at the target SHA but hadn't run yet, whenever
+> the target isn't an ancestor of the bad SHA (two-dot silently ignores one
+> side), or whenever someone ran `migration:run:prod` by hand. Never classify
+> from it alone:
+> ```bash
+> git diff --name-only <target_sha>..<bad_sha> -- \
+>   new-implementation/backend/src/database/migrations/   # hint, not the answer
+> ```
+
+> ⚠️ **Third case — the half-applied migration.** MySQL auto-commits DDL, so a
+> multi-statement migration that failed partway leaves the schema changed but
+> writes **no** ledger row. The schema is then ahead of *both* the ledger and
+> the target commit. Symptom: the boot log shows a migration erroring, and the
+> ledger head is still the previous migration. Treat this as **Case B and use
+> B1 only** — B2 would revert the wrong (previous, good) migration. See the B2
+> preflight.
 
 ---
 
@@ -38,14 +65,49 @@ git diff --name-only <target_sha>..<bad_sha> -- \
 
 - [ ] Note the **currently-healthy commit SHA** (Coolify → backend →
       *Deployments* shows the deployed commit). This is your rollback target.
-- [ ] **Take a backup immediately before the deploy** — this is the anchor a
-      Case-B rollback restores to. Prefer Coolify native (pos-mysql → *Backups*
-      → *Backup Now*); portable fallback:
+- [ ] <a id="exec-context"></a>**Take a backup immediately before the deploy** —
+      this is the anchor a Case-B rollback restores to. Prefer Coolify native
+      (pos-mysql → *Backups* → *Backup Now*); portable fallback below.
+
+      > **Execution context (do not skip).** `pos-mysql` is the Coolify
+      > *resource* name; the actual container name is generated (Coolify appends
+      > a suffix) and it resolves only on the Docker network — the VPS host has
+      > no `mysql`/`mysqldump` client at all (confirmed in
+      > `STAGING-DRY-RUN-RESULTS.md`). So: **discover** the container, then run
+      > `db-backup.sh` / `db-restore.sh` from a throwaway client container joined
+      > to its network. `-it` is required — the restore prompts, and without a
+      > TTY the read hits EOF and `set -e` aborts. Root-level SQL (DDL, GRANT,
+      > the ledger query) runs in **Coolify → pos-mysql → Terminal** instead —
+      > that shell already has a TTY and root.
+
       ```bash
-      # from the VPS, against the internal DB service
-      DB_HOST=pos-mysql DB_PORT=3306 DB_USERNAME=pos_user DB_PASSWORD=*** \
-        DB_NAME=pos_db BACKUP_DIR=/backups ./scripts/db-backup.sh
+      # from the VPS, in the repo checkout (DEPLOYMENT-COOLIFY.md's cron assumes
+      # /opt/pos — adjust if yours differs)
+      cd /opt/pos/new-implementation
+
+      # 1. Discover the DB container + its network (never hardcode either)
+      docker ps --format '{{.Names}}\t{{.Image}}' | grep -i mysql   # expect ONE row
+      DB_CT=<name from that row>
+      NET=$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}{{end}}' "$DB_CT")
+
+      # 2. Back up through the real script, in a client container on that network
+      docker run --rm -it --network "$NET" \
+        -v "$PWD/scripts:/scripts:ro" -v /backups:/backups \
+        -e DB_HOST="$DB_CT" -e DB_PORT=3306 -e DB_USERNAME=pos_user \
+        -e DB_PASSWORD=*** -e DB_NAME=pos_db -e BACKUP_DIR=/backups \
+        -w /scripts mysql:8.0 bash db-backup.sh
       # → Backup written: /backups/pos_db_YYYYMMDD-HHMMSS.sql.gz   ← record this path
+      ```
+- [ ] **Record the DB's charset/collation** — a B1 restore has to recreate the
+      schema, and the dump carries no `CREATE DATABASE`, so the values must be
+      copied, not guessed (Coolify → pos-mysql → Terminal):
+      ```bash
+      mysql -uroot -p -e "SELECT DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME \
+        FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='pos_db';"
+      # → record both values verbatim. Read them, don't assume: pos_db is created
+      #   by MYSQL_DATABASE at container init, so it carries the MySQL 8 server
+      #   default (utf8mb4 / utf8mb4_0900_ai_ci) — NOT the utf8mb4_unicode_ci
+      #   that database/schema.sql declares per table.
       ```
 - [ ] Confirm the health endpoints of the **current** release respond (baseline
       to compare against after rollback — see §4).
@@ -74,43 +136,117 @@ The bad deploy applied a migration the target commit predates. Pick **one**
 strategy; B1 is the default for staging.
 
 ### B1 — Restore the pre-deploy backup, then redeploy the old code (recommended)
-Order matters: **restore first, code second**, so the old code never boots
-against the newer schema.
+Order matters: **validate, stop the bad code, restore, code last**, so neither
+the bad release nor the old release ever runs against a schema it doesn't match.
+Only steps 2–5 are an outage.
 
-1. **Restore into a scratch DB first to validate the backup** (never trust an
-   unverified backup):
+All `db-*.sh` invocations below use the client-container recipe from
+[§1](#exec-context); root SQL runs in Coolify → pos-mysql → Terminal.
+
+1. **Validate the backup in a scratch DB** (never trust an unverified backup).
+   This touches only `pos_scratch`, so do it **before** taking the app down —
+   it's the slowest step and there's no reason to be offline for it:
    ```bash
-   DB_HOST=pos-mysql DB_USERNAME=pos_user DB_PASSWORD=*** \
-     DB_NAME=pos_scratch ./scripts/db-restore.sh /backups/pos_db_YYYYMMDD-HHMMSS.sql.gz
-   # scratch DB must already exist — the script does NOT CREATE DATABASE.
-   #   create it once: docker exec -it pos_mysql mysql -uroot -p -e "CREATE DATABASE pos_scratch"
+   # create-once, as root (Coolify → pos-mysql → Terminal). The GRANT is
+   # required — db-restore.sh connects as pos_user, which has no rights on a
+   # freshly created schema and would fail with "Access denied".
+   mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS pos_scratch \
+     CHARACTER SET <charset> COLLATE <collation>; \
+     GRANT ALL PRIVILEGES ON pos_scratch.* TO 'pos_user'@'%'; FLUSH PRIVILEGES;"
+   # <charset>/<collation> = the values recorded in §1.
    ```
-   Sanity-check row counts / a known record in `pos_scratch`.
-2. **Restore over prod** (⚠️ destructive — overwrites `pos_db`):
    ```bash
-   DB_NAME=pos_db CONFIRM=yes DB_HOST=pos-mysql DB_USERNAME=pos_user \
-     DB_PASSWORD=*** ./scripts/db-restore.sh /backups/pos_db_YYYYMMDD-HHMMSS.sql.gz
+   docker run --rm -it --network "$NET" \
+     -v "$PWD/scripts:/scripts:ro" -v /backups:/backups \
+     -e DB_HOST="$DB_CT" -e DB_USERNAME=pos_user -e DB_PASSWORD=*** \
+     -e DB_NAME=pos_scratch -w /scripts mysql:8.0 \
+     bash db-restore.sh /backups/pos_db_YYYYMMDD-HHMMSS.sql.gz
    ```
-3. Coolify → **backend** → Deployments → **Redeploy** the target (pre-migration)
-   commit. On boot it sees the restored (pre-migration) schema and runs no
-   pending migrations.
-4. Run **§4 health verification**.
+   Sanity-check row counts / a known record in `pos_scratch`. Bad backup → stop
+   here and find an earlier one; prod is still untouched.
+2. **Stop the backend** (Coolify → **backend** → **Stop**) — everything after
+   this point mutates `pos_db`, and the restore is not atomic with respect to
+   live traffic. Coolify builds the target image *before* swapping containers,
+   so without this the bad release keeps serving for the whole redeploy window:
+   the moment the restore lands, its writes hit columns that no longer exist —
+   500s on order submit (`ER_BAD_FIELD_ERROR`), and any multi-statement
+   order/payment write that already committed its header row leaves an orphaned
+   partial order. **The outage starts here** and ends at step 5.
+3. **Recreate `pos_db` empty** (⚠️ destructive — root, in the pos-mysql Terminal):
+   ```bash
+   mysql -uroot -p -e "DROP DATABASE pos_db; \
+     CREATE DATABASE pos_db CHARACTER SET <charset> COLLATE <collation>;"
+   # <charset>/<collation> = the values recorded in §1. Do not let the server
+   # default decide — future migrations inherit it.
+   # DROP DATABASE keeps pos_user's grants (mysql.db rows survive), so no re-GRANT.
+   ```
+   > **Why the drop is mandatory.** `db-backup.sh` dumps a single schema, so the
+   > archive holds `DROP TABLE IF EXISTS` + `CREATE` only for tables that existed
+   > at dump time. Restoring straight over `pos_db` rolls `typeorm_migrations`
+   > back but leaves any table/column the bad migration *created* in place. The
+   > next forward deploy then re-runs that migration and dies on
+   > `ER_TABLE_EXISTS_ERROR` during `NestFactory.create` — a boot crash-loop that
+   > needs manual SQL to escape.
+4. **Restore over prod** (⚠️ destructive — overwrites `pos_db`):
+   ```bash
+   docker run --rm -it --network "$NET" \
+     -v "$PWD/scripts:/scripts:ro" -v /backups:/backups \
+     -e DB_HOST="$DB_CT" -e DB_USERNAME=pos_user -e DB_PASSWORD=*** \
+     -e DB_NAME=pos_db -w /scripts mysql:8.0 \
+     bash db-restore.sh /backups/pos_db_YYYYMMDD-HHMMSS.sql.gz
+   # Answer the "This OVERWRITES database 'pos_db'" prompt by hand.
+   ```
+   > Do **not** add `CONFIRM=yes` here. That switch exists for cron/automation;
+   > on the one destructive step a human runs, the prompt is the only guard
+   > against a mistyped `DB_NAME` or a stale backup path pulled from scrollback.
+   > (It also needs the `-it` above — without a TTY the prompt read hits EOF and
+   > `set -e` aborts mid-restore.)
+5. Coolify → **backend** → Deployments → **Redeploy** the target (pre-migration)
+   commit. This also brings the backend back up. On boot it sees the restored
+   (pre-migration) schema and runs no pending migrations.
+6. Run **§4 health verification**.
 
 ### B2 — Revert the migration, then redeploy the old code (no data loss)
 Use only if the migration has a correct `down()` and you must keep writes made
 after the deploy.
 
-> ⚠️ **There is no prod-compiled revert npm script.** `npm run migration:revert`
+> ⚠️ **`migration:revert` undoes the last *recorded* migration — not "the bad
+> one".** It has no notion of which deploy went wrong; it just pops the ledger
+> head. On this repo the head below the offending migration is
+> `1781600000000-AddLegacyIdColumns`, and one invocation further down is
+> `1781578985277-InitialSchema`, whose `down()` **drops all 15 tables**. Run it
+> blind — or once too often — and the "no data loss" path is the one that wipes
+> staging.
+
+**B2 preflight — all three must hold, or use B1:**
+- [ ] The ledger head **is** the offending migration. Confirm with the
+      [canonical ledger query](#ledger-query); the last row must be the migration
+      the bad deploy added.
+- [ ] The bad deploy's migration **completed** (it wrote that ledger row). If the
+      boot log shows it erroring, the schema is half-applied with no ledger row —
+      revert would undo the previous *good* migration. → **B1**.
+- [ ] That migration has a correct, non-lossy `down()`. Read it. → else **B1**.
+
+> **There is no prod-compiled revert npm script.** `npm run migration:revert`
 > targets `src` via ts-node and won't exist in the production image. Run the
-> compiled data-source explicitly inside the backend container:
+> compiled data-source explicitly. `typeorm` is a **prod** dependency, so the
+> binary is in the image — but only npm puts it on `PATH`, so call it by path
+> from `/app` (the Dockerfile's `WORKDIR`); don't use `npx`, which can hit the
+> network from a slim image:
 > ```bash
 > # in the running backend container (Coolify → backend → Terminal)
-> npx typeorm migration:revert -d dist/database/data-source.js
-> # reverts exactly ONE migration per invocation; repeat per migration to undo.
+> cd /app && ./node_modules/.bin/typeorm migration:revert -d dist/database/data-source.js
+> # reverts exactly ONE migration per invocation. Re-run the ledger query after
+> # EACH one and stop the moment the head is the target commit's last migration.
 > ```
-1. Revert the offending migration(s) with the command above (once per migration).
-2. Coolify → backend → **Redeploy** the target commit.
-3. Run **§4 health verification**.
+1. **Cut traffic to the app** — Coolify → **frontend** → **Stop** (or put the
+   proxy in maintenance). Do *not* stop the backend: B2 needs its running
+   container to execute the revert. Leaving traffic on means the bad code writes
+   against a schema being reverted underneath it (500s, orphaned partial orders).
+2. Revert the offending migration(s) with the command above, re-checking the
+   ledger between invocations.
+3. Coolify → backend → **Redeploy** the target commit; restart the frontend.
+4. Run **§4 health verification**.
 
 > If the migration's `down()` is missing or lossy, **do not** use B2 — use B1.
 
@@ -139,6 +275,12 @@ curl -fsS -X POST https://api.<staging>/auth/login \
 # 4. Frontend serves
 curl -fsS -o /dev/null -w '%{http_code}\n' https://app.<staging>/login
 # expect: 200
+
+# 5. Schema state — the ledger matches the deployed commit
+#    (Coolify → pos-mysql → Terminal; the canonical ledger query from §0)
+mysql -uroot -p -D pos_db -e "SELECT name FROM typeorm_migrations ORDER BY timestamp;"
+# expect: exactly the migrations present in the TARGET commit's
+#         backend/src/database/migrations/ — no more, no fewer
 ```
 
 - [ ] `/health` → 200 `OK`
@@ -147,11 +289,18 @@ curl -fsS -o /dev/null -w '%{http_code}\n' https://app.<staging>/login
       authenticates a real user)
 - [ ] `/login` page → 200
 - [ ] Coolify shows the **target** commit as the deployed one, container healthy
+- [ ] **Ledger == target commit's migration set** (check 5 above)
 - [ ] (Case B only) spot-check a known record survived (or was correctly rolled
       back to the backup state)
 
+> The four HTTP checks are all satisfiable by a **half**-rolled-back schema: a
+> B2 that reverted one of two migrations, or a B1 that left orphan objects, still
+> returns 200 on every one of them (login only touches `users`/`companies`).
+> Without check 5 the rehearsal is recorded PASS and the *next* forward deploy is
+> what fails to boot. Do not tick the gate on the HTTP checks alone.
+
 **Pass gate:** all boxes checked; deployed commit == rollback target; readiness
-green.
+green; ledger matches the deployed commit.
 
 ---
 
@@ -160,10 +309,17 @@ green.
 Stop and escalate rather than improvise if:
 - `/health/ready` stays 503 after rollback → DB is down or unreachable; do not
   keep redeploying (you'll loop). Check the pos-mysql resource first.
-- A Case-B restore's scratch validation (§3 B1.1) shows wrong row counts →
-  backup is bad; find an earlier good backup before overwriting prod.
+- A Case-B restore's scratch validation (§3 B1 step 1) shows wrong row counts →
+  backup is bad; find an earlier good backup before overwriting prod. Prod is
+  still untouched at that point — do not proceed to step 2.
 - `migration:revert` errors or the migration has no `down()` → switch to B1
   (backup restore); never leave the schema half-reverted.
+- The B2 preflight fails on the ledger head (head isn't the offending migration,
+  or the migration errored without recording a row) → **B1 only**. Do not "just
+  try" a revert to see what happens; the head below it may be `InitialSchema`.
+- §4 check 5 shows a ledger that doesn't match the deployed commit → the rollback
+  is **not** done, whatever the HTTP checks say. Do not sign off; do not deploy
+  forward on top of it.
 
 ---
 
@@ -174,10 +330,14 @@ To *rehearse* (not wait for a real incident):
 1. Deploy current `main` to staging; run §4 — record it green.
 2. **Case A drill:** Redeploy the immediately-previous commit; run §4; Redeploy
    `main` again. Confirms the redeploy-previous mechanic + health gate.
-3. **Case B drill:** take a pre-deploy backup (§1); deploy a commit that adds a
-   throwaway migration (or use the real last schema-changing commit); then
-   execute **B1** back to the pre-migration commit; run §4. Confirms the
-   backup→restore→redeploy ordering end-to-end.
+3. **Case B drill:** take a pre-deploy backup (§1, and record charset/collation);
+   deploy a commit whose throwaway migration **creates** a table (or use the real
+   last schema-changing commit); classify with the ledger query (§0); then
+   execute **B1** back to the pre-migration commit; run §4 including check 5.
+   Confirms the stop→validate→recreate→restore→redeploy ordering end-to-end.
+   A migration that only creates is the case that catches a skipped step 3: if
+   the drill's forward redeploy of `main` boots clean afterwards, the created
+   table really was removed.
 4. Record commands + outcomes in `STAGING-DRY-RUN-RESULTS.md` under a new
    "Rollback rehearsal" section (mirror the backup/restore section's format:
    commands, result, pass/fail).
@@ -193,9 +353,15 @@ recovers to a healthy, data-consistent stack (Case B).
 - **No `migration:revert:prod` script.** `package.json` only has
   `migration:run:prod`; revert must be invoked with the explicit `dist`
   data-source (§3 B2). Worth adding a `migration:revert:prod` script to remove
-  the footgun — tracked as a follow-up, not blocking the rehearsal.
+  the footgun — tracked as a follow-up, not blocking the rehearsal. Note the
+  script alone wouldn't fix the real hazard: `revert` pops the ledger head
+  regardless of which deploy was bad, hence the B2 preflight.
 - **`db-restore.sh` requires the target DB to pre-exist** (single-schema dump,
-  no `CREATE DATABASE`) — see the create-once note in §3 B1.1. Matches the local
-  rehearsal finding in `STAGING-DRY-RUN-RESULTS.md`.
+  no `CREATE DATABASE`) and connects as `pos_user`, so a freshly created schema
+  also needs a `GRANT` — both folded into §3 B1. Matches the local rehearsal
+  findings in `STAGING-DRY-RUN-RESULTS.md`.
+- **Neither script can run from the VPS host shell** — no client binaries there,
+  and `pos-mysql` resolves only on the Docker network. Every invocation here is
+  wrapped in a `mysql:8.0` client container (§1).
 - **`/health` returns `OK` (uppercase);** `DEPLOYMENT-COOLIFY.md` §Paso 5 shows
   lowercase `ok` — cosmetic doc drift, the real value is `OK`.
