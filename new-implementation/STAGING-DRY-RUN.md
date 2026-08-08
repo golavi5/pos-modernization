@@ -66,20 +66,56 @@ this is the verification checklist. Tracks SPEC-CUT-001 §5.
       + a user in it; add a product/sale under each company. Log in as the
       second-company user → its **reports/customers show only its own data**,
       never the first company's.
-- **Pass gate:** zero cross-tenant data visible; cashier cannot reach admin routes.
+- [ ] **Privilege-escalation boundary (PR #24):** as a tenant `admin` (not superadmin):
+      - `POST /companies` → **403** (company create/delete is `superadmin`-only).
+      - `GET /users/roles/list` → the response **omits `superadmin`** (elevated roles
+        are hidden from non-elevated actors).
+      - `POST /users` or `PATCH /users/:id/roles` attempting to grant `superadmin`
+        → **403** `You cannot assign an elevated role.` (admin cannot self-escalate or
+        mint a superadmin).
+- [ ] **Company read/write scoping (PR #25):** as a tenant `admin` of the *first*
+      company (these routes are `admin`-reachable by design — isolation is enforced
+      in `CompaniesService` against the actor, not by the decorator):
+      - `GET /companies` → **exactly one row, its own**; the second company's name /
+        `tax_id` / address must **not** appear.
+      - `GET /companies/<second-company-id>` → **404** (not 403 — the response must not
+        confirm the other company exists).
+      - `PATCH /companies/<second-company-id>` → **404**, and the second company's row
+        is **unchanged** afterwards.
+      - `GET /companies/<own-id>` and `PATCH /companies/<own-id>` still **200**.
+      - Then as `superadmin`: `GET /companies` → **both** companies listed.
+- [ ] **Cross-tenant purge (PR #25):** with read notifications older than 30 days in
+      **both** companies, call `DELETE /notifications/admin/clean-old` as the first
+      company's `admin` → the second company's old notifications are **still present**
+      (the purge is a bulk DELETE scoped to the caller's company).
+- **Pass gate:** zero cross-tenant data visible **on the company read/write and
+  notification-purge paths as well as reports/customers**; cashier cannot reach admin
+  routes; a tenant admin cannot create a company, assign/see the `superadmin` role,
+  read or modify another tenant's company, or purge another tenant's notifications.
 
 ## 6. Backup / restore / rollback rehearsal
+> Use the repo scripts, not ad-hoc `mysqldump`/`mysql` pipelines: a bare
+> `mysqldump | gzip > file` truncates the target before the dump can fail, so a
+> partial archive is indistinguishable from a good one. `db-backup.sh` dumps to
+> `.partial`, runs `gzip -t`, and only then renames. Execution context (client
+> container + `-it`) is in `STAGING-ROLLBACK-RUNBOOK.md` §1.
+
 - [ ] **Backup:**
   ```bash
-  mysqldump -h <db-host> -u <user> -p<pass> <db> | gzip > pos_$(date +%F).sql.gz
+  DB_HOST=<db-host> DB_USERNAME=<user> DB_PASSWORD=<pass> \
+    DB_NAME=<db> BACKUP_DIR=/backups ./scripts/db-backup.sh
   ```
-- [ ] **Restore** into a scratch DB and confirm row counts match:
+- [ ] **Restore** into a scratch DB and confirm row counts match (the scratch DB
+      must already exist and be granted to the restoring user):
   ```bash
-  gunzip < pos_<date>.sql.gz | mysql -h <db-host> -u <user> -p<pass> <scratch_db>
+  DB_HOST=<db-host> DB_USERNAME=<user> DB_PASSWORD=<pass> \
+    DB_NAME=<scratch_db> ./scripts/db-restore.sh /backups/<db>_<ts>.sql.gz
   ```
 - [ ] **Rollback rehearsal:** in Coolify, redeploy the previous backend image/commit;
       confirm the app comes back healthy (migrations are forward-only — a rollback
       must target a commit whose migrations already ran).
+      → Step-by-step procedure + Case A/Case B decision tree in
+      [`STAGING-ROLLBACK-RUNBOOK.md`](./STAGING-ROLLBACK-RUNBOOK.md).
 - **Pass gate:** restore verified; rollback returns a healthy stack.
 
 ## 7. Observability spot-check

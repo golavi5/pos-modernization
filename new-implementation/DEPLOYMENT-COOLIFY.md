@@ -184,7 +184,14 @@ no es un backup).
 
 ### Backups (fallback portable / hosts sin Coolify)
 Scripts en [`scripts/`](./scripts) — conexión por las mismas env vars del backend
-(`DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME`):
+(`DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME`).
+
+> ⚠️ **Contexto de ejecución.** El host del VPS **no** tiene cliente
+> `mysql`/`mysqldump`, y `pos-mysql` sólo resuelve dentro de la red Docker: estos
+> comandos no corren tal cual desde una shell del host. Envolvelos en un
+> contenedor cliente `mysql:8.0` unido a la red del contenedor de la base — receta
+> completa en [`STAGING-ROLLBACK-RUNBOOK.md`](./STAGING-ROLLBACK-RUNBOOK.md) §1
+> (aplica también a la línea de cron de abajo).
 ```bash
 # Backup → gzip con timestamp + poda por retención (RETENTION_DAYS, def. 7)
 DB_PASSWORD=*** BACKUP_DIR=/backups ./scripts/db-backup.sh
@@ -197,18 +204,46 @@ DB_PASSWORD=*** BACKUP_DIR=/backups ./scripts/db-backup.sh
 ### Restauración (⚠️ destructiva)
 Restaura **primero en una base scratch** para validar el backup antes de tocar prod:
 ```bash
+# la base scratch debe existir Y estar concedida a pos_user (el script no la crea):
+#   mysql -uroot -p -e "CREATE DATABASE IF NOT EXISTS pos_scratch CHARACTER SET <charset> \
+#     COLLATE <collation>; GRANT ALL ON pos_scratch.* TO 'pos_user'@'%'; FLUSH PRIVILEGES;"
+# <charset>/<collation>: copiá los de la base origen — ver STAGING-ROLLBACK-RUNBOOK.md §1.
 DB_PASSWORD=*** DB_NAME=pos_scratch ./scripts/db-restore.sh /backups/pos_db_YYYYMMDD-HHMMSS.sql.gz
-# tras validar, repetir con DB_NAME=pos_db (CONFIRM=yes para automatizar)
+# tras validar, repetir con DB_NAME=pos_db — respondé el prompt a mano.
+# CONFIRM=yes es sólo para cron/automatización: en un restore manual el prompt
+# es la única protección contra un DB_NAME o un archivo equivocado.
 ```
 
 ### Rollback de un deploy
-En Coolify → aplicación → **Deployments** → **Redeploy** del commit anterior.
+
+> 📖 **Procedimiento completo:
+> [`STAGING-ROLLBACK-RUNBOOK.md`](./STAGING-ROLLBACK-RUNBOOK.md)** — árbol de
+> decisión Caso A / Caso B, orden exacto de los pasos y verificación de salida.
+> Esta sección es sólo el resumen; ante un incidente, seguí el runbook.
+
+Sin cambio de esquema entre el commit desplegado y el anterior (**Caso A**):
+Coolify → aplicación → **Deployments** → **Redeploy** del commit anterior.
 
 > ⚠️ **Las migraciones son forward-only.** Hacer rollback del *código* no revierte
-> el *esquema*. Si el commit anterior es incompatible con el esquema ya migrado:
-> 1. restaura el backup **previo a esa migración**, **o**
-> 2. añade y aplica una migración de reversa (`npm run migration:revert`) antes
->    de bajar el código.
+> el *esquema*. Clasificá **con la base de datos**, no con el repo — el ledger
+> manda (Coolify → pos-mysql → Terminal):
+> ```bash
+> mysql -uroot -p -D pos_db -e "SELECT name FROM typeorm_migrations ORDER BY timestamp;"
+> ```
+> Si aparece alguna migración que el commit destino **no** tiene (**Caso B**), el
+> Redeploy solo **no** alcanza: hay que restaurar el backup previo a esa migración
+> (recreando `pos_db` primero — el dump no borra las tablas que la migración creó),
+> deteniendo el backend antes de tocar el esquema. Ver **§3 B1** del runbook.
+>
+> ⚠️ **`npm run migration:revert` no existe en la imagen de producción** (usa
+> ts-node contra `src/`, y la imagen sólo trae `dist` con `--omit=dev`). Además
+> revierte la **última migración registrada**, no "la mala": ejecutado a ciegas
+> puede llegar a `InitialSchema`, cuyo `down()` borra las 15 tablas. La forma
+> correcta, y sólo tras el preflight de **§3 B2** del runbook:
+> ```bash
+> # dentro del contenedor backend (Coolify → backend → Terminal)
+> cd /app && ./node_modules/.bin/typeorm migration:revert -d dist/database/data-source.js
+> ```
 > Para cambios de esquema riesgosos: backup **inmediatamente antes** del deploy.
 
 ---

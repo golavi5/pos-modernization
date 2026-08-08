@@ -1,13 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CompaniesService } from '../companies.service';
 import { Company } from '../entities/company.entity';
+import { User } from '../../auth/entities/user.entity';
+import { Role } from '../../auth/entities/role.entity';
+
+function actor(companyId: string, roleNames: string[]): User {
+  const user = new User();
+  user.company_id = companyId;
+  user.roles = roleNames.map((name) => ({ name }) as Role);
+  return user;
+}
 
 describe('CompaniesService', () => {
   let service: CompaniesService;
   let repo: Repository<Company>;
+
+  const superadmin = actor('company-uuid', ['superadmin']);
+  const tenantAdmin = actor('company-uuid', ['admin']);
 
   const mockCompany: Company = {
     id: 'company-uuid',
@@ -45,7 +61,7 @@ describe('CompaniesService', () => {
     it('should return paginated companies', async () => {
       jest.spyOn(repo, 'findAndCount').mockResolvedValue([[mockCompany], 1]);
 
-      const result = await service.findAll({ page: 1, limit: 10 });
+      const result = await service.findAll({ page: 1, limit: 10 }, superadmin);
 
       expect(result.data).toHaveLength(1);
       expect(result.total).toBe(1);
@@ -62,7 +78,7 @@ describe('CompaniesService', () => {
     it('should return a company by id', async () => {
       jest.spyOn(repo, 'findOne').mockResolvedValue(mockCompany);
 
-      const result = await service.findOne('company-uuid');
+      const result = await service.findOne('company-uuid', superadmin);
 
       expect(result.id).toBe('company-uuid');
       expect(result.name).toBe('Acme Corp');
@@ -71,7 +87,7 @@ describe('CompaniesService', () => {
     it('should throw NotFoundException when company not found', async () => {
       jest.spyOn(repo, 'findOne').mockResolvedValue(null);
 
-      await expect(service.findOne('non-existent')).rejects.toThrow(
+      await expect(service.findOne('non-existent', superadmin)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -107,7 +123,7 @@ describe('CompaniesService', () => {
         .mockResolvedValueOnce(null);       // conflict check — name not taken
       jest.spyOn(repo, 'save').mockResolvedValue(updated);
 
-      const result = await service.update('company-uuid', { name: 'Updated Corp' });
+      const result = await service.update('company-uuid', { name: 'Updated Corp' }, superadmin);
 
       expect(result.name).toBe('Updated Corp');
     });
@@ -116,7 +132,7 @@ describe('CompaniesService', () => {
       jest.spyOn(repo, 'findOne').mockResolvedValue(null);
 
       await expect(
-        service.update('non-existent', { name: 'X' }),
+        service.update('non-existent', { name: 'X' }, superadmin),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -138,6 +154,96 @@ describe('CompaniesService', () => {
       await expect(service.remove('non-existent')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  /**
+   * `GET /companies`, `GET /companies/:id` and `PATCH /companies/:id` are
+   * `@Roles('admin','superadmin')`, so a tenant admin reaches them literally —
+   * the ADMIN superuser bypass is not what lets them in and tightening the
+   * decorator would lock admins out of their own company. Tenant isolation is
+   * therefore enforced in the service, against the actor. See SPEC-CUT-001 S-07.
+   */
+  describe('tenant scoping', () => {
+    const otherCompany = 'company-other';
+
+    it('constrains the list query to the tenant admin own company', async () => {
+      jest.spyOn(repo, 'findAndCount').mockResolvedValue([[mockCompany], 1]);
+
+      await service.findAll({ page: 1, limit: 10 }, tenantAdmin);
+
+      expect(repo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'company-uuid' } }),
+      );
+    });
+
+    it('lets a superadmin list every company', async () => {
+      jest.spyOn(repo, 'findAndCount').mockResolvedValue([[mockCompany], 1]);
+
+      await service.findAll({ page: 1, limit: 10 }, superadmin);
+
+      expect(repo.findAndCount).toHaveBeenCalledWith(
+        expect.objectContaining({ where: {} }),
+      );
+    });
+
+    it('refuses to list rather than fall back to an unscoped query when the actor has no company', async () => {
+      const findAndCount = jest
+        .spyOn(repo, 'findAndCount')
+        .mockResolvedValue([[mockCompany], 1]);
+
+      await expect(
+        service.findAll({ page: 1, limit: 10 }, actor(undefined as any, ['admin'])),
+      ).rejects.toThrow(ForbiddenException);
+      expect(findAndCount).not.toHaveBeenCalled();
+    });
+
+    it('hides another tenant company from a tenant admin on read', async () => {
+      const findOne = jest.spyOn(repo, 'findOne').mockResolvedValue(mockCompany);
+
+      await expect(service.findOne(otherCompany, tenantAdmin)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(findOne).not.toHaveBeenCalled();
+    });
+
+    it('lets a superadmin read another tenant company', async () => {
+      jest
+        .spyOn(repo, 'findOne')
+        .mockResolvedValue({ ...mockCompany, id: otherCompany });
+
+      const result = await service.findOne(otherCompany, superadmin);
+
+      expect(result.id).toBe(otherCompany);
+    });
+
+    it('blocks a tenant admin from updating another tenant company', async () => {
+      const findOne = jest.spyOn(repo, 'findOne').mockResolvedValue(mockCompany);
+      const save = jest.spyOn(repo, 'save');
+
+      await expect(
+        service.update(otherCompany, { name: 'Hijacked' }, tenantAdmin),
+      ).rejects.toThrow(NotFoundException);
+      expect(findOne).not.toHaveBeenCalled();
+      expect(save).not.toHaveBeenCalled();
+    });
+
+    it('still lets a tenant admin update their own company', async () => {
+      jest
+        .spyOn(repo, 'findOne')
+        .mockResolvedValueOnce(mockCompany)
+        .mockResolvedValueOnce(null);
+      jest
+        .spyOn(repo, 'save')
+        .mockResolvedValue({ ...mockCompany, name: 'Acme Renamed' });
+
+      const result = await service.update(
+        'company-uuid',
+        { name: 'Acme Renamed' },
+        tenantAdmin,
+      );
+
+      expect(result.name).toBe('Acme Renamed');
     });
   });
 });
