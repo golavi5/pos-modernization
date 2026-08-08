@@ -136,7 +136,7 @@ export class NotificationsController {
   @Roles('admin')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Clean old read notifications (admin)' })
-  async cleanOld(): Promise<{ deleted: number }> {
-    return this.schedulerService.cleanOldNotifications();
+  async cleanOld(@CurrentUser() user: User): Promise<{ deleted: number }> {
+    return this.schedulerService.cleanOldNotifications(user.company_id);
   }
 }

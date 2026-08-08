@@ -86,4 +86,112 @@ describe('NotificationSchedulerService.checkLowStock', () => {
     expect(result).toEqual({ checked: 0, notified: 0 });
     expect(notificationsService.create).not.toHaveBeenCalled();
   });
+
+  /**
+   * Service-layer tenant-scoping guard: proves every query this service issues
+   * — the product scan, the open-alert dedupe, and the old-notification purge —
+   * filters by the caller's company, at the query itself and not just at the
+   * controller. See SPEC-CUT-001 S-07.
+   */
+  describe('tenant scoping', () => {
+    beforeEach(() => productRepo.find.mockResolvedValue([]));
+
+    it('scopes the product scan to the caller company_id', async () => {
+      await service.checkLowStock('company-A');
+      expect(productRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ company_id: 'company-A' }),
+        }),
+      );
+    });
+
+    it('scopes the open-alert dedupe query to the caller company', async () => {
+      await service.checkLowStock('company-A');
+      expect(notificationRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ companyId: 'company-A' }),
+        }),
+      );
+    });
+
+    it('derives the scope from the argument rather than a fixed company', async () => {
+      // A `not.toHaveBeenCalledWith(company-A)` assertion after a single
+      // checkLowStock('company-B') would hold for *any* implementation,
+      // including one with no tenant filter at all. Driving two different
+      // tenants through and comparing the predicates is what actually fails
+      // when the scope is hardcoded or dropped.
+      await service.checkLowStock('company-A');
+      await service.checkLowStock('company-B');
+
+      expect(productRepo.find.mock.calls.map((c) => c[0].where.company_id)).toEqual([
+        'company-A',
+        'company-B',
+      ]);
+      expect(
+        notificationRepo.find.mock.calls.map((c) => c[0].where.companyId),
+      ).toEqual(['company-A', 'company-B']);
+    });
+
+    /**
+     * cleanOldNotifications issues a bulk DELETE. Without a companyId predicate
+     * one tenant's admin purges every other tenant's read notifications, so the
+     * predicate is asserted here rather than assumed.
+     */
+    describe('cleanOldNotifications', () => {
+      let qb: {
+        delete: jest.Mock;
+        from: jest.Mock;
+        where: jest.Mock;
+        andWhere: jest.Mock;
+        execute: jest.Mock;
+      };
+
+      const predicates = () =>
+        [...qb.where.mock.calls, ...qb.andWhere.mock.calls] as [
+          string,
+          Record<string, unknown>?,
+        ][];
+
+      beforeEach(() => {
+        qb = {
+          delete: jest.fn().mockReturnThis(),
+          from: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          execute: jest.fn().mockResolvedValue({ affected: 3 }),
+        };
+        (notificationRepo as any).createQueryBuilder = jest
+          .fn()
+          .mockReturnValue(qb);
+      });
+
+      it('constrains the purge to the caller company', async () => {
+        const result = await service.cleanOldNotifications('company-A');
+
+        expect(result).toEqual({ deleted: 3 });
+        expect(qb.execute).toHaveBeenCalledTimes(1);
+        expect(
+          predicates().some(
+            ([sql, params]) =>
+              /companyId/.test(sql) && params?.companyId === 'company-A',
+          ),
+        ).toBe(true);
+      });
+
+      it('still filters on read state and the 30-day cutoff', async () => {
+        await service.cleanOldNotifications('company-A');
+
+        const sql = predicates().map(([s]) => s);
+        expect(sql.some((s) => /isRead/.test(s))).toBe(true);
+        expect(sql.some((s) => /createdAt/.test(s))).toBe(true);
+      });
+
+      it('requires a company id', async () => {
+        await expect(
+          (service.cleanOldNotifications as any)(),
+        ).rejects.toThrow();
+        expect(qb.execute).not.toHaveBeenCalled();
+      });
+    });
+  });
 });
