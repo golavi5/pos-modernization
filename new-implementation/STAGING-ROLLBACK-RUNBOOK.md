@@ -227,26 +227,57 @@ after the deploy.
       revert would undo the previous *good* migration. → **B1**.
 - [ ] That migration has a correct, non-lossy `down()`. Read it. → else **B1**.
 
-> **There is no prod-compiled revert npm script.** `npm run migration:revert`
-> targets `src` via ts-node and won't exist in the production image. Run the
-> compiled data-source explicitly. `typeorm` is a **prod** dependency, so the
-> binary is in the image — but only npm puts it on `PATH`, so call it by path
-> from `/app` (the Dockerfile's `WORKDIR`); don't use `npx`, which can hit the
-> network from a slim image:
+> **Use the guarded script — not the bare TypeORM CLI.**
+> `npm run migration:revert-one:prod` runs `dist/database/revert-one-migration.js`,
+> which wraps `undoLastMigration()` in the preflight this section demands: it
+> prints the ledger (head marked) plus anything pending, refuses to run
+> unattended or while `DB_RUN_MIGRATIONS=true`, warns when the head is the only
+> applied migration, and requires you to type that migration's **exact name**
+> before it touches the schema. A generic "yes" is too easy to answer twice.
 > ```bash
 > # in the running backend container (Coolify → backend → Terminal)
-> cd /app && ./node_modules/.bin/typeorm migration:revert -d dist/database/data-source.js
-> # reverts exactly ONE migration per invocation. Re-run the ledger query after
-> # EACH one and stop the moment the head is the target commit's last migration.
+> cd /app && npm run migration:revert-one:prod
 > ```
+> Exit codes: `0` reverted · `1` refused or aborted — **schema untouched** ·
+> `2` the revert failed part-way → **B1**, do not retry (§5).
+>
+> It is deliberately **not** called `migration:revert:prod`: `migration:run:prod`
+> applies **all** pending migrations, so the mirrored name would promise an
+> inverse that does not exist. This undoes **one** migration per invocation.
+> Re-run it — it re-reads the ledger every time — until the head is the target
+> commit's last migration.
+>
+> ⚠ **Revert BEFORE you redeploy the target commit.** Both the script and the
+> offending migration's `down()` ship inside the image built from the **bad**
+> commit. Once the older target commit is deployed, `dist` no longer contains
+> that migration class and *no* command can revert it — the only way back is
+> **B1**. §0 warns that the `git diff` hint mis-reports several Case-B
+> situations as Case A; if you redeployed first and only then found the schema
+> mismatch, go straight to **B1**.
+>
+> On an image built before this script landed, `npm run migration:revert-one:prod`
+> fails with `Missing script`. The unguarded fallback is
+> `cd /app && ./node_modules/.bin/typeorm migration:revert -d dist/database/data-source.js`
+> (call it by path — only npm puts it on `PATH`, and `npx` can hit the network
+> from a slim image). It has none of the guards above: re-read the preflight and
+> the ledger query before **every** invocation.
 1. **Cut traffic to the app** — Coolify → **frontend** → **Stop** (or put the
    proxy in maintenance). Do *not* stop the backend: B2 needs its running
    container to execute the revert. Leaving traffic on means the bad code writes
    against a schema being reverted underneath it (500s, orphaned partial orders).
-2. Revert the offending migration(s) with the command above, re-checking the
+2. **Set `DB_RUN_MIGRATIONS=false`** on the backend service and let Coolify
+   restart it. Migrations run on boot, so without this the container re-applies
+   the migration you are about to revert the moment it restarts — and it *will*
+   restart: after the revert the bad code is serving an old schema and the
+   healthcheck fails. The script refuses to run while the flag is `true`.
+   > A restart is not a stop — the backend comes back and is still available to
+   > run the revert, which is all step 1 requires. Traffic is already cut.
+3. Revert the offending migration(s) with the command above, re-checking the
    ledger between invocations.
-3. Coolify → backend → **Redeploy** the target commit; restart the frontend.
-4. Run **§4 health verification**.
+4. Coolify → backend → **Redeploy** the target commit, **restore
+   `DB_RUN_MIGRATIONS=true`**, then restart the frontend. (Leaving it `false`
+   means the *next* forward deploy silently ships code ahead of the schema.)
+5. Run **§4 health verification**.
 
 > If the migration's `down()` is missing or lossy, **do not** use B2 — use B1.
 
@@ -283,6 +314,19 @@ mysql -uroot -p -D pos_db -e "SELECT name FROM typeorm_migrations ORDER BY times
 #         backend/src/database/migrations/ — no more, no fewer
 ```
 
+> Check 5 from the **backend** container instead, when you are already there and
+> don't want to switch to the DB terminal (there is no mysql client in the
+> backend image, and none on the VPS host at all):
+> ```bash
+> cd /app && npm run migration:show:prod   # [X] applied · [ ] pending
+> ```
+> Read-only. `[X]` rows are the ledger; every `[ ]` row is a migration the
+> **deployed image** carries but has not run — after a Case-B rollback that list
+> should be empty, since the target commit shouldn't know about the reverted one.
+> Note it reports against the deployed image's migration set, so it cannot tell
+> you about a migration the *bad* commit added and the current image lacks — for
+> that, the mysql query above is authoritative.
+
 - [ ] `/health` → 200 `OK`
 - [ ] `/health/ready` → 200 `ready` / `db: up`
 - [ ] `/auth/login` → 200 with tokens (proves the restored/reverted schema still
@@ -312,8 +356,15 @@ Stop and escalate rather than improvise if:
 - A Case-B restore's scratch validation (§3 B1 step 1) shows wrong row counts →
   backup is bad; find an earlier good backup before overwriting prod. Prod is
   still untouched at that point — do not proceed to step 2.
-- `migration:revert` errors or the migration has no `down()` → switch to B1
-  (backup restore); never leave the schema half-reverted.
+- The revert errors (script **exit 2**) or the migration has no `down()` →
+  switch to B1 (backup restore); never leave the schema half-reverted. MySQL
+  auto-commits DDL, so a `down()` that throws mid-way has already applied some
+  of its statements while the ledger row survives — the migration still reads as
+  applied, re-running re-attempts statements that succeeded, and
+  `migration:run:prod` sees nothing pending. There is no scripted way out of
+  that state; only a restore is. (Exit **1** is the opposite case — refused or
+  aborted before any SQL ran, so the schema is untouched and you can safely
+  fix the flagged condition and retry.)
 - The B2 preflight fails on the ledger head (head isn't the offending migration,
   or the migration errored without recording a row) → **B1 only**. Do not "just
   try" a revert to see what happens; the head below it may be `InitialSchema`.
@@ -350,12 +401,16 @@ recovers to a healthy, data-consistent stack (Case B).
 
 ## Notes / known gaps surfaced while writing this
 
-- **No `migration:revert:prod` script.** `package.json` only has
-  `migration:run:prod`; revert must be invoked with the explicit `dist`
-  data-source (§3 B2). Worth adding a `migration:revert:prod` script to remove
-  the footgun — tracked as a follow-up, not blocking the rehearsal. Note the
-  script alone wouldn't fix the real hazard: `revert` pops the ledger head
-  regardless of which deploy was bad, hence the B2 preflight.
+- **Prod revert is now a guarded script** — `migration:revert-one:prod`
+  (`backend/src/database/revert-one-migration.ts`), added because the gap
+  written up here originally invited a bare `migration:revert:prod`, which would
+  have been *worse* than the hand-typed binary path: discoverable, routine-looking,
+  and popping the ledger head regardless of which deploy was bad. The script
+  keeps the B2 preflight attached to the invocation (ledger echo, typed-name
+  confirmation, no unattended mode, `DB_RUN_MIGRATIONS` guard). Two hazards it
+  cannot remove, both handled in §3 B2 / §5 instead: a `down()` that throws
+  leaves the schema half-reverted (DDL auto-commits), and neither script nor
+  migration class exists in an image built from an older commit.
 - **`db-restore.sh` requires the target DB to pre-exist** (single-schema dump,
   no `CREATE DATABASE`) and connects as `pos_user`, so a freshly created schema
   also needs a `GRANT` — both folded into §3 B1. Matches the local rehearsal
