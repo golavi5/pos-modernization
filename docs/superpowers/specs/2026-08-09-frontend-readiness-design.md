@@ -115,7 +115,7 @@ ships an ESLint config; `npm run build` typechecks and is the gate.
 
 1. ~~Depends on #35.~~ Resolved: #35 merged 2026-08-09 and its review pass
    already landed the shared table, shrinking this design's i18n work to the
-   header breadcrumb plus three product pages.
+   header breadcrumb plus two product pages.
 2. **A pinned sidebar costs 168px of width** on the sales workspace, which the
    redesign optimised for screen real estate. Mitigated by defaulting to
    unpinned — the user opts in, and the setting is theirs.

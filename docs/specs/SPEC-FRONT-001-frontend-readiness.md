@@ -35,12 +35,13 @@ app shell. It is deliberately not a charter for the whole frontend.
   is the last hardcoded Spanish copy** and is what remains to fold in.
 - **S-09 is wrong about both the size and the files.** SPEC-CUT-001 §4 describes
   it as the product detail/edit and category pages. In fact
-  `products/[id]/page.tsx` and `products/[id]/edit/page.tsx` **already use**
-  `useTranslations`, while the untranslated product pages are the list
-  (`products/page.tsx`), `products/categories/page.tsx` and
+  `products/[id]/page.tsx`, `products/[id]/edit/page.tsx` and
+  `products/categories/page.tsx` **already use** `useTranslations` (the last of
+  those via its sole content, `CategoryManager.tsx`, translated in `c99fd6aa`),
+  while the untranslated product pages are the list (`products/page.tsx`) and
   `products/new/page.tsx`. The real size is **12 of 77** component/page files
   using `useTranslations`, with ~24 carrying hardcoded Spanish. This spec takes
-  the app shell plus those three product pages; the rest is SPEC-FRONT-002.
+  the app shell plus those two product pages; the rest is SPEC-FRONT-002.
 - **S-10 is already fixed.** SPEC-CUT-001 §4 says `types/auth.ts` still declares
   snake_case token fields on `AuthResponse`. It does not: line 28 reads
   `export type AuthResponse = User`, and the backend's `register` returns
@@ -59,8 +60,8 @@ app shell. It is deliberately not a charter for the whole frontend.
 2. **App-shell i18n** — move the header breadcrumb onto the shared
    `NAV_ITEMS` table and delete `Header.ROUTE_LABELS`, the last hardcoded copy
    (the sidebar and palette were consolidated by #35's review pass). Plus the
-   three untranslated product pages named in §2: `products/page.tsx`,
-   `products/categories/page.tsx`, `products/new/page.tsx`.
+   two untranslated product pages named in §2: `products/page.tsx`,
+   `products/new/page.tsx`.
 S-10 was in this spec's original scope and is **removed**: the work is already
 done (see §2).
 
@@ -78,7 +79,7 @@ done (see §2).
       the palette all read from `lib/navigation/nav-items.ts`, and no route label
       is a hardcoded string.
 - [ ] Switching locale changes the sidebar nav labels and the header breadcrumb.
-- [ ] The three product pages named in §3, item 2 render no hardcoded Spanish; any new keys
+- [ ] The two product pages named in §3, item 2 render no hardcoded Spanish; any new keys
       exist in both `es.json` and `en.json`.
 - [ ] `npm run build` is green (it typechecks; `next lint` remains unrunnable
       until SPEC-CUT-001 S-01 ships an ESLint config).

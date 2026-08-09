@@ -459,14 +459,19 @@ git commit -m "refactor(front): breadcrumb reads the shared nav table, drops har
 
 ---
 
-### Task 4: Translate the three product pages
+### Task 4: Translate the two product pages
 
 **Files:**
 - Modify: `app/(panel)/products/page.tsx`
-- Modify: `app/(panel)/products/categories/page.tsx`
 - Modify: `app/(panel)/products/new/page.tsx`
 - Modify: `messages/es.json`, `messages/en.json`
 - Create: `scripts/smoke/i18n-parity.mjs`
+
+`app/(panel)/products/categories/page.tsx` is out of scope: it is an 8-line
+wrapper around `<CategoryManager />`, and `components/products/CategoryManager.tsx`
+— its only content — already uses `useTranslations('products')` for every
+string it renders (translated in `c99fd6aa`, predating this plan). Nothing to
+change here.
 
 **Interfaces:**
 - Consumes: `findNavLabelKey` is not used here. The `products` namespace already exists in both catalogs.
@@ -509,7 +514,7 @@ Expected: `PASS  <n> keys in sync`. This is the baseline; it must still pass at 
 
 - [ ] **Step 3: Add the keys**
 
-These three pages are **mixed English and Spanish**, not merely untranslated —
+These two pages are **mixed English and Spanish**, not merely untranslated —
 `Create Product` and `Product Information` sit beside `Buscar productos...` in
 the same views. Both languages become keys; the English literals are not
 "already fine".
@@ -531,7 +536,6 @@ Example shape (`es.json` / `en.json` respectively):
 ```json
 "products": {
   "newProduct": "Nuevo Producto",
-  "categories": "Categorías",
   "createProduct": "Crear producto"
 }
 ```
@@ -539,14 +543,13 @@ Example shape (`es.json` / `en.json` respectively):
 ```json
 "products": {
   "newProduct": "New Product",
-  "categories": "Categories",
   "createProduct": "Create product"
 }
 ```
 
 - [ ] **Step 4: Replace the literals**
 
-In each of the three pages, add `const t = useTranslations('products');` and swap every hardcoded Spanish string for `t('key')`. Follow `components/products/ProductFilters.tsx` — it already does this and is the house pattern.
+In each of the two pages, add `const t = useTranslations('products');` and swap every hardcoded Spanish string for `t('key')`. Follow `components/products/ProductFilters.tsx` — it already does this and is the house pattern.
 
 Watch for strings inside `placeholder`, `aria-label`, `title` and toast calls, not only visible text.
 
@@ -557,25 +560,25 @@ node scripts/smoke/i18n-parity.mjs      # expect PASS, key count higher than Ste
 npm run build                            # expect ✓ Compiled successfully
 
 # Accented Spanish between JSX tags.
-grep -nE ">[^<>{]*(á|é|í|ó|ú|ñ|¿|¡)" "app/(panel)/products/page.tsx" "app/(panel)/products/categories/page.tsx" "app/(panel)/products/new/page.tsx"
+grep -nE ">[^<>{]*(á|é|í|ó|ú|ñ|¿|¡)" "app/(panel)/products/page.tsx" "app/(panel)/products/new/page.tsx"
 
 # Hardcoded strings in placeholder/aria-label/title attributes (Step 4's own warning) —
 # a literal string here means it was not swapped for t('key').
-grep -nE '(placeholder|aria-label|title)="[^"{]+"' "app/(panel)/products/page.tsx" "app/(panel)/products/categories/page.tsx" "app/(panel)/products/new/page.tsx"
+grep -nE '(placeholder|aria-label|title)="[^"{]+"' "app/(panel)/products/page.tsx" "app/(panel)/products/new/page.tsx"
 
 # Unaccented Spanish words from Step 3's literal table (e.g. "Nuevo", "Crear", "Buscar
 # productos") anywhere in the file, not only between tags — the accented-only check above
 # would miss these entirely.
-grep -niE '\b(nuevo|nueva|crear|buscar|guardar|cancelar|eliminar|producto|productos|categoria|categorias|categoría|categorías)\b' "app/(panel)/products/page.tsx" "app/(panel)/products/categories/page.tsx" "app/(panel)/products/new/page.tsx"
+grep -niE '\b(nuevo|nueva|crear|buscar|guardar|cancelar|eliminar|producto|productos)\b' "app/(panel)/products/page.tsx" "app/(panel)/products/new/page.tsx"
 ```
 
-All three greps should return no matches. Accented or listed Spanish text remaining in a `className` or a comment is fine; text between JSX tags or inside an attribute value is not. These greps are a starting filter, not a substitute for re-reading the three pages per Step 3's own caveat ("a starting list, not an exhaustive one").
+All three greps should return no matches. Accented or listed Spanish text remaining in a `className` or a comment is fine; text between JSX tags or inside an attribute value is not. These greps are a starting filter, not a substitute for re-reading the two pages per Step 3's own caveat ("a starting list, not an exhaustive one").
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add "app/(panel)/products" messages scripts/smoke/i18n-parity.mjs
-git commit -m "i18n(front): translate the product list, categories and new pages"
+git commit -m "i18n(front): translate the product list and new pages"
 ```
 
 ---
@@ -596,7 +599,7 @@ Mark each `- [ ]` in §4 that the work actually satisfies. Leave unticked anythi
 Per the convention in `CLAUDE.md`, the status line is the ledger and must carry its evidence:
 
 ```markdown
-**Status**: DONE — 2026-08-09 (PR #NN). Sidebar reveals labels on focus and via a persisted pin; header breadcrumb reads NAV_ITEMS; three product pages translated. <Note here whether the Playwright specs were executed or only written.>
+**Status**: DONE — 2026-08-09 (PR #NN). Sidebar reveals labels on focus and via a persisted pin; header breadcrumb reads NAV_ITEMS; two product pages translated. <Note here whether the Playwright specs were executed or only written.>
 ```
 
 If any part is unfinished, use `APPROVED` with the gap spelled out instead. Never `IMPLEMENTED` — Kairos maps it to Done.
