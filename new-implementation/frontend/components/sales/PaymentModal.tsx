@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PaymentSuccessScreen } from './PaymentSuccessScreen';
@@ -28,6 +29,7 @@ export function PaymentModal({
   onConfirm,
   isLoading,
 }: PaymentModalProps) {
+  const t = useTranslations('sales');
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [cashReceived, setCashReceived] = useState('');
   const [status, setStatus] = useState<ModalStatus>('payment');
@@ -58,7 +60,7 @@ export function PaymentModal({
       setStatus('success');
       setCountdown(5);
     } catch (err) {
-      setConfirmError(err instanceof Error ? err.message : 'Error al procesar el pago');
+      setConfirmError(err instanceof Error ? err.message : t('payment.error'));
     }
   }, [canConfirm, isLoading, method, onConfirm]);
 
@@ -118,9 +120,9 @@ export function PaymentModal({
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft size={16} />
-          Volver al carrito
+          {t('payment.backToCart')}
         </button>
-        <span className="text-xs text-muted-foreground">Venta en curso</span>
+        <span className="text-xs text-muted-foreground">{t('payment.inProgress')}</span>
       </div>
 
       {/* Content */}
@@ -129,7 +131,7 @@ export function PaymentModal({
           {/* Total */}
           <div className="text-center">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
-              Total a cobrar
+              {t('totalACobrar')}
             </p>
             <p className="text-5xl font-extrabold tracking-tight">
               {formatCOP(total)}
@@ -149,7 +151,7 @@ export function PaymentModal({
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {m === 'cash' ? '💵 Efectivo' : m === 'card' ? '💳 Tarjeta' : '🔀 Mixto'}
+                {m === 'cash' ? `💵 ${t('cash')}` : m === 'card' ? `💳 ${t('card')}` : `🔀 ${t('payment.mixed')}`}
               </button>
             ))}
           </div>
@@ -166,14 +168,14 @@ export function PaymentModal({
           {method === 'card' && (
             <div className="text-center py-10 text-muted-foreground space-y-1">
               <p className="text-2xl">💳</p>
-              <p className="text-sm">Procesa el pago en el terminal</p>
-              <p className="text-xs">Confirma cuando el terminal apruebe</p>
+              <p className="text-sm">{t('payment.cardInstructions')}</p>
+              <p className="text-xs">{t('payment.cardConfirm')}</p>
             </div>
           )}
 
           {method === 'mixed' && (
             <div className="text-center py-10 text-muted-foreground">
-              <p className="text-xs">Funcionalidad de pago mixto — próximamente</p>
+              <p className="text-xs">{t('payment.mixedComingSoon')}</p>
             </div>
           )}
 
@@ -190,10 +192,10 @@ export function PaymentModal({
             data-testid="confirm-payment-button"
           >
             {isLoading ? (
-              'Procesando...'
+              t('processing')
             ) : (
               <>
-                ✓ Confirmar pago{' '}
+                ✓ {t('confirmarPago')}{' '}
                 <span className="ml-2 text-xs opacity-60 font-normal">Enter ↵</span>
               </>
             )}

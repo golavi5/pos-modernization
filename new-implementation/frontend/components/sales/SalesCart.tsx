@@ -1,6 +1,7 @@
 'use client';
 
 import { Minus, Plus, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { CustomerSelect } from './CustomerSelect';
 import { formatCOP } from '@/lib/utils';
@@ -35,12 +36,14 @@ export function SalesCart({
   onSelectCustomer,
   onCheckout,
 }: SalesCartProps) {
+  const t = useTranslations('sales');
+  const tDashboard = useTranslations('dashboard');
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border shrink-0">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Carrito · {items.length} items
+          {t('cartHeader', { count: items.length })}
         </p>
       </div>
 
@@ -61,7 +64,7 @@ export function SalesCart({
         {items.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs gap-2 py-8">
             <span className="text-3xl">🛒</span>
-            <span>Agrega productos al carrito</span>
+            <span>{t('agregarProductos')}</span>
           </div>
         )}
         {items.map((item) => (
@@ -112,21 +115,21 @@ export function SalesCart({
       {/* Totals + Checkout */}
       <div className="px-4 py-3 border-t border-border shrink-0 space-y-2">
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Subtotal</span>
+          <span>{t('cartSubtotal')}</span>
           <span>{formatCOP(subtotal)}</span>
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>IVA (19%)</span>
+          <span>{t('cartTax')}</span>
           <span>{formatCOP(tax)}</span>
         </div>
         {discount > 0 && (
           <div className="flex justify-between text-xs text-emerald-500">
-            <span>Descuento</span>
+            <span>{t('cartDiscount')}</span>
             <span>-{formatCOP(discount)}</span>
           </div>
         )}
         <div className="flex justify-between text-base font-bold text-foreground pt-1 border-t border-border">
-          <span>Total</span>
+          <span>{tDashboard('total')}</span>
           <span>{formatCOP(total)}</span>
         </div>
 
@@ -137,19 +140,19 @@ export function SalesCart({
           className="w-full font-bold mt-1"
           data-testid="cobrar-button"
         >
-          💳 Cobrar {items.length > 0 ? formatCOP(total) : ''}
+          💳 {t('cobrar')} {items.length > 0 ? formatCOP(total) : ''}
         </Button>
 
         {items.length > 0 && (
           <button
             onClick={() => {
-              if (confirm('¿Limpiar el carrito?')) {
+              if (confirm(t('clearCartConfirm'))) {
                 onClearCart();
               }
             }}
             className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
           >
-            Limpiar carrito
+            {t('limpiarCarrito')}
           </button>
         )}
       </div>

@@ -151,7 +151,29 @@
     "confirmarPago": "Confirmar pago",
     "pagoCompletado": "¡Pago completado!",
     "nuevaVenta": "+ Nueva venta",
-    "autoRegresa": "Auto-regresa en {seconds}s..."
+    "autoRegresa": "Auto-regresa en {seconds}s...",
+    "customerSelect": {
+      "label": "Cliente (Opcional)",
+      "search": "Buscar cliente...",
+      "loading": "Cargando clientes...",
+      "error": "No se pudieron cargar los clientes"
+    },
+    "payment": {
+      "backToCart": "Volver al carrito",
+      "inProgress": "Venta en curso",
+      "mixed": "Mixto",
+      "cardInstructions": "Procesa el pago en el terminal",
+      "cardConfirm": "Confirma cuando el terminal apruebe",
+      "mixedComingSoon": "Funcionalidad de pago mixto — próximamente",
+      "error": "Error al procesar el pago",
+      "totalCharged": "Total cobrado",
+      "received": "Recibido"
+    },
+    "cartHeader": "Carrito · {count} items",
+    "cartSubtotal": "Subtotal",
+    "cartTax": "IVA (19%)",
+    "cartDiscount": "Descuento",
+    "clearCartConfirm": "¿Limpiar el carrito?"
   },
   "products": {
     "title": "Productos",

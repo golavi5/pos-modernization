@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useProducts } from '@/hooks/useProducts';
 import { cn, formatCOP } from '@/lib/utils';
 import type { Product } from '@/types/product';
@@ -10,6 +11,8 @@ interface ProductSearchProps {
 }
 
 export function ProductSearch({ onAddProduct }: ProductSearchProps) {
+  const tProducts = useTranslations('products');
+  const tInventory = useTranslations('inventory');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const { data: productsData, isLoading } = useProducts();
 
@@ -53,7 +56,7 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
               : 'bg-muted text-muted-foreground hover:bg-accent'
           )}
         >
-          Todos
+          {tProducts('allStatus')}
         </button>
         {categories.map((cat) => (
           <button
@@ -117,7 +120,7 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
                       : 'text-emerald-500 border-emerald-500/30'
                   )}
                 >
-                  {outOfStock ? 'Sin stock' : product.stock_quantity}
+                  {outOfStock ? tInventory('table.noStock') : product.stock_quantity}
                 </span>
               </div>
             </button>

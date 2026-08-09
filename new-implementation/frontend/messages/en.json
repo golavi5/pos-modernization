@@ -151,7 +151,29 @@
     "confirmarPago": "Confirm payment",
     "pagoCompletado": "Payment complete!",
     "nuevaVenta": "+ New sale",
-    "autoRegresa": "Auto-returns in {seconds}s..."
+    "autoRegresa": "Auto-returns in {seconds}s...",
+    "customerSelect": {
+      "label": "Customer (Optional)",
+      "search": "Search customer...",
+      "loading": "Loading customers...",
+      "error": "Could not load customers"
+    },
+    "payment": {
+      "backToCart": "Back to cart",
+      "inProgress": "Sale in progress",
+      "mixed": "Mixed",
+      "cardInstructions": "Process the payment on the terminal",
+      "cardConfirm": "Confirm once the terminal approves",
+      "mixedComingSoon": "Mixed payment — coming soon",
+      "error": "Error processing the payment",
+      "totalCharged": "Total charged",
+      "received": "Received"
+    },
+    "cartHeader": "Cart · {count} items",
+    "cartSubtotal": "Subtotal",
+    "cartTax": "VAT (19%)",
+    "cartDiscount": "Discount",
+    "clearCartConfirm": "Clear the cart?"
   },
   "products": {
     "title": "Products",
