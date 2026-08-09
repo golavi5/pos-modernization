@@ -1,6 +1,6 @@
 # M1 — Coolify Staging Dry-Run & Production Go-Live
 
-**Status**: DRAFT
+**Status**: DRAFT — non-infra prep done (backup/restore rehearsed, guarded `migration:revert-one:prod`, rollback runbook); §4 acceptance 0/5. Every remaining gate needs a live Coolify instance.
 **Owner**: gandhi
 **Created**: 2026-07-07
 **Modules**: M1 INFRA (primary), M2 BACK, M3 FRONT

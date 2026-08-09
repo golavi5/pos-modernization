@@ -215,6 +215,43 @@ the manual-index repos:
 - Two SPEC files with the same number abort the sync — numbers are unique
   per module prefix.
 
+### Spec status convention (the `**Status**:` line is the ledger)
+
+**The status line is the only maintained record of what is done.** Acceptance
+checkboxes are working notes — do not treat `- [ ]` as evidence of anything.
+(This repo accumulated 14 unchecked / 0 checked boxes across every spec before
+the convention landed; `realtime-agents` shows the same 12%-ticked pattern at
+200+ specs. The status line is what people actually keep current.)
+
+Format — a token, then the evidence that makes the claim falsifiable:
+
+```
+**Status**: <TOKEN> — <date> (PR #N). <what shipped / what is still open>
+```
+
+Kairos parses only the leading token and stops at the first space, so
+everything after it is free text. Write the evidence: dates, PR numbers, a link
+to a verification record for anything exercised against real infrastructure,
+and an honest tail (`…; T-20 follow-up open`) when a spec is partly landed.
+Record a corrected header too (`header was stale DRAFT`) — that history is why
+this convention exists.
+
+| Token | Means | Board state |
+|-------|-------|-------------|
+| `DRAFT` | not started, or blocked before approval | Backlog |
+| `APPROVED` | approved and/or built, not yet verified | Ready |
+| `DONE` | shipped **and** verified; cite the PR | Done |
+| `SUPERSEDED` | replaced — name the successor spec | Backlog |
+
+**Do not use `IMPLEMENTED`.** Kairos maps it to **Done**, but it reads as
+"code shipped, verification pending" — it would show Done before anything is
+verified. Use `APPROVED` with the gap spelled out instead.
+
+Changing this line moves the Plane board, and the sync's monotonic guard only
+advances state: a more advanced token silently overrides a manual walk-back to
+an earlier one, and cannot pull an item back. Pick the token you want the board
+to show.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 

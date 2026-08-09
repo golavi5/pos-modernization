@@ -1,6 +1,6 @@
 # M2 — RBAC Role Provisioning & Ghost-Role Cleanup
 
-**Status**: DRAFT
+**Status**: DONE — 2026-08-08 (PR #24, #25). All four §4 acceptance items have artifacts: `SYSTEM_ROLES` defines manager/cashier/inventory_manager/accountant and `bootstrap/system-roles.service.ts` seeds every one of them; `users.controller.ts` exposes `assignRoles` + `roles/list`; `roles-decorator-drift.spec.ts` asserts every `@Roles(...)` string resolves; `ELEVATED_ROLES` reconciled in `companies.service.ts`.
 **Owner**: gandhi
 **Created**: 2026-07-07
 **Modules**: M2 BACK
