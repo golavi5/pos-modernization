@@ -1,6 +1,6 @@
 # M3 — Frontend Readiness: shell reachability and i18n
 
-**Status**: DRAFT — not started. #35 merged 2026-08-09 and its review pass (`c11e6512`) landed the shared `NAV_ITEMS` table plus sidebar/palette i18n, so part of §3.2 is already closed; the header breadcrumb is the remaining copy.
+**Status**: APPROVED — 2026-08-09 (PR #39). All five plan tasks landed: sidebar labels reveal on keyboard focus and via a persisted pin (`stores/uiStore.ts`); header breadcrumb reads `NAV_ITEMS` through `findNavLabelKey` (compiled smoke 6/6 PASS, executed); `Header.ROUTE_LABELS` deleted; product list + new pages translated (parity smoke 392 keys in sync, executed). Gap: the 5 Playwright specs in `tests/e2e/sidebar-reachability.spec.ts` are written but NOT executed — no live stack was available; run them (`docker compose up -d`, `BASE_URL=http://localhost:3001`) to verify the sidebar/pin/locale acceptance items and promote to DONE. (Header was DRAFT through implementation.)
 
 One Plane issue (`POS-FRONT-001`) tracking the frontend module's known open work.
 
@@ -71,17 +71,20 @@ done (see §2).
 > ledger. These are working notes, not the record of completion.
 
 - [ ] Tabbing into the sidebar reveals nav labels with no pointer involved.
+      *(implemented + grep-verified; Playwright spec written but not executed — no stack)*
 - [ ] The pin toggle expands and collapses, survives a reload, and degrades to
       unpinned when `localStorage` is unavailable rather than throwing.
-- [ ] The pin control is a real button with `aria-pressed`, labelled from the
+      *(implemented; Playwright specs written but not executed — no stack)*
+- [x] The pin control is a real button with `aria-pressed`, labelled from the
       existing `expandSidebar` / `collapseSidebar` keys.
-- [ ] Exactly one route→label table remains in the codebase; Header, Sidebar and
+- [x] Exactly one route→label table remains in the codebase; Header, Sidebar and
       the palette all read from `lib/navigation/nav-items.ts`, and no route label
-      is a hardcoded string.
+      is a hardcoded string. *(compiled smoke: 6/6 PASS)*
 - [ ] Switching locale changes the sidebar nav labels and the header breadcrumb.
-- [ ] The two product pages named in §3, item 2 render no hardcoded Spanish; any new keys
-      exist in both `es.json` and `en.json`.
-- [ ] `npm run build` is green (it typechecks; `next lint` remains unrunnable
+      *(implemented; Playwright spec written but not executed — no stack)*
+- [x] The two product pages named in §3, item 2 render no hardcoded Spanish; any new keys
+      exist in both `es.json` and `en.json`. *(parity smoke: 392 keys in sync)*
+- [x] `npm run build` is green (it typechecks; `next lint` remains unrunnable
       until SPEC-CUT-001 S-01 ships an ESLint config).
 
 ## 5. Out of scope
