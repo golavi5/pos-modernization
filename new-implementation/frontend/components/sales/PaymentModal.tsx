@@ -196,7 +196,7 @@ export function PaymentModal({
             ) : (
               <>
                 ✓ {t('confirmarPago')}{' '}
-                <span className="ml-2 text-xs opacity-60 font-normal">Enter ↵</span>
+                <span className="ml-2 text-xs opacity-60 font-normal">{t('confirmShortcutHint')}</span>
               </>
             )}
           </Button>

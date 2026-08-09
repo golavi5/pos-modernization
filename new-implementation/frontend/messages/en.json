@@ -170,6 +170,7 @@
     "efectivoRecibido": "Cash received",
     "cambio": "Change",
     "confirmarPago": "Confirm payment",
+    "confirmShortcutHint": "Enter ↵",
     "pagoCompletado": "Payment complete!",
     "nuevaVenta": "+ New sale",
     "autoRegresa": "Auto-returns in {seconds}s...",

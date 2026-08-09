@@ -170,6 +170,7 @@
     "efectivoRecibido": "Efectivo recibido",
     "cambio": "Cambio",
     "confirmarPago": "Confirmar pago",
+    "confirmShortcutHint": "Enter ↵",
     "pagoCompletado": "¡Pago completado!",
     "nuevaVenta": "+ Nueva venta",
     "autoRegresa": "Auto-regresa en {seconds}s...",

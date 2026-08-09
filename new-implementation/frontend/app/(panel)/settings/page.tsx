@@ -191,7 +191,7 @@ export default function SettingsPage() {
           disabled={reset.isPending}
         >
           <RotateCcw className="h-4 w-4 mr-2" />
-          {t('restoreDefaults')}
+          {tCommon('restoreDefaults')}
         </Button>
       </div>
 
