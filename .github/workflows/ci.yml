@@ -50,6 +50,20 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+  i18n:
+    name: Frontend — i18n checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./new-implementation/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/smoke/i18n-parity.cjs
+      - run: node scripts/smoke/i18n-lint.cjs
+
   e2e:
     name: E2E — Playwright (suspended)
     needs: [backend, frontend]
