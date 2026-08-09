@@ -1,6 +1,12 @@
 # M4 — Legacy Migration: Parity-Validation CLI
 
-**Status**: IN_PROGRESS
+**Status**: DRAFT
+<!-- DRAFT here encodes "manually parked in Backlog", not spec-drafting
+     status: the board item was moved to Backlog by hand, and DRAFT is the
+     only enum value Kairos infers as Backlog. The CLI itself is well past
+     draft (see summary below) — do not "fix" this to APPROVED or
+     IN_PROGRESS without first updating the Plane column, or the next sync
+     will forward-transition it straight back out of Backlog. -->
 
 One Plane issue (`POS-MIGR-001`) tracking the M4 parity-validation work.
 
