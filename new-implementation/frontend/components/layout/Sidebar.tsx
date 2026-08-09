@@ -39,7 +39,7 @@ function NavItem({
       )}
     >
       <Icon size={18} className="shrink-0" />
-      <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+      <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150">
         {label}
       </span>
     </Link>
@@ -107,7 +107,7 @@ export function Sidebar() {
                   {getInitials(user?.name || 'U')}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-150 truncate">
+              <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 truncate">
                 {user?.name || 'Usuario'}
               </span>
             </button>
