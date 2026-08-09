@@ -45,4 +45,15 @@ test.describe('Sidebar reachability', () => {
     await expect(page.getByRole('link', { name: 'Ventas' }).locator('span'))
       .toHaveCSS('opacity', '0');
   });
+
+  test('locale switch changes the breadcrumb and the nav labels together', async ({ page }) => {
+    await page.goto('/sales');
+    await expect(page.getByRole('banner')).toContainText('Ventas');
+
+    await page.getByTestId('language-switcher').click();
+    await page.getByRole('menuitem', { name: /english/i }).click();
+
+    await expect(page.getByRole('banner')).toContainText('Sales');
+    await expect(page.getByRole('link', { name: 'Sales' })).toBeVisible();
+  });
 });
