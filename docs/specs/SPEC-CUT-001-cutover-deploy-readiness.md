@@ -1,6 +1,6 @@
 # M1–M3 — Production Cutover Readiness
 
-**Status**: DRAFT — §3 blockers B-05..B-10 closed; §6 exit criteria 0/5. Blocked on a live Coolify staging run. §4 S-items: S-03..S-08 done, S-01 (lint gate) and S-02 (Sentry) deferred, S-09/S-10 open.
+**Status**: DRAFT — §3 blockers B-05..B-10 closed; §6 exit criteria 0/5. Blocked on a live Coolify staging run. §4 re-audited against code 2026-08-09: S-03..S-08 and S-10 done (S-10 was already fixed when checked), S-01 (lint gate) and S-02 (Sentry) deferred by decision, S-09 open and re-homed to SPEC-FRONT-001/002. Backend suite 246/246 green at the time of that audit.
 **Owner**: gandhi
 **Created**: 2026-06-16
 **Modules**: M1 INFRA (primary), M2 BACK, M3 FRONT
@@ -167,6 +167,14 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 
 ## 4. Should-fix before launch
 
+> **Re-audited 2026-08-09 against code, not against this table's own prose.**
+> Eight of the ten items were accurate; the two that had rotted (S-09, S-10) were
+> both frontend items, and both are corrected in place below with the date noted.
+> The backend and infra items — the ones actually gating cutover — held up.
+>
+> Test counts quoted in the rows below are historical, recorded when each item
+> landed. The backend suite is **246/246** as of the re-audit.
+
 | ID | Item | Evidence / note |
 |----|------|-----------------|
 | S-01 | ⚠️ **Mostly done — CI gating** | Root cause: the only workflow sat at `new-implementation/.github/` (a subdir), so GitHub **never ran it** (`gh run list` empty). Moved to repo-root `.github/workflows/ci.yml` with gate jobs **backend (npm ci → test → build)** and **frontend (npm ci → build = typecheck)** on **Node 20** (matches Dockerfiles), v4 actions. Verified locally: backend `npm test` 173/173 + `build` green; frontend `build` green. E2E kept but `continue-on-error` (port wiring fixed: backend :3001, frontend :3000; full prod env + bootstrap) — not gating until validated on a runner. **Deferred:** lint gate — neither app ships an ESLint config (`next lint`/`eslint` have nothing to run); add configs first. |
@@ -177,8 +185,8 @@ Commit `a95a2c4d`. Backend 158/158 unit tests pass; frontend type-checks clean.
 | S-06 | ✅ **DONE — password policy** | Single source of truth `common/password-policy.ts` (min **10** + upper/lower/number/special). `auth.constants` complexity flags flipped **on** + min 10 (was 6/all-off → `validatePasswordStrength` was a no-op for register/change). Applied the rule to **all** password DTOs, incl. closing two bypasses: `AdminResetPasswordDto` had **no length/complexity at all** (admin could set a 1-char password), and `AdminCreateUserDto` lacked the special-char requirement. Also fixed a **false-positive test** (the strength test passed via a downstream `save` failure, not the policy). Backend 173/173. |
 | S-07 | ✅ **DONE — reports tenant-scoping tests** | Added `reports.controller.spec.ts` (was zero coverage): asserts **all 14 endpoints** forward the authenticated user's `company_id` to their service (incl. the 3 export endpoints), plus a cross-tenant guard (user B never gets company A's scope). This is the exact B-01 regression that went uncaught. Backend 179/179. *(Deeper service-layer query-filter tests left as a follow-up — controller tests cover the scoping contract.)* |
 | S-08 | ✅ **DONE — implemented both stubs** | `customers.getPurchaseHistory` now queries the customer's `Order`s (company-scoped, newest-first, limit) → `{id, order_number, total, status, created_at}` (matches the frontend type); `Order` registered in customers.module. `notification-scheduler.checkLowStock` queries active low-stock products (`stock_quantity ≤ reorder_level`), creates LOW_STOCK/OUT_OF_STOCK notifications with **in-memory dedup** against existing unread alerts; `Product` registered in notifications.module. Added tests for both (+ removed the obsolete "returns []" placeholder test). Backend 182/182. |
-| S-09 | **i18n gaps** | Hardcoded EN/ES strings on product detail/edit + category pages; align `es.json`/`en.json` keys. |
-| S-10 | **Dead register token fields** | `types/auth.ts` `AuthResponse` still has snake_case token fields; backend register returns no tokens. Cosmetic — remove. |
+| S-09 | ⚠️ **Open — larger than written here** | *Re-audited 2026-08-09; the original text was wrong on both count and files.* It named product detail/edit + category pages, but `products/[id]/page.tsx`, `products/[id]/edit/page.tsx` and `products/categories/page.tsx` **already use `useTranslations`**. The untranslated product pages are the **list** and **new** pages, and they carry **mixed EN and ES** literals ("Create Product" beside "Buscar productos..."). Real scope: **12 of 77** component/page files use `useTranslations`; ~24 carry hardcoded strings. Now owned by **`SPEC-FRONT-001`** (app shell + those two pages) with the remaining ~22 files split out as **SPEC-FRONT-002**. Not a go-live blocker. |
+| S-10 | ✅ **DONE — was already fixed when re-audited** | *Re-audited 2026-08-09.* The claim that `AuthResponse` still carried snake_case token fields no longer held: `types/auth.ts` reads `export type AuthResponse = User`, and the backend `register` returns `UserResponseDto` with no tokens, so the frontend type matches the API. Verified on both sides. No work outstanding. |
 
 ---
 
