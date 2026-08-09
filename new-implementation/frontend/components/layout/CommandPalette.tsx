@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { buildCommandItems, filterCommandItems } from '@/lib/navigation/command-items';
 
 interface CommandPaletteProps {
@@ -18,6 +19,10 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const t = useTranslations('commandPalette');
   const user = useAuthStore((s) => s.user);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Traps Tab inside the dialog while open and restores focus to whatever
+  // triggered it (command-palette-trigger) once it closes — same pattern
+  // PaymentModal uses.
+  const overlayRef = useFocusTrap<HTMLDivElement>(open);
 
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -66,6 +71,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-[15vh] px-4"
       onClick={onClose}
       data-testid="command-palette-backdrop"

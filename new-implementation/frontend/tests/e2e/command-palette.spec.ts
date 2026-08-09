@@ -76,6 +76,15 @@ test.describe('Command palette (⌘K)', () => {
     expect(page.url()).toBe(before);
   });
 
+  test('returns focus to the trigger after Escape', async ({ page }) => {
+    await page.getByTestId('command-palette-trigger').click();
+    await expect(page.getByTestId('command-palette')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(page.getByTestId('command-palette-trigger')).toBeFocused();
+  });
+
   test('shows an empty state rather than a blank list', async ({ page }) => {
     await page.getByTestId('command-palette-trigger').click();
     await page.keyboard.type('zzzzzz');
@@ -91,5 +100,38 @@ test.describe('Command palette (⌘K)', () => {
     await page.keyboard.press('Enter');
 
     expect(page.url()).toBe(before);
+  });
+
+  test('does not surface routes the sidebar hides from a restricted role', async ({ page }) => {
+    // `buildCommandItems` filters through the same `canAccessRoute` policy the
+    // sidebar uses (lib/auth/roles.ts) specifically so the palette can't become
+    // a way around the UI's own role gating. Per ROUTE_ROLES, `cashier` can
+    // reach /sales but not /users — that's the pairing this test locks in.
+    const email = `palette-rbac-${Date.now()}@test.com`;
+    const password = 'CashierPass1!';
+
+    await page.goto('/users');
+    await page.getByRole('button', { name: 'Nuevo usuario' }).click();
+    // Scoped to the form: the users table above it already renders "cashier"
+    // role badges for seeded users, which would otherwise make this a
+    // strict-mode-violating multi-match.
+    const form = page.locator('#user-form');
+    await form.getByLabel('Nombre completo').fill('Palette RBAC Cashier');
+    await form.getByLabel('Email').fill(email);
+    await form.getByLabel('Contraseña').fill(password);
+    await form.getByText(/^cashier$/i).click();
+    await page.getByRole('button', { name: 'Guardar' }).click();
+
+    // Switch sessions: clear the admin's auth state and log back in as the
+    // freshly-created cashier.
+    await page.context().clearCookies();
+    await page.evaluate(() => localStorage.clear());
+    await authHelper.login(email, password);
+
+    await page.getByTestId('command-palette-trigger').click();
+    const results = page.getByRole('option');
+
+    await expect(results.filter({ hasText: '/sales' })).toHaveCount(1);
+    await expect(results.filter({ hasText: '/users' })).toHaveCount(0);
   });
 });
