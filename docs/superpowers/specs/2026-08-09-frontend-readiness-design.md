@@ -3,7 +3,8 @@
 **Issue:** POS-FRONT-001
 **Date:** 2026-08-09
 **Status:** Draft
-**Scope:** App-shell reachability, shell i18n, dead auth types
+**Scope:** App-shell reachability, shell i18n, ~~dead auth types~~ (S-10 was
+already fixed — see SPEC-FRONT-001 §2 — and dropped from scope)
 
 ---
 
@@ -34,7 +35,10 @@ sidebar and the palette now share, translating through the `sidebar` namespace.
 ## 2. Goals / non-goals
 
 **Goals.** Make the shell usable without a pointer; collapse the three route
-tables into one; delete `AuthResponse` fields the backend never returns.
+tables into one. ~~Delete `AuthResponse` fields the backend never returns.~~
+Resolved: `types/auth.ts:28` already reads `export type AuthResponse = User`
+and the backend's `register` returns `UserResponseDto` with no tokens — S-10
+was fixed before this design was written, verified against both sides.
 
 **Non-goals.** The ~20 feature files still carrying hardcoded Spanish
 (SPEC-FRONT-002). Global search. Any backend change. Restyling — every pillar of
@@ -64,7 +68,7 @@ the 2026-05-15 redesign is shipped.
 | `DashboardLayout.tsx` | width rule: 52px, expanded on hover ∪ focus-within ∪ pinned | uiStore |
 | `Sidebar.tsx` | pin button; labels via i18n; reveal on the same three conditions | uiStore, NAV_ITEMS |
 | `Header.tsx` | breadcrumb label from the shared table; `ROUTE_LABELS` deleted | NAV_ITEMS |
-| `types/auth.ts` | drop the unreturned snake_case token fields | — |
+| ~~`types/auth.ts`~~ | ~~drop the unreturned snake_case token fields~~ — already fixed, out of scope (see §2) | — |
 
 The width rule cannot be expressed by Tailwind variants alone once `pinned` is
 JS state, so `DashboardLayout` composes the class list: the hover and

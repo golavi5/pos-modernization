@@ -38,7 +38,7 @@ app shell. It is deliberately not a charter for the whole frontend.
   `products/[id]/page.tsx` and `products/[id]/edit/page.tsx` **already use**
   `useTranslations`, while the untranslated product pages are the list
   (`products/page.tsx`), `products/categories/page.tsx` and
-  `products/new/page.tsx`. The real size is **9 of 76** component/page files
+  `products/new/page.tsx`. The real size is **12 of 77** component/page files
   using `useTranslations`, with ~24 carrying hardcoded Spanish. This spec takes
   the app shell plus those three product pages; the rest is SPEC-FRONT-002.
 - **S-10 is already fixed.** SPEC-CUT-001 §4 says `types/auth.ts` still declares

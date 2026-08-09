@@ -303,7 +303,7 @@ git commit -m "feat(front): add a persisted sidebar pin for touch and mouse user
 
 **Files:**
 - Modify: `lib/navigation/nav-items.ts`
-- Modify: `components/layout/Header.tsx:9-29` (delete `ROUTE_LABELS` and `getLabel`)
+- Modify: `components/layout/Header.tsx:12-29` (delete `ROUTE_LABELS` and `getLabel`)
 - Test: compiled smoke run (below) — this is pure logic, so it gets a real executable test
 
 **Interfaces:**
@@ -403,7 +403,7 @@ Expected: 6 PASS, exit 0.
 
 - [ ] **Step 5: Rewrite the header breadcrumb**
 
-In `Header.tsx`, delete the `ROUTE_LABELS` constant and the `getLabel` function entirely (lines 9-29 of the current file), and replace the label derivation:
+In `Header.tsx`, delete the `ROUTE_LABELS` constant and the `getLabel` function entirely (lines 12-29 of the current file), and replace the label derivation:
 
 ```tsx
 import { findNavLabelKey } from '@/lib/navigation/nav-items';
