@@ -1,6 +1,6 @@
 # Fiscal Platform & Conversational Accounting Agent
 
-**Status**: DONE
+**Status**: DRAFT
 
 One Plane issue (`POS-FISC-001`) tracking the fiscal-platform design through
 its review gate and into the TASKS breakdown.
