@@ -1,6 +1,6 @@
 # M3 — Frontend i18n Sweep: finish the translation surface and ratchet it shut
 
-**Status**: DRAFT — not started. Baseline measured 2026-08-09 after PR #39: 35 files carry 223 visible literals, 78 of them (35%) already exist as catalog values. Depends on nothing further; the parity check it builds on shipped in #39.
+**Status**: DRAFT — not started. Baseline measured 2026-08-09 after PR #39: 40 files need work (35 by visible text, 5 more once `placeholder`/`aria-label`/`title` are counted), carrying 223 visible literals of which 78 (35%) already exist as catalog values. Depends on nothing further; the parity check it builds on shipped in #39.
 
 One Plane issue (`POS-FRONT-002`) tracking the remaining i18n work for the frontend module.
 
@@ -38,17 +38,22 @@ for them. `app/(panel)` pages are the extreme case: 24 of 24 already exist.
 | dashboard | 1 | 1 | 0 | 1 |
 | **total** | **35** | **223** | **78** | **145** |
 
-Counts cover text between JSX tags. Strings in `placeholder`, `aria-label` and
-`title` are **also in scope** and are not in these numbers — expect the real
-total to be higher per file.
+Counts cover text between JSX tags only. Strings in `placeholder`, `aria-label`
+and `title` are **also in scope** and are not in these numbers: including them
+adds five more files that have no visible literals at all —
+`components/theme/ThemeToggle.tsx`, `components/ui/slide-over.tsx`,
+`components/products/ProductCard.tsx`, `components/products/StockBadge.tsx`,
+`components/sales/CashPaymentSection.tsx` — for **40 files in total**, which is
+what the ratchet allowlist is seeded with. Per-file literal totals are likewise
+a floor.
 
 ## 3. Scope
 
-1. **Translate all 35 files**, batched by the domains in §2. Each batch is one
+1. **Translate all 40 files**, batched by the domains in §2. Each batch is one
    reviewable unit ending in a green build.
 2. **Ratchet: `scripts/smoke/i18n-lint.cjs`** — fails when a `.tsx` carries
    visible literals and does not call `useTranslations`, unless the file is on an
-   allowlist. The allowlist is seeded with today's 35 files; **each batch deletes
+   allowlist. The allowlist is seeded with today's 40 files; **each batch deletes
    its own files from it**. The list only ever shrinks.
 3. **Gate it in CI** — add a job to `.github/workflows/ci.yml` running the new
    check alongside the existing `scripts/smoke/i18n-parity.cjs`. Blocking from
