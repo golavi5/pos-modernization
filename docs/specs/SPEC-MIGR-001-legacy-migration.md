@@ -1,12 +1,12 @@
 # M4 — Legacy Migration: Parity-Validation CLI
 
 **Status**: APPROVED — machine complete (`reset`/`import`/`verify`/`report`, 10 test files); real-dump parity NOT run. The committed e2e uses a synthetic fixture and does not prove the rules against `info/bd_ex.sql`. Five open items in the README "Known limitations & follow-ups"; per-row inserts (~14 min for 1.18M order_items) are called out there as the top cutover-readiness follow-up.
-<!-- DRAFT here encodes "manually parked in Backlog", not spec-drafting
-     status: the board item was moved to Backlog by hand, and DRAFT is the
-     only enum value Kairos infers as Backlog. The CLI itself is well past
-     draft (see summary below) — do not "fix" this to APPROVED or
-     IN_PROGRESS without first updating the Plane column, or the next sync
-     will forward-transition it straight back out of Backlog. -->
+<!-- Advanced DRAFT -> APPROVED intentionally as part of the status-line
+     audit (see PR that introduced the status-convention in CLAUDE.md): the
+     CLI is machine-complete (see summary below), so DRAFT understated it.
+     This moves the Plane column from Backlog to Ready on next sync — that
+     is the intended effect, not a stale reversion of the earlier
+     manually-parked-in-Backlog state. -->
 
 One Plane issue (`POS-MIGR-001`) tracking the M4 parity-validation work.
 
