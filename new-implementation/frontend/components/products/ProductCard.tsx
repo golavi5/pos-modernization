@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import type { Product } from '@/types/product';
 import { Card, CardContent } from '@/components/ui/card';
 import { StockBadge } from './StockBadge';
@@ -10,6 +11,8 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const t = useTranslations('products');
+  const tCommon = useTranslations('common');
   return (
     <Card>
       <CardContent className="p-4">
@@ -28,10 +31,10 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
         <div className="flex gap-2">
           <Link href={`/products/${product.id}`} className="flex-1">
-            <Button variant="outline" className="w-full">View</Button>
+            <Button variant="outline" className="w-full">{t('view')}</Button>
           </Link>
           <Link href={`/products/${product.id}/edit`} className="flex-1">
-            <Button className="w-full">Edit</Button>
+            <Button className="w-full">{tCommon('edit')}</Button>
           </Link>
         </div>
       </CardContent>

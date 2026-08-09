@@ -1,6 +1,7 @@
 'use client';
 
 import { Pencil, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
@@ -13,6 +14,12 @@ interface ProductsTableProps {
 }
 
 export function ProductsTable({ search, onEdit }: ProductsTableProps) {
+  const t = useTranslations('products');
+  const tCommon = useTranslations('common');
+  const tCustomers = useTranslations('customers');
+  const tReports = useTranslations('reports');
+  const tInventory = useTranslations('inventory');
+  const tNotifications = useTranslations('notifications');
   const { data: productsData, isLoading } = useProducts({ search, page: 1, pageSize: 50 });
   const deleteMutation = useDeleteProduct();
 
@@ -20,16 +27,16 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
 
   const getStockStatus = (product: Product) => {
     if (product.stock_quantity === 0) {
-      return <Badge variant="destructive">Sin stock</Badge>;
+      return <Badge variant="destructive">{tInventory('table.noStock')}</Badge>;
     }
     if (product.min_stock_level && product.stock_quantity <= product.min_stock_level) {
-      return <Badge variant="warning">Stock bajo</Badge>;
+      return <Badge variant="warning">{tNotifications('types.lowStock')}</Badge>;
     }
-    return <Badge variant="success">En stock</Badge>;
+    return <Badge variant="success">{t('inStock')}</Badge>;
   };
 
   const handleDelete = async (product: Product) => {
-    if (window.confirm(`¿Eliminar "${product.name}"?`)) {
+    if (window.confirm(t('table.deleteConfirm', { name: product.name }))) {
       await deleteMutation.mutateAsync(product.id);
     }
   };
@@ -47,9 +54,9 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
   if (products.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground text-lg">No se encontraron productos</p>
+        <p className="text-muted-foreground text-lg">{t('table.empty')}</p>
         <p className="text-muted-foreground/70 text-sm mt-2">
-          Intenta ajustar la búsqueda o crear un nuevo producto
+          {t('table.emptyHint')}
         </p>
       </div>
     );
@@ -60,13 +67,13 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-border bg-muted/50">
-            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">Producto</th>
-            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">SKU</th>
-            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">Categoría</th>
-            <th className="text-right p-4 font-semibold text-muted-foreground text-sm">Precio</th>
-            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">Stock</th>
-            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">Estado</th>
-            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">Acciones</th>
+            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">{tReports('product')}</th>
+            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">{t('skuLabel')}</th>
+            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">{t('category')}</th>
+            <th className="text-right p-4 font-semibold text-muted-foreground text-sm">{t('price')}</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{t('stock')}</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{t('status')}</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{tCustomers('table.actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -85,7 +92,7 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
                     />
                   ) : (
                     <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
-                      <span className="text-muted-foreground text-xs">IMG</span>
+                      <span className="text-muted-foreground text-xs">{t('table.img')}</span>
                     </div>
                   )}
                   <div>
@@ -122,9 +129,9 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
               </td>
               <td className="p-4 text-center">
                 {product.is_active ? (
-                  <Badge variant="success">Activo</Badge>
+                  <Badge variant="success">{tCustomers('table.active')}</Badge>
                 ) : (
-                  <Badge variant="default">Inactivo</Badge>
+                  <Badge variant="default">{tCustomers('table.inactive')}</Badge>
                 )}
               </td>
               <td className="p-4">
@@ -133,7 +140,7 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit?.(product)}
-                    title="Editar"
+                    title={tCommon('edit')}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -141,7 +148,7 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(product)}
-                    title="Eliminar"
+                    title={tCommon('delete')}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />

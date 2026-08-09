@@ -222,7 +222,18 @@
     "addCategory": "Agregar categoría",
     "searchProducts": "Buscar productos...",
     "createProductSubtitle": "Agrega un nuevo producto a tu catálogo",
-    "productInformation": "Información del producto"
+    "productInformation": "Información del producto",
+    "view": "Ver",
+    "skuLabel": "SKU",
+    "inStock": "En stock",
+    "lowStockCount": "Stock bajo ({stock})",
+    "inStockCount": "En stock ({stock})",
+    "table": {
+      "empty": "No se encontraron productos",
+      "emptyHint": "Intenta ajustar la búsqueda o crear un nuevo producto",
+      "img": "IMG",
+      "deleteConfirm": "¿Eliminar \"{name}\"?"
+    }
   },
   "customers": {
     "title": "Clientes",

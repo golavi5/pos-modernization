@@ -222,7 +222,18 @@
     "addCategory": "Add Category",
     "searchProducts": "Search products...",
     "createProductSubtitle": "Add a new product to your catalog",
-    "productInformation": "Product Information"
+    "productInformation": "Product Information",
+    "view": "View",
+    "skuLabel": "SKU",
+    "inStock": "In stock",
+    "lowStockCount": "Low stock ({stock})",
+    "inStockCount": "In stock ({stock})",
+    "table": {
+      "empty": "No products found",
+      "emptyHint": "Try adjusting the search or create a new product",
+      "img": "IMG",
+      "deleteConfirm": "Delete \"{name}\"?"
+    }
   },
   "customers": {
     "title": "Customers",
