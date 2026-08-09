@@ -555,10 +555,21 @@ Watch for strings inside `placeholder`, `aria-label`, `title` and toast calls, n
 ```bash
 node scripts/smoke/i18n-parity.mjs      # expect PASS, key count higher than Step 2
 npm run build                            # expect ✓ Compiled successfully
+
+# Accented Spanish between JSX tags.
 grep -nE ">[^<>{]*(á|é|í|ó|ú|ñ|¿|¡)" "app/(panel)/products/page.tsx" "app/(panel)/products/categories/page.tsx" "app/(panel)/products/new/page.tsx"
+
+# Hardcoded strings in placeholder/aria-label/title attributes (Step 4's own warning) —
+# a literal string here means it was not swapped for t('key').
+grep -nE '(placeholder|aria-label|title)="[^"{]+"' "app/(panel)/products/page.tsx" "app/(panel)/products/categories/page.tsx" "app/(panel)/products/new/page.tsx"
+
+# Unaccented Spanish words from Step 3's literal table (e.g. "Nuevo", "Crear", "Buscar
+# productos") anywhere in the file, not only between tags — the accented-only check above
+# would miss these entirely.
+grep -niE '\b(nuevo|nueva|crear|buscar|guardar|cancelar|eliminar|producto|productos|categoria|categorias|categoría|categorías)\b' "app/(panel)/products/page.tsx" "app/(panel)/products/categories/page.tsx" "app/(panel)/products/new/page.tsx"
 ```
 
-The final grep should return no matches. Accented text remaining in a `className` or a comment is fine; text between JSX tags is not.
+All three greps should return no matches. Accented or listed Spanish text remaining in a `className` or a comment is fine; text between JSX tags or inside an attribute value is not. These greps are a starting filter, not a substitute for re-reading the three pages per Step 3's own caveat ("a starting list, not an exhaustive one").
 
 - [ ] **Step 6: Commit**
 

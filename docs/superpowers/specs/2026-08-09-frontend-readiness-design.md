@@ -62,8 +62,8 @@ the 2026-05-15 redesign is shipped.
 |------|----------------|------------|
 | `stores/uiStore.ts` (new) | `sidebarPinned: boolean` + toggle, persisted | zustand/persist |
 | `DashboardLayout.tsx` | width rule: 52px, expanded on hover ∪ focus-within ∪ pinned | uiStore |
-| `Sidebar.tsx` | pin button; labels via i18n; reveal on the same three conditions | uiStore, COMMAND_ROUTES |
-| `Header.tsx` | breadcrumb label from the shared table; `ROUTE_LABELS` deleted | COMMAND_ROUTES |
+| `Sidebar.tsx` | pin button; labels via i18n; reveal on the same three conditions | uiStore, NAV_ITEMS |
+| `Header.tsx` | breadcrumb label from the shared table; `ROUTE_LABELS` deleted | NAV_ITEMS |
 | `types/auth.ts` | drop the unreturned snake_case token fields | — |
 
 The width rule cannot be expressed by Tailwind variants alone once `pinned` is

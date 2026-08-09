@@ -78,7 +78,7 @@ done (see §2).
       the palette all read from `lib/navigation/nav-items.ts`, and no route label
       is a hardcoded string.
 - [ ] Switching locale changes the sidebar nav labels and the header breadcrumb.
-- [ ] The three product pages in §3.2 render no hardcoded Spanish; any new keys
+- [ ] The three product pages named in §3, item 2 render no hardcoded Spanish; any new keys
       exist in both `es.json` and `en.json`.
 - [ ] `npm run build` is green (it typechecks; `next lint` remains unrunnable
       until SPEC-CUT-001 S-01 ships an ESLint config).
