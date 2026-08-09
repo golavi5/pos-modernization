@@ -1,6 +1,6 @@
 # M1–M3 — Production Cutover Readiness
 
-**Status**: DRAFT
+**Status**: DRAFT — §3 blockers B-05..B-10 closed; §6 exit criteria 0/5. Blocked on a live Coolify staging run. §4 S-items: S-03..S-08 done, S-01 (lint gate) and S-02 (Sentry) deferred, S-09/S-10 open.
 **Owner**: gandhi
 **Created**: 2026-06-16
 **Modules**: M1 INFRA (primary), M2 BACK, M3 FRONT

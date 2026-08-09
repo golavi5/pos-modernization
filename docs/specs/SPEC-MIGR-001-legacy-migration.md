@@ -1,6 +1,6 @@
 # M4 — Legacy Migration: Parity-Validation CLI
 
-**Status**: DRAFT
+**Status**: APPROVED — machine complete (`reset`/`import`/`verify`/`report`, 10 test files); real-dump parity NOT run. The committed e2e uses a synthetic fixture and does not prove the rules against `info/bd_ex.sql`. Five open items in the README "Known limitations & follow-ups"; per-row inserts (~14 min for 1.18M order_items) are called out there as the top cutover-readiness follow-up.
 <!-- DRAFT here encodes "manually parked in Backlog", not spec-drafting
      status: the board item was moved to Backlog by hand, and DRAFT is the
      only enum value Kairos infers as Backlog. The CLI itself is well past

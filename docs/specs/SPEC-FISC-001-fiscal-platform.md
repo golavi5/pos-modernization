@@ -1,6 +1,6 @@
 # Fiscal Platform & Conversational Accounting Agent
 
-**Status**: DRAFT
+**Status**: DRAFT — not started; zero fiscal code in the backend. Blocked on the review/approval gate plus OQ-1/2/3/8, the signing / set-de-pruebas spike, and ADR-007.
 
 One Plane issue (`POS-FISC-001`) tracking the fiscal-platform design through
 its review gate and into the TASKS breakdown.
