@@ -440,7 +440,49 @@
     "toggleUserStatus": "¿{action} usuario \"{name}\"?",
     "activate": "Activar",
     "deactivate": "Desactivar",
-    "deleteConfirm": "¿Eliminar usuario \"{name}\"? Esta acción no se puede deshacer."
+    "deleteConfirm": "¿Eliminar usuario \"{name}\"? Esta acción no se puede deshacer.",
+    "roles": {
+      "assignTitle": "Asignar Roles",
+      "userLabel": "Usuario: {name} ({email})",
+      "saveRoles": "Guardar roles"
+    },
+    "resetPassword": {
+      "title": "Resetear Contraseña",
+      "newPassword": "Nueva Contraseña *",
+      "confirmPassword": "Confirmar Contraseña *",
+      "minChars": "Mínimo 8 caracteres",
+      "repeatPassword": "Repetir contraseña",
+      "mismatch": "Las contraseñas no coinciden",
+      "action": "Resetear contraseña"
+    },
+    "form": {
+      "password": "Contraseña",
+      "firstName": "Primer nombre",
+      "lastName": "Apellido",
+      "activeUser": "Usuario activo",
+      "assignedRoles": "Roles asignados",
+      "nameRequired": "El nombre es requerido",
+      "emailRequired": "El email es requerido",
+      "passwordRequired": "La contraseña es requerida",
+      "createUser": "Crear usuario"
+    },
+    "table": {
+      "empty": "No se encontraron usuarios",
+      "emptyHint": "Intenta cambiar los filtros o crear un nuevo usuario",
+      "user": "Usuario",
+      "roles": "Roles",
+      "lastAccess": "Último acceso",
+      "registered": "Registrado",
+      "noRoles": "Sin roles",
+      "never": "Nunca",
+      "assignRoles": "Asignar roles",
+      "resetPassword": "Resetear contraseña"
+    },
+    "page": {
+      "searchPlaceholder": "Buscar usuarios...",
+      "newUser": "Nuevo usuario",
+      "editUser": "Editar usuario"
+    }
   },
   "notifications": {
     "title": "Notificaciones",

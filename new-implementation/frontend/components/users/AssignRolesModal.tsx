@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRoles } from '@/hooks/useUsers';
@@ -15,6 +16,9 @@ interface AssignRolesModalProps {
 }
 
 export function AssignRolesModal({ user, onSubmit, onCancel, isLoading }: AssignRolesModalProps) {
+  const t = useTranslations('users');
+  const tCommon = useTranslations('common');
+  const tNotifications = useTranslations('notifications');
   const { data: roles = [] } = useRoles();
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>(user.roles.map((r) => r.id));
 
@@ -31,9 +35,9 @@ export function AssignRolesModal({ user, onSubmit, onCancel, isLoading }: Assign
           <div>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Asignar Roles
+              {t('roles.assignTitle')}
             </CardTitle>
-            <CardDescription>Usuario: {user.name} ({user.email})</CardDescription>
+            <CardDescription>{t('roles.userLabel', { name: user.name, email: user.email })}</CardDescription>
           </div>
           <Button variant="ghost" size="sm" onClick={onCancel}>
             <X className="h-4 w-4" />
@@ -61,16 +65,16 @@ export function AssignRolesModal({ user, onSubmit, onCancel, isLoading }: Assign
                   <p className="text-sm text-tertiary">{role.description}</p>
                 </div>
                 {role.isSystemRole && (
-                  <span className="text-xs bg-gray-100 text-secondary px-2 py-0.5 rounded">Sistema</span>
+                  <span className="text-xs bg-gray-100 text-secondary px-2 py-0.5 rounded">{tNotifications('types.system')}</span>
                 )}
               </label>
             ))}
           </div>
 
           <div className="flex justify-end gap-3 pt-2 border-t">
-            <Button variant="outline" onClick={onCancel}>Cancelar</Button>
+            <Button variant="outline" onClick={onCancel}>{tCommon('cancel')}</Button>
             <Button onClick={() => onSubmit(selectedRoleIds)} disabled={isLoading}>
-              {isLoading ? 'Guardando...' : 'Guardar roles'}
+              {isLoading ? tCommon('saving') : t('roles.saveRoles')}
             </Button>
           </div>
         </CardContent>

@@ -440,7 +440,49 @@
     "toggleUserStatus": "{action} user \"{name}\"?",
     "activate": "Activate",
     "deactivate": "Deactivate",
-    "deleteConfirm": "Delete user \"{name}\"? This action cannot be undone."
+    "deleteConfirm": "Delete user \"{name}\"? This action cannot be undone.",
+    "roles": {
+      "assignTitle": "Assign Roles",
+      "userLabel": "User: {name} ({email})",
+      "saveRoles": "Save roles"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "newPassword": "New Password *",
+      "confirmPassword": "Confirm Password *",
+      "minChars": "Minimum 8 characters",
+      "repeatPassword": "Repeat password",
+      "mismatch": "Passwords do not match",
+      "action": "Reset password"
+    },
+    "form": {
+      "password": "Password",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "activeUser": "Active user",
+      "assignedRoles": "Assigned roles",
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "passwordRequired": "Password is required",
+      "createUser": "Create user"
+    },
+    "table": {
+      "empty": "No users found",
+      "emptyHint": "Try changing the filters or create a new user",
+      "user": "User",
+      "roles": "Roles",
+      "lastAccess": "Last access",
+      "registered": "Registered",
+      "noRoles": "No roles",
+      "never": "Never",
+      "assignRoles": "Assign roles",
+      "resetPassword": "Reset password"
+    },
+    "page": {
+      "searchPlaceholder": "Search users...",
+      "newUser": "New user",
+      "editUser": "Edit user"
+    }
   },
   "notifications": {
     "title": "Notifications",

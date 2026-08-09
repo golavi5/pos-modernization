@@ -19,16 +19,11 @@ const ALLOWLIST = new Set([
   'app/(panel)/dashboard/page.tsx',
   'app/(panel)/notifications/page.tsx',
   'app/(panel)/settings/page.tsx',
-  'app/(panel)/users/page.tsx',
   'components/dashboard/QuickActions.tsx',
   'components/layout/AuthLayout.tsx',
   'components/notifications/NotificationBell.tsx',
   'components/theme/ThemeToggle.tsx',
   'components/ui/slide-over.tsx',
-  'components/users/AssignRolesModal.tsx',
-  'components/users/ResetPasswordModal.tsx',
-  'components/users/UserForm.tsx',
-  'components/users/UsersTable.tsx',
 ]);
 
 const HAS_LETTERS = /[A-Za-zÁÉÍÓÚÑáéíóúñ]{3}/;
