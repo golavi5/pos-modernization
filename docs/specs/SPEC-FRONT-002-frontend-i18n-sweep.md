@@ -1,6 +1,6 @@
 # M3 — Frontend i18n Sweep: finish the translation surface and ratchet it shut
 
-**Status**: DRAFT — not started. Baseline measured 2026-08-09 after PR #39: 40 files need work (35 by visible text, 5 more once `placeholder`/`aria-label`/`title` are counted), carrying 223 visible literals of which 78 (35%) already exist as catalog values. Depends on nothing further; the parity check it builds on shipped in #39.
+**Status**: DONE — 2026-08-09 (PR #42). All files translated across 8 domain batches; `i18n-lint.cjs` allowlist empty (seeded 39, not the measured 40 — `ProductFormFields.tsx` carries only numeric placeholders and the check's STALE branch flagged it clean on first run) and both checks gating in CI. Catalogs 392 → 628 keys, parity green, build green per batch. The locale switch was exercised in a real browser: automated Chromium walk against a live stack (fresh MySQL + backend + `next dev`), all nine panel pages in both locales, per-page catalog strings asserted visible including `placeholder`/`title` attributes — 63/63 checks pass. Ratchet failure branches proven with a planted probe component and a planted stale allowlist entry before the first commit.
 
 One Plane issue (`POS-FRONT-002`) tracking the remaining i18n work for the frontend module.
 
@@ -74,14 +74,14 @@ a floor.
 > Per the status convention in `CLAUDE.md`, the `**Status**:` line is the ledger.
 > These are working notes.
 
-- [ ] The `i18n-lint.cjs` allowlist is empty.
-- [ ] `i18n-lint.cjs` and `i18n-parity.cjs` both pass, and both run in CI as a
+- [x] The `i18n-lint.cjs` allowlist is empty.
+- [x] `i18n-lint.cjs` and `i18n-parity.cjs` both pass, and both run in CI as a
       blocking job.
-- [ ] `npm run build` green.
-- [ ] Switching locale changes visible text on every page listed in §2 — checked
-      per domain, not only on the first one.
-- [ ] No key added to one catalog without the other (parity check proves it).
-- [ ] Strings in `placeholder`, `aria-label` and `title` are translated too, not
+- [x] `npm run build` green.
+- [x] Switching locale changes visible text on every page listed in §2 — checked
+      per domain, not only on the first one (automated browser walk, PR #42).
+- [x] No key added to one catalog without the other (parity check proves it).
+- [x] Strings in `placeholder`, `aria-label` and `title` are translated too, not
       only text between tags.
 
 ## 6. Out of scope
