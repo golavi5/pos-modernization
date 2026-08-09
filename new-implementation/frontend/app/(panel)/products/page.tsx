@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,8 @@ import { ProductForm } from '@/components/products/ProductForm';
 import type { Product } from '@/types/product';
 
 export default function ProductsPage() {
+  const t = useTranslations('products');
+  const tCommon = useTranslations('common');
   const [search, setSearch] = useState('');
   const [slideOver, setSlideOver] = useState<'closed' | 'new' | 'edit'>('closed');
   const [editTarget, setEditTarget] = useState<Product | null>(null);
@@ -27,13 +30,13 @@ export default function ProductsPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar productos..."
+            placeholder={t('searchProducts')}
             className="pl-8 h-9 text-sm"
           />
         </div>
         <div className="flex-1" />
         <Button onClick={openNew} size="sm" className="gap-1.5">
-          <Plus size={14} /> Nuevo producto
+          <Plus size={14} /> {t('newProduct')}
         </Button>
       </div>
 
@@ -46,14 +49,14 @@ export default function ProductsPage() {
       <SlideOver
         open={slideOver !== 'closed'}
         onClose={close}
-        title={slideOver === 'new' ? 'Nuevo producto' : 'Editar producto'}
+        title={slideOver === 'new' ? t('newProduct') : t('editProduct')}
         footer={
           <>
             <Button variant="outline" onClick={close} className="flex-1">
-              Cancelar
+              {tCommon('cancel')}
             </Button>
             <Button form="product-form" type="submit" className="flex-1">
-              Guardar
+              {tCommon('save')}
             </Button>
           </>
         }

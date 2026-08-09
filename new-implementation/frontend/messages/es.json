@@ -219,7 +219,10 @@
     "categoryManagement": "Gestión de categorías",
     "categoryNamePlaceholder": "Nombre de categoría",
     "categoryDescriptionPlaceholder": "Descripción (opcional)",
-    "addCategory": "Agregar categoría"
+    "addCategory": "Agregar categoría",
+    "searchProducts": "Buscar productos...",
+    "createProductSubtitle": "Agrega un nuevo producto a tu catálogo",
+    "productInformation": "Información del producto"
   },
   "customers": {
     "title": "Clientes",
