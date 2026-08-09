@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,22 +26,25 @@ const TYPE_ICONS: Record<string, string> = {
   new_user: '👤', system: '⚙️', reorder_alert: '🔔', large_sale: '💰',
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  low_stock: 'Stock bajo', out_of_stock: 'Sin stock', sale_milestone: 'Hito de ventas',
-  new_user: 'Nuevo usuario', system: 'Sistema', reorder_alert: 'Reorden', large_sale: 'Venta grande',
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  low_stock: 'lowStock', out_of_stock: 'outOfStock', sale_milestone: 'salesMilestone',
+  new_user: 'newUser', system: 'system', reorder_alert: 'reorder', large_sale: 'largeSale',
 };
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return 'Ahora mismo';
-  if (min < 60) return `hace ${min} min`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `hace ${h}h`;
-  return `hace ${Math.floor(h / 24)}d`;
-}
-
 export default function NotificationsPage() {
+  const t = useTranslations('notifications');
+  const tCommon = useTranslations('common');
+
+  const timeAgo = (dateStr: string): string => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return t('justNow');
+    if (min < 60) return t('minutesAgo', { min });
+    const h = Math.floor(min / 60);
+    if (h < 24) return t('hoursAgo', { h });
+    return t('daysAgo', { d: Math.floor(h / 24) });
+  };
+
   const [query, setQuery] = useState<NotificationQuery>({ page: 1, pageSize: 20 });
   const [typeFilter, setTypeFilter] = useState('');
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -67,23 +71,23 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notificaciones</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
           <p className="text-secondary mt-1">
             {list?.unreadCount
-              ? `${list.unreadCount} sin leer · ${list.total} total`
-              : `${list?.total || 0} notificaciones`}
+              ? t('unreadCount', { unread: list.unreadCount, total: list.total })
+              : t('totalCount', { total: list?.total || 0 })}
           </p>
         </div>
         <div className="flex gap-2">
           {(list?.unreadCount || 0) > 0 && (
             <Button variant="outline" onClick={() => markAllAsRead.mutate()}>
               <CheckCheck className="h-4 w-4 mr-2" />
-              Marcar todas leídas
+              {t('markAllRead')}
             </Button>
           )}
           <Button variant="outline" onClick={() => clearRead.mutate()} className="text-red-600 hover:text-red-700">
             <Trash2 className="h-4 w-4 mr-2" />
-            Limpiar leídas
+            {t('clearRead')}
           </Button>
         </div>
       </div>
@@ -98,9 +102,9 @@ export default function NotificationsPage() {
               onChange={(e) => setTypeFilter(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="">Todos los tipos</option>
-              {Object.entries(TYPE_LABELS).map(([val, label]) => (
-                <option key={val} value={val}>{label}</option>
+              <option value="">{tCommon('allTypes')}</option>
+              {Object.entries(TYPE_LABEL_KEYS).map(([val, key]) => (
+                <option key={val} value={val}>{t(`types.${key}`)}</option>
               ))}
             </select>
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -110,15 +114,15 @@ export default function NotificationsPage() {
                 onChange={(e) => setUnreadOnly(e.target.checked)}
                 className="h-4 w-4"
               />
-              Solo sin leer
+              {t('onlyUnread')}
             </label>
-            <Button size="sm" onClick={applyFilters}>Aplicar</Button>
+            <Button size="sm" onClick={applyFilters}>{tCommon('apply')}</Button>
             <Button size="sm" variant="outline" onClick={() => {
               setTypeFilter('');
               setUnreadOnly(false);
               setQuery({ page: 1, pageSize: 20 });
             }}>
-              Limpiar
+              {tCommon('clear')}
             </Button>
           </div>
         </CardContent>
@@ -136,8 +140,8 @@ export default function NotificationsPage() {
           ) : notifications.length === 0 ? (
             <div className="py-16 text-center text-quaternary">
               <Bell className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="text-lg font-medium">Sin notificaciones</p>
-              <p className="text-sm mt-1">Aquí aparecerán alertas de stock, ventas y sistema</p>
+              <p className="text-lg font-medium">{t('noNotifications')}</p>
+              <p className="text-sm mt-1">{t('noNotificationsDesc')}</p>
             </div>
           ) : (
             <div className="divide-y">
@@ -175,20 +179,20 @@ export default function NotificationsPage() {
                       </div>
                       <div className="flex items-center gap-4 mt-2">
                         <span className="text-xs text-quaternary">{timeAgo(notif.createdAt)}</span>
-                        <span className="text-xs text-quaternary">{TYPE_LABELS[notif.type]}</span>
+                        <span className="text-xs text-quaternary">{TYPE_LABEL_KEYS[notif.type] ? t(`types.${TYPE_LABEL_KEYS[notif.type]}`) : notif.type}</span>
                         {!notif.isRead && (
                           <button
                             onClick={() => markAsRead.mutate(notif.id)}
                             className="text-xs text-blue-600 hover:underline"
                           >
-                            Marcar leída
+                            {t('markRead')}
                           </button>
                         )}
                         <button
                           onClick={() => remove.mutate(notif.id)}
                           className="text-xs text-red-500 hover:underline ml-auto"
                         >
-                          Eliminar
+                          {tCommon('delete')}
                         </button>
                       </div>
                     </div>
@@ -202,16 +206,16 @@ export default function NotificationsPage() {
           {list && list.totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t mt-2">
               <p className="text-sm text-tertiary">
-                Página {list.page} de {list.totalPages}
+                {t('pagination', { page: list.page, totalPages: list.totalPages })}
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={list.page <= 1}
                   onClick={() => setQuery((q) => ({ ...q, page: (q.page || 1) - 1 }))}>
-                  Anterior
+                  {tCommon('previous')}
                 </Button>
                 <Button variant="outline" size="sm" disabled={list.page >= list.totalPages}
                   onClick={() => setQuery((q) => ({ ...q, page: (q.page || 1) + 1 }))}>
-                  Siguiente
+                  {tCommon('next')}
                 </Button>
               </div>
             </div>

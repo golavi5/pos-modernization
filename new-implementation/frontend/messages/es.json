@@ -103,7 +103,22 @@
     "statusPaid": "Pagado",
     "statusPending": "Pendiente",
     "statusPartial": "Parcial",
-    "statusRefunded": "Devuelto"
+    "statusRefunded": "Devuelto",
+    "kpi": {
+      "salesToday": "Ventas hoy",
+      "transactions": "Transacciones",
+      "avgTicket": "Ticket promedio",
+      "totalSales": "Total ventas",
+      "deltaRevenue": "+12% vs ayer",
+      "deltaTransactions": "+5 vs ayer"
+    },
+    "quickActions": {
+      "title": "Acciones rápidas",
+      "newSale": "Nueva venta",
+      "adjustInventory": "Ajustar inventario",
+      "viewDailyReport": "Ver reporte del día",
+      "addProduct": "Agregar producto"
+    }
   },
   "sales": {
     "title": "Ventas",
@@ -507,6 +522,13 @@
       "system": "Sistema",
       "reorder": "Reorden",
       "largeSale": "Venta grande"
+    },
+    "bell": {
+      "unread": "{count} sin leer",
+      "markAllRead": "Marcar todas como leídas",
+      "justNow": "Ahora",
+      "minutesAgo": "hace {min}m",
+      "viewAll": "Ver todas las notificaciones"
     }
   },
   "reports": {
@@ -672,7 +694,8 @@
     "enableLoyaltyDesc": "Los clientes acumulan puntos en cada compra",
     "pointsPerAmount": "Puntos por $ gastado",
     "pointValue": "Valor de 1 punto ($)",
-    "loyaltyCalculation": "💡 Con esta configuración: compra de $10,000 genera {points} puntos equivalentes a ${value}"
+    "loyaltyCalculation": "💡 Con esta configuración: compra de $10,000 genera <b>{points} puntos</b> equivalentes a <b>${value}</b>",
+    "resetConfirm": "¿Restaurar configuración a valores por defecto?"
   },
   "theme": {
     "light": "Claro",

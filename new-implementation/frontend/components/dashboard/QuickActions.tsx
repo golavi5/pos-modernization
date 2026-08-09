@@ -1,22 +1,24 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ShoppingCart, Warehouse, BarChart3, Plus } from 'lucide-react';
 
 const ACTIONS = [
-  { label: 'Nueva venta',         href: '/sales',     icon: ShoppingCart, primary: true },
-  { label: 'Ajustar inventario',  href: '/inventory', icon: Warehouse,    primary: false },
-  { label: 'Ver reporte del día', href: '/reports',   icon: BarChart3,    primary: false },
-  { label: 'Agregar producto',    href: '/products',  icon: Plus,         primary: false },
+  { labelKey: 'newSale',         href: '/sales',     icon: ShoppingCart, primary: true },
+  { labelKey: 'adjustInventory', href: '/inventory', icon: Warehouse,    primary: false },
+  { labelKey: 'viewDailyReport', href: '/reports',   icon: BarChart3,    primary: false },
+  { labelKey: 'addProduct',      href: '/products',  icon: Plus,         primary: false },
 ];
 
 export function QuickActions() {
+  const t = useTranslations('dashboard.quickActions');
   const router = useRouter();
   return (
     <div className="bg-card rounded-xl p-4">
-      <p className="text-sm font-semibold text-foreground mb-3">Acciones rápidas</p>
+      <p className="text-sm font-semibold text-foreground mb-3">{t('title')}</p>
       <div className="flex flex-col gap-2">
-        {ACTIONS.map(({ label, href, icon: Icon, primary }) => (
+        {ACTIONS.map(({ labelKey, href, icon: Icon, primary }) => (
           <button
             key={href}
             onClick={() => router.push(href)}
@@ -27,7 +29,7 @@ export function QuickActions() {
             }
           >
             <Icon size={15} />
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bell, X, CheckCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,18 +30,20 @@ const TYPE_ICONS: Record<string, string> = {
   large_sale: '💰',
 };
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'Ahora';
-  if (minutes < 60) return `hace ${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `hace ${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `hace ${days}d`;
-}
-
 export function NotificationBell() {
+  const t = useTranslations('notifications');
+
+  const timeAgo = (dateStr: string): string => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return t('bell.justNow');
+    if (minutes < 60) return t('bell.minutesAgo', { min: minutes });
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return t('hoursAgo', { h: hours });
+    const days = Math.floor(hours / 24);
+    return t('daysAgo', { d: days });
+  };
+
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +77,7 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen((prev) => !prev)}
         className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        aria-label="Notificaciones"
+        aria-label={t('title')}
       >
         <Bell className="h-5 w-5 text-secondary" />
         {unreadCount > 0 && (
@@ -90,9 +93,9 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-gray-50">
             <div>
-              <h3 className="font-semibold">Notificaciones</h3>
+              <h3 className="font-semibold">{t('title')}</h3>
               {unreadCount > 0 && (
-                <p className="text-xs text-tertiary">{unreadCount} sin leer</p>
+                <p className="text-xs text-tertiary">{t('bell.unread', { count: unreadCount })}</p>
               )}
             </div>
             <div className="flex gap-1">
@@ -100,7 +103,7 @@ export function NotificationBell() {
                 <button
                   onClick={() => markAllAsRead.mutate()}
                   className="p-1.5 rounded hover:bg-hover-bg text-tertiary hover:text-secondary"
-                  title="Marcar todas como leídas"
+                  title={t('bell.markAllRead')}
                 >
                   <CheckCheck className="h-4 w-4" />
                 </button>
@@ -108,7 +111,7 @@ export function NotificationBell() {
               <button
                 onClick={() => clearRead.mutate()}
                 className="p-1.5 rounded hover:bg-hover-bg text-tertiary hover:text-secondary"
-                title="Limpiar leídas"
+                title={t('clearRead')}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -126,7 +129,7 @@ export function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="py-12 text-center text-quaternary">
                 <Bell className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Sin notificaciones</p>
+                <p className="text-sm">{t('noNotifications')}</p>
               </div>
             ) : (
               notifications.map((notif) => (
@@ -170,7 +173,7 @@ export function NotificationBell() {
                 className="text-sm text-blue-600 hover:underline"
                 onClick={() => setOpen(false)}
               >
-                Ver todas las notificaciones
+                {t('bell.viewAll')}
               </a>
             </div>
           )}

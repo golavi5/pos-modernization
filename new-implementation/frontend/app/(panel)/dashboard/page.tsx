@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { SalesChart } from '@/components/dashboard/SalesChart';
 import { QuickActions } from '@/components/dashboard/QuickActions';
@@ -18,6 +19,7 @@ const CHART_DATA = [
 ];
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard.kpi');
   const { data: stats } = useSalesStats();
 
   const chartData = CHART_DATA.map((d, i) =>
@@ -31,26 +33,26 @@ export default function DashboardPage() {
       {/* KPI row */}
       <div className="grid grid-cols-4 gap-3">
         <StatsCard
-          title="Ventas hoy"
+          title={t('salesToday')}
           value={stats ? formatCOP(stats.todayRevenue) : '—'}
-          delta="+12% vs ayer"
+          delta={t('deltaRevenue')}
           deltaPositive
           accentClass="border-primary"
         />
         <StatsCard
-          title="Transacciones"
+          title={t('transactions')}
           value={stats ? String(stats.todaySales) : '—'}
-          delta="+5 vs ayer"
+          delta={t('deltaTransactions')}
           deltaPositive
           accentClass="border-emerald-500"
         />
         <StatsCard
-          title="Ticket promedio"
+          title={t('avgTicket')}
           value={stats ? formatCOP(stats.averageOrderValue) : '—'}
           accentClass="border-amber-500"
         />
         <StatsCard
-          title="Total ventas"
+          title={t('totalSales')}
           value={stats ? String(stats.totalSales) : '—'}
           accentClass="border-violet-500"
         />
