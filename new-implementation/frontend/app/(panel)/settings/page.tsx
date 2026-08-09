@@ -76,6 +76,7 @@ function Section({ title, description, children, onSave, saving }: {
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [activeSection, setActiveSection] = useState<SectionId>('company');
   const [saved, setSaved] = useState('');
 
