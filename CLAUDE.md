@@ -204,6 +204,14 @@ the manual-index repos:
   Issue line so Kairos links the design to its SPEC-file issue.
 - Sync contract: files own structure; **Plane owns per-issue state after
   creation.** Never hand-create POS issues in the Plane UI.
+- **A merged PR closes a POS issue — and auto-rewrites its SPEC file's
+  `**Status**` to DONE — only via an explicit closing keyword:
+  `Closes POS-CUT-002` / `Fixes SPEC-CUT-002` in the PR title or body.**
+  Naming the ID in the title or discussing it in the body does NOT promote it,
+  so a PR may safely reference specs it defers or did not touch. One keyword can
+  introduce a list (`Closes POS-A-001, POS-A-002`), stopping at the first
+  non-ref word; keywords inside code fences are ignored. If a PR completes an
+  issue, the `Closes` line is what records it — without it the issue stays open.
 - Two SPEC files with the same number abort the sync — numbers are unique
   per module prefix.
 
