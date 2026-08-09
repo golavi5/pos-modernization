@@ -416,5 +416,10 @@
     "spanish": "Español",
     "english": "English",
     "changeLanguage": "Change language"
+  },
+  "commandPalette": {
+    "placeholder": "Search...",
+    "noResults": "No results",
+    "ariaLabel": "Command palette"
   }
 }
