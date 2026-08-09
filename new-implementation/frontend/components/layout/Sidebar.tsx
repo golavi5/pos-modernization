@@ -2,20 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  Home,
-  Package,
-  ShoppingCart,
-  Users,
-  BarChart3,
-  Settings,
-  Warehouse,
-  UserCog,
-  Bell,
-  LogOut,
-} from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { canAccessRoute } from '@/lib/auth/roles';
+import { NAV_ITEMS, SETTINGS_NAV_ITEM } from '@/lib/navigation/nav-items';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -25,17 +16,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-
-const NAV_ITEMS = [
-  { href: '/sales',         icon: ShoppingCart, label: 'Ventas' },
-  { href: '/dashboard',     icon: Home,         label: 'Dashboard' },
-  { href: '/products',      icon: Package,      label: 'Productos' },
-  { href: '/inventory',     icon: Warehouse,    label: 'Inventario' },
-  { href: '/customers',     icon: Users,        label: 'Clientes' },
-  { href: '/users',         icon: UserCog,      label: 'Usuarios' },
-  { href: '/reports',       icon: BarChart3,    label: 'Reportes' },
-  { href: '/notifications', icon: Bell,         label: 'Notificaciones' },
-];
 
 function NavItem({
   href,
@@ -70,11 +50,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const t = useTranslations('sidebar');
 
   const visibleNav = NAV_ITEMS.filter((item) =>
     canAccessRoute(item.href, user?.roles),
   );
-  const canSeeSettings = canAccessRoute('/settings', user?.roles);
+  const canSeeSettings = canAccessRoute(SETTINGS_NAV_ITEM.href, user?.roles);
 
   const getInitials = (name: string) =>
     name.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -96,12 +77,12 @@ export function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-1 p-2 overflow-y-auto">
-        {visibleNav.map(({ href, icon, label }) => (
+        {visibleNav.map(({ href, icon, labelKey }) => (
           <NavItem
             key={href}
             href={href}
             icon={icon}
-            label={label}
+            label={t(labelKey)}
             active={pathname === href || pathname.startsWith(href + '/')}
           />
         ))}
@@ -111,10 +92,10 @@ export function Sidebar() {
       <div className="p-2 border-t border-border flex flex-col gap-1">
         {canSeeSettings && (
           <NavItem
-            href="/settings"
-            icon={Settings}
-            label="Configuración"
-            active={pathname.startsWith('/settings')}
+            href={SETTINGS_NAV_ITEM.href}
+            icon={SETTINGS_NAV_ITEM.icon}
+            label={t(SETTINGS_NAV_ITEM.labelKey)}
+            active={pathname.startsWith(SETTINGS_NAV_ITEM.href)}
           />
         )}
 
