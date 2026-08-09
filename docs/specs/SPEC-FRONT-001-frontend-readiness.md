@@ -1,4 +1,4 @@
-# M3 — Frontend Readiness: shell reachability, i18n, dead types
+# M3 — Frontend Readiness: shell reachability and i18n
 
 **Status**: DRAFT — not started. #35 merged 2026-08-09 and its review pass (`c11e6512`) landed the shared `NAV_ITEMS` table plus sidebar/palette i18n, so part of §3.2 is already closed; the header breadcrumb is the remaining copy.
 
@@ -14,8 +14,8 @@ was, until this file, **the only module with no spec at all**. Its work lived in
 a design doc that declared a board issue, which regenerated every time the issue
 was deleted; that doc was untracked in #33 and the board item removed.
 
-This spec gives M3 a tracked home and closes the three known gaps in the app
-shell. It is deliberately not a charter for the whole frontend.
+This spec gives M3 a tracked home and closes the two remaining gaps in the
+app shell. It is deliberately not a charter for the whole frontend.
 
 ## 2. Findings this spec responds to
 
@@ -41,8 +41,14 @@ shell. It is deliberately not a charter for the whole frontend.
   `products/new/page.tsx`. The real size is **9 of 76** component/page files
   using `useTranslations`, with ~24 carrying hardcoded Spanish. This spec takes
   the app shell plus those three product pages; the rest is SPEC-FRONT-002.
-- **`types/auth.ts` still declares snake_case token fields on `AuthResponse`**
-  that the backend register endpoint never returns (SPEC-CUT-001 §4 S-10).
+- **S-10 is already fixed.** SPEC-CUT-001 §4 says `types/auth.ts` still declares
+  snake_case token fields on `AuthResponse`. It does not: line 28 reads
+  `export type AuthResponse = User`, and the backend's `register` returns
+  `UserResponseDto` with no tokens, so the frontend type is correct. Verified
+  against both sides; dropped from this spec's scope.
+- **Three of SPEC-CUT-001 §4's frontend claims were stale** (S-09's size, S-09's
+  file list, S-10 entirely). Re-auditing the rest of §4 against code is worth its
+  own pass — see §5.
 
 ## 3. Scope
 
@@ -55,7 +61,8 @@ shell. It is deliberately not a charter for the whole frontend.
    (the sidebar and palette were consolidated by #35's review pass). Plus the
    three untranslated product pages named in §2: `products/page.tsx`,
    `products/categories/page.tsx`, `products/new/page.tsx`.
-3. **S-10** — delete the dead token fields from `types/auth.ts`.
+S-10 was in this spec's original scope and is **removed**: the work is already
+done (see §2).
 
 ## 4. Acceptance
 
@@ -73,13 +80,15 @@ shell. It is deliberately not a charter for the whole frontend.
 - [ ] Switching locale changes the sidebar nav labels and the header breadcrumb.
 - [ ] The three product pages in §3.2 render no hardcoded Spanish; any new keys
       exist in both `es.json` and `en.json`.
-- [ ] `AuthResponse` declares no field the backend does not return.
 - [ ] `npm run build` is green (it typechecks; `next lint` remains unrunnable
       until SPEC-CUT-001 S-01 ships an ESLint config).
 
 ## 5. Out of scope
 
 - The remaining ~20 feature files carrying hardcoded Spanish → **SPEC-FRONT-002**.
+- Re-auditing SPEC-CUT-001 §4's remaining S-items against code. Three of its
+  frontend claims proved stale while writing this spec; the backend-facing ones
+  have not been checked and may be equally out of date.
 - Global search over products/customers/sales. The ⌘K palette shipped in #35 is
   navigation-only by design.
 - Any backend change. This spec is frontend-only.
