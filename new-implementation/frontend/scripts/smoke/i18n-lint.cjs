@@ -17,15 +17,10 @@ const DIRS = ['app', 'components'];
 
 const ALLOWLIST = new Set([
   'app/(panel)/dashboard/page.tsx',
-  'app/(panel)/inventory/page.tsx',
   'app/(panel)/notifications/page.tsx',
   'app/(panel)/settings/page.tsx',
   'app/(panel)/users/page.tsx',
   'components/dashboard/QuickActions.tsx',
-  'components/inventory/AdjustStockModal.tsx',
-  'components/inventory/InventoryFilters.tsx',
-  'components/inventory/StockMovements.tsx',
-  'components/inventory/StockTable.tsx',
   'components/layout/AuthLayout.tsx',
   'components/notifications/NotificationBell.tsx',
   'components/products/ProductCard.tsx',

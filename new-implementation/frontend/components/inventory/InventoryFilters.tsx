@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { StockQueryParams, Warehouse } from '@/types/inventory';
@@ -11,6 +12,11 @@ interface InventoryFiltersProps {
 }
 
 export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryFiltersProps) {
+  const t = useTranslations('inventory');
+  const tCommon = useTranslations('common');
+  const tProducts = useTranslations('products');
+  const tReports = useTranslations('reports');
+  const tNotifications = useTranslations('notifications');
   const [warehouseId, setWarehouseId] = useState<string>('');
   const [lowStock, setLowStock] = useState<boolean | undefined>(undefined);
   const [sortBy, setSortBy] = useState<StockQueryParams['sortBy']>('product_name');
@@ -46,12 +52,12 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
           className={showAdvanced ? 'bg-gray-100' : ''}
         >
           <Filter className="w-4 h-4 mr-2" />
-          Filtros
+          {tProducts('filters')}
         </Button>
         {hasActiveFilters && (
           <Button variant="outline" onClick={handleReset}>
             <X className="w-4 h-4 mr-2" />
-            Limpiar
+            {tCommon('clear')}
           </Button>
         )}
       </div>
@@ -62,14 +68,14 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
           {/* Warehouse */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Almacén
+              {tReports('productTab.warehouse')}
             </label>
             <select
               value={warehouseId}
               onChange={(e) => setWarehouseId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Todos los almacenes</option>
+              <option value="">{t('filters.allWarehouses')}</option>
               {warehouses.map((warehouse) => (
                 <option key={warehouse.id} value={warehouse.id}>
                   {warehouse.name}
@@ -81,7 +87,7 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
           {/* Stock level */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Nivel de stock
+              {t('filters.stockLevel')}
             </label>
             <select
               value={lowStock === undefined ? '' : lowStock ? 'true' : 'false'}
@@ -92,40 +98,40 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Todos</option>
-              <option value="true">Stock bajo</option>
-              <option value="false">Stock normal</option>
+              <option value="">{tProducts('allStatus')}</option>
+              <option value="true">{tNotifications('types.lowStock')}</option>
+              <option value="false">{t('filters.normalStock')}</option>
             </select>
           </div>
 
           {/* Sort by */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Ordenar por
+              {tProducts('sortBy')}
             </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as StockQueryParams['sortBy'])}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="product_name">Nombre del producto</option>
-              <option value="quantity">Cantidad</option>
-              <option value="last_movement_date">Último movimiento</option>
+              <option value="product_name">{t('filters.productName')}</option>
+              <option value="quantity">{tReports('productTab.quantity')}</option>
+              <option value="last_movement_date">{t('filters.lastMovement')}</option>
             </select>
           </div>
 
           {/* Sort order */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Orden
+              {tProducts('order')}
             </label>
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'ASC' | 'DESC')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="ASC">Ascendente</option>
-              <option value="DESC">Descendente</option>
+              <option value="ASC">{tProducts('ascending')}</option>
+              <option value="DESC">{tProducts('descending')}</option>
             </select>
           </div>
         </div>
@@ -134,7 +140,7 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
       {/* Apply button */}
       {showAdvanced && (
         <div className="flex justify-end pt-2 border-t">
-          <Button onClick={handleApply}>Aplicar filtros</Button>
+          <Button onClick={handleApply}>{t('filters.applyFilters')}</Button>
         </div>
       )}
     </div>

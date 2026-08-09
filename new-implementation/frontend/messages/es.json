@@ -324,7 +324,69 @@
     "showingProducts": "Mostrando {from} - {to} de {total} productos",
     "showingMovements": "Mostrando {from} - {to} de {total} movimientos",
     "adjustSuccess": "Stock ajustado exitosamente",
-    "adjustError": "Error al ajustar el stock"
+    "adjustError": "Error al ajustar el stock",
+    "adjust": {
+      "title": "Ajustar Stock",
+      "currentStock": "Stock actual",
+      "movementType": "Tipo de movimiento",
+      "newQuantity": "Nueva cantidad",
+      "exceedsStock": "Cantidad excede el stock disponible ({available})",
+      "reference": "Número de referencia (Opcional)",
+      "referencePlaceholder": "Ej: PO-12345, FACTURA-001",
+      "notesPlaceholder": "Motivo del ajuste, observaciones...",
+      "newStock": "Nuevo stock",
+      "addLabel": "Agregar:",
+      "subtractLabel": "Restar:",
+      "invalidQuantity": "Ingresa una cantidad válida",
+      "insufficientStock": "No hay suficiente stock disponible",
+      "confirmAdjust": "Confirmar Ajuste"
+    },
+    "movementTypes": {
+      "IN": "Entrada",
+      "OUT": "Salida",
+      "ADJUST": "Ajuste",
+      "TRANSFER": "Transferencia",
+      "DAMAGE": "Daño",
+      "RETURN": "Devolución"
+    },
+    "movementDesc": {
+      "IN": "Recibir stock",
+      "OUT": "Retirar stock",
+      "ADJUST": "Ajustar a cantidad exacta",
+      "DAMAGE": "Registrar daño",
+      "RETURN": "Devolución de cliente"
+    },
+    "filters": {
+      "allWarehouses": "Todos los almacenes",
+      "stockLevel": "Nivel de stock",
+      "normalStock": "Stock normal",
+      "productName": "Nombre del producto",
+      "lastMovement": "Último movimiento",
+      "applyFilters": "Aplicar filtros"
+    },
+    "movementsList": {
+      "empty": "No hay movimientos registrados",
+      "emptyHint": "Los movimientos de stock aparecerán aquí",
+      "reference": "Ref: {number}",
+      "by": "Por: {name}"
+    },
+    "table": {
+      "empty": "No hay stock disponible",
+      "emptyHint": "Ajusta filtros o agrega productos al inventario",
+      "reserved": "Reservado",
+      "available": "Disponible",
+      "action": "Acción",
+      "adjustStock": "Ajustar stock",
+      "adjust": "Ajustar",
+      "min": "Min: {value}",
+      "noName": "Producto sin nombre",
+      "noStock": "Sin stock",
+      "restock": "Reabastecer"
+    },
+    "page": {
+      "searchPlaceholder": "Buscar producto o SKU...",
+      "stock": "Stock"
+    }
   },
   "users": {
     "title": "Gestión de Usuarios",

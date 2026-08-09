@@ -1,6 +1,7 @@
 'use client';
 
 import { Package, AlertTriangle, ArrowUpCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useStock } from '@/hooks/useInventory';
@@ -16,6 +17,10 @@ interface StockTableProps {
 }
 
 export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLoadingProp }: StockTableProps) {
+  const t = useTranslations('inventory');
+  const tReports = useTranslations('reports');
+  const tDashboard = useTranslations('dashboard');
+  const tNotifications = useTranslations('notifications');
   const queryEnabled = search !== undefined;
   const { data: stockData, isLoading: isLoadingQuery } = useStock(
     queryEnabled ? { page: 1, pageSize: 50, search: search || undefined } : undefined
@@ -24,15 +29,15 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
   const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);
   const getStockStatus = (item: StockLevel) => {
     if (item.quantity === 0) {
-      return { label: 'Sin stock', variant: 'destructive' as const, icon: AlertTriangle };
+      return { label: t('table.noStock'), variant: 'destructive' as const, icon: AlertTriangle };
     }
     if (item.reorder_point && item.quantity <= item.reorder_point) {
-      return { label: 'Reabastecer', variant: 'warning' as const, icon: AlertTriangle };
+      return { label: t('table.restock'), variant: 'warning' as const, icon: AlertTriangle };
     }
     if (item.min_stock_level && item.quantity <= item.min_stock_level) {
-      return { label: 'Stock bajo', variant: 'warning' as const, icon: AlertTriangle };
+      return { label: tNotifications('types.lowStock'), variant: 'warning' as const, icon: AlertTriangle };
     }
-    return { label: 'Disponible', variant: 'success' as const, icon: Package };
+    return { label: t('table.available'), variant: 'success' as const, icon: Package };
   };
 
   if (isLoading) {
@@ -49,9 +54,9 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
     return (
       <div className="text-center py-12">
         <Package className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-        <p className="text-tertiary text-lg">No hay stock disponible</p>
+        <p className="text-tertiary text-lg">{t('table.empty')}</p>
         <p className="text-quaternary text-sm mt-2">
-          Ajusta filtros o agrega productos al inventario
+          {t('table.emptyHint')}
         </p>
       </div>
     );
@@ -62,13 +67,13 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left p-4 font-semibold text-secondary">Producto</th>
-            <th className="text-left p-4 font-semibold text-secondary">Almacén</th>
-            <th className="text-center p-4 font-semibold text-secondary">Cantidad</th>
-            <th className="text-center p-4 font-semibold text-secondary">Reservado</th>
-            <th className="text-center p-4 font-semibold text-secondary">Disponible</th>
-            <th className="text-center p-4 font-semibold text-secondary">Estado</th>
-            <th className="text-center p-4 font-semibold text-secondary">Acción</th>
+            <th className="text-left p-4 font-semibold text-secondary">{tReports('product')}</th>
+            <th className="text-left p-4 font-semibold text-secondary">{tReports('productTab.warehouse')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tReports('productTab.quantity')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{t('table.reserved')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{t('table.available')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tDashboard('status')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{t('table.action')}</th>
           </tr>
         </thead>
         <tbody>
@@ -84,7 +89,7 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
                 <td className="p-4">
                   <div>
                     <div className="font-medium ">
-                      {item.product_name || 'Producto sin nombre'}
+                      {item.product_name || t('table.noName')}
                     </div>
                     {item.product_sku && (
                       <div className="text-sm text-tertiary font-mono">
@@ -107,7 +112,7 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
                   </div>
                   {item.min_stock_level && (
                     <div className="text-xs text-tertiary">
-                      Min: {item.min_stock_level}
+                      {t('table.min', { value: item.min_stock_level })}
                     </div>
                   )}
                 </td>
@@ -130,10 +135,10 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
                     variant="outline"
                     size="sm"
                     onClick={() => onAdjust?.(item)}
-                    title="Ajustar stock"
+                    title={t('table.adjustStock')}
                   >
                     <ArrowUpCircle className="w-4 h-4 mr-1" />
-                    Ajustar
+                    {t('table.adjust')}
                   </Button>
                 </td>
               </tr>

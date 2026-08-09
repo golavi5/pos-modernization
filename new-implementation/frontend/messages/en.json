@@ -324,7 +324,69 @@
     "showingProducts": "Showing {from} - {to} of {total} products",
     "showingMovements": "Showing {from} - {to} of {total} movements",
     "adjustSuccess": "Stock adjusted successfully",
-    "adjustError": "Error adjusting stock"
+    "adjustError": "Error adjusting stock",
+    "adjust": {
+      "title": "Adjust Stock",
+      "currentStock": "Current stock",
+      "movementType": "Movement type",
+      "newQuantity": "New quantity",
+      "exceedsStock": "Quantity exceeds available stock ({available})",
+      "reference": "Reference number (Optional)",
+      "referencePlaceholder": "E.g.: PO-12345, INVOICE-001",
+      "notesPlaceholder": "Reason for adjustment, observations...",
+      "newStock": "New stock",
+      "addLabel": "Add:",
+      "subtractLabel": "Subtract:",
+      "invalidQuantity": "Enter a valid quantity",
+      "insufficientStock": "Not enough stock available",
+      "confirmAdjust": "Confirm Adjustment"
+    },
+    "movementTypes": {
+      "IN": "Inbound",
+      "OUT": "Outbound",
+      "ADJUST": "Adjustment",
+      "TRANSFER": "Transfer",
+      "DAMAGE": "Damage",
+      "RETURN": "Return"
+    },
+    "movementDesc": {
+      "IN": "Receive stock",
+      "OUT": "Remove stock",
+      "ADJUST": "Adjust to exact quantity",
+      "DAMAGE": "Record damage",
+      "RETURN": "Customer return"
+    },
+    "filters": {
+      "allWarehouses": "All warehouses",
+      "stockLevel": "Stock level",
+      "normalStock": "Normal stock",
+      "productName": "Product name",
+      "lastMovement": "Last movement",
+      "applyFilters": "Apply filters"
+    },
+    "movementsList": {
+      "empty": "No movements recorded",
+      "emptyHint": "Stock movements will appear here",
+      "reference": "Ref: {number}",
+      "by": "By: {name}"
+    },
+    "table": {
+      "empty": "No stock available",
+      "emptyHint": "Adjust filters or add products to inventory",
+      "reserved": "Reserved",
+      "available": "Available",
+      "action": "Action",
+      "adjustStock": "Adjust stock",
+      "adjust": "Adjust",
+      "min": "Min: {value}",
+      "noName": "Unnamed product",
+      "noStock": "Out of stock",
+      "restock": "Restock"
+    },
+    "page": {
+      "searchPlaceholder": "Search product or SKU...",
+      "stock": "Stock"
+    }
   },
   "users": {
     "title": "User Management",

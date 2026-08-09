@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { X, ArrowUpCircle, ArrowDownCircle, Edit3, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,11 @@ export function AdjustStockModal({
   onConfirm,
   isLoading,
 }: AdjustStockModalProps) {
+  const t = useTranslations('inventory');
+  const tCommon = useTranslations('common');
+  const tSales = useTranslations('sales');
+  const tProducts = useTranslations('products');
+  const tReports = useTranslations('reports');
   const [movementType, setMovementType] = useState<'IN' | 'OUT' | 'ADJUST' | 'DAMAGE' | 'RETURN'>('IN');
   const [quantity, setQuantity] = useState<number>(0);
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -36,12 +42,12 @@ export function AdjustStockModal({
 
   const handleConfirm = () => {
     if (quantity <= 0) {
-      alert('Ingresa una cantidad válida');
+      alert(t('adjust.invalidQuantity'));
       return;
     }
 
     if (movementType === 'OUT' && quantity > stock.available_quantity) {
-      alert('No hay suficiente stock disponible');
+      alert(t('adjust.insufficientStock'));
       return;
     }
 
@@ -76,38 +82,38 @@ export function AdjustStockModal({
   const movementTypes = [
     {
       id: 'IN' as const,
-      label: 'Entrada',
+      label: t('movementTypes.IN'),
       icon: ArrowUpCircle,
       color: 'green',
-      description: 'Recibir stock',
+      description: t('movementDesc.IN'),
     },
     {
       id: 'OUT' as const,
-      label: 'Salida',
+      label: t('movementTypes.OUT'),
       icon: ArrowDownCircle,
       color: 'red',
-      description: 'Retirar stock',
+      description: t('movementDesc.OUT'),
     },
     {
       id: 'ADJUST' as const,
-      label: 'Ajuste',
+      label: t('movementTypes.ADJUST'),
       icon: Edit3,
       color: 'blue',
-      description: 'Ajustar a cantidad exacta',
+      description: t('movementDesc.ADJUST'),
     },
     {
       id: 'DAMAGE' as const,
-      label: 'Daño',
+      label: t('movementTypes.DAMAGE'),
       icon: AlertCircle,
       color: 'orange',
-      description: 'Registrar daño',
+      description: t('movementDesc.DAMAGE'),
     },
     {
       id: 'RETURN' as const,
-      label: 'Devolución',
+      label: t('movementTypes.RETURN'),
       icon: RotateCcw,
       color: 'indigo',
-      description: 'Devolución de cliente',
+      description: t('movementDesc.RETURN'),
     },
   ];
 
@@ -116,7 +122,7 @@ export function AdjustStockModal({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold ">Ajustar Stock</h2>
+          <h2 className="text-2xl font-bold ">{t('adjust.title')}</h2>
           <button
             onClick={onClose}
             className="text-quaternary hover:text-secondary transition-colors"
@@ -130,22 +136,22 @@ export function AdjustStockModal({
         <div className="p-6 space-y-6">
           {/* Product info */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-secondary mb-1">Producto</p>
+            <p className="text-sm text-secondary mb-1">{tReports('product')}</p>
             <p className="text-lg font-semibold ">{stock.product_name}</p>
             {stock.product_sku && (
               <p className="text-sm text-tertiary font-mono">SKU: {stock.product_sku}</p>
             )}
             <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="text-secondary">Stock actual:</span>
+                <span className="text-secondary">{t('adjust.currentStock')}:</span>
                 <span className="ml-2 font-bold ">{stock.quantity}</span>
               </div>
               <div>
-                <span className="text-secondary">Reservado:</span>
+                <span className="text-secondary">{t('table.reserved')}:</span>
                 <span className="ml-2 font-bold ">{stock.reserved_quantity}</span>
               </div>
               <div>
-                <span className="text-secondary">Disponible:</span>
+                <span className="text-secondary">{t('table.available')}:</span>
                 <span className="ml-2 font-bold text-green-600">{stock.available_quantity}</span>
               </div>
             </div>
@@ -153,7 +159,7 @@ export function AdjustStockModal({
 
           {/* Movement type selection */}
           <div>
-            <Label className="mb-3">Tipo de movimiento</Label>
+            <Label className="mb-3">{t('adjust.movementType')}</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {movementTypes.map((type) => {
                 const Icon = type.icon;
@@ -195,7 +201,7 @@ export function AdjustStockModal({
           {/* Quantity input */}
           <div>
             <Label htmlFor="quantity">
-              {movementType === 'ADJUST' ? 'Nueva cantidad' : 'Cantidad'}
+              {movementType === 'ADJUST' ? t('adjust.newQuantity') : tReports('productTab.quantity')}
             </Label>
             <Input
               id="quantity"
@@ -207,31 +213,31 @@ export function AdjustStockModal({
             />
             {movementType === 'OUT' && quantity > stock.available_quantity && (
               <p className="text-sm text-red-600 mt-1">
-                Cantidad excede el stock disponible ({stock.available_quantity})
+                {t('adjust.exceedsStock', { available: stock.available_quantity })}
               </p>
             )}
           </div>
 
           {/* Reference number */}
           <div>
-            <Label htmlFor="reference">Número de referencia (Opcional)</Label>
+            <Label htmlFor="reference">{t('adjust.reference')}</Label>
             <Input
               id="reference"
               type="text"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
-              placeholder="Ej: PO-12345, FACTURA-001"
+              placeholder={t('adjust.referencePlaceholder')}
             />
           </div>
 
           {/* Notes */}
           <div>
-            <Label htmlFor="notes">Notas (Opcional)</Label>
+            <Label htmlFor="notes">{tSales('notes')}</Label>
             <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Motivo del ajuste, observaciones..."
+              placeholder={t('adjust.notesPlaceholder')}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -240,15 +246,15 @@ export function AdjustStockModal({
           {/* Preview */}
           {quantity > 0 && (
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <p className="text-sm text-blue-700 mb-2">Vista previa</p>
+              <p className="text-sm text-blue-700 mb-2">{tProducts('preview')}</p>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-600">Stock actual:</span>
+                <span className="text-sm text-blue-600">{t('adjust.currentStock')}:</span>
                 <span className="font-semibold text-blue-900">{stock.quantity}</span>
               </div>
               {movementType !== 'ADJUST' && (
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-sm text-blue-600">
-                    {['IN', 'RETURN'].includes(movementType) ? 'Agregar:' : 'Restar:'}
+                    {['IN', 'RETURN'].includes(movementType) ? t('adjust.addLabel') : t('adjust.subtractLabel')}
                   </span>
                   <span
                     className={`font-semibold ${
@@ -263,7 +269,7 @@ export function AdjustStockModal({
                 </div>
               )}
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-300">
-                <span className="text-sm font-semibold text-blue-700">Nuevo stock:</span>
+                <span className="text-sm font-semibold text-blue-700">{t('adjust.newStock')}:</span>
                 <span className="text-xl font-bold text-blue-900">{getNewQuantity()}</span>
               </div>
             </div>
@@ -278,14 +284,14 @@ export function AdjustStockModal({
             disabled={isLoading}
             className="flex-1"
           >
-            Cancelar
+            {tCommon('cancel')}
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={isLoading || quantity <= 0}
             className="flex-1"
           >
-            {isLoading ? 'Procesando...' : 'Confirmar Ajuste'}
+            {isLoading ? tSales('processing') : t('adjust.confirmAdjust')}
           </Button>
         </div>
       </div>
