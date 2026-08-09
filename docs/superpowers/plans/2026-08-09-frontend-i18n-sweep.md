@@ -50,6 +50,11 @@ Create `scripts/smoke/i18n-lint.cjs`:
 // partially-translated file passes. Catching those needs per-string analysis;
 // this check is deliberately the cheap version that cannot produce false alarms
 // on translated files.
+//
+// Known limitation: the text-between-tags pattern excludes '\n', so JSX text
+// wrapped across multiple lines (e.g. by Prettier on a long string) silently
+// passes even when not allowlisted. Normalize whitespace before matching if
+// that starts producing false negatives.
 const fs = require('fs');
 const path = require('path');
 
@@ -484,7 +489,7 @@ git commit -m "i18n(front): translate the inventory module"
 ```bash
 node scripts/smoke/i18n-lint.cjs; echo "exit=$?"
 ```
-Expected: `exit=1`. `ProductCard.tsx` and `StockBadge.tsx` have no visible literals — they appear because of attribute strings, so read the FAIL lines rather than assuming.
+Expected: `exit=1`. `ProductFormFields.tsx` has no visible literal at all — it already takes `t` as a prop from `ProductForm` — so it may not produce a `FAIL` line; read the actual output rather than assuming all five fail identically.
 
 - [ ] **Step 3: Find which literals already have keys**
 

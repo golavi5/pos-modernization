@@ -38,14 +38,30 @@ for them. `app/(panel)` pages are the extreme case: 24 of 24 already exist.
 | dashboard | 1 | 1 | 0 | 1 |
 | **total** | **35** | **223** | **78** | **145** |
 
+"Files" counts each domain's own components only — a domain's `page.tsx` is
+tracked separately. Pages that carry visible literals sit in the **app
+pages** row (5 files — customers, notifications, reports, settings, users —
+24 literals, all 24 already keyed); `dashboard/page.tsx` and
+`inventory/page.tsx` carry none and are in the zero-literal list below
+instead. The implementation plan batches a domain's page together with its
+components into one reviewable task, so a task's file count is this table's
+row **+1** wherever that domain has a page in scope: reports (5+1=6, Task 2),
+customers (4+1=5, Task 3), inventory (4+1=5, Task 4), users (4+1=5, Task 7).
+`products` has no page in scope (its pages shipped in `SPEC-FRONT-001`); Task
+5's 5-file batch is this table's 4 plus `ProductFormFields.tsx`, which also
+carries no visible literal at all — see the list below.
+
 Counts cover text between JSX tags only. Strings in `placeholder`, `aria-label`
 and `title` are **also in scope** and are not in these numbers: including them
-adds five more files that have no visible literals at all —
-`components/theme/ThemeToggle.tsx`, `components/ui/slide-over.tsx`,
-`components/products/ProductCard.tsx`, `components/products/StockBadge.tsx`,
-`components/sales/CashPaymentSection.tsx` — for **40 files in total**, which is
-what the ratchet allowlist is seeded with. Per-file literal totals are likewise
-a floor.
+adds four more files that have no visible (text) literal but do carry an
+in-scope attribute string — `components/theme/ThemeToggle.tsx`,
+`components/ui/slide-over.tsx`, `app/(panel)/dashboard/page.tsx`,
+`app/(panel)/inventory/page.tsx`. A fifth file,
+`components/products/ProductFormFields.tsx`, carries no literal of either
+kind — it already takes `t` as a prop from `ProductForm` — but is seeded on
+the allowlist with its batch regardless. That's **40 files in total**, which
+is what the ratchet allowlist is seeded with. Per-file literal totals are
+likewise a floor.
 
 ## 3. Scope
 
