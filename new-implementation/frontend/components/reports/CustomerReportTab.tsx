@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ReportFilters } from './ReportFilters';
 import { useCustomerReport } from '@/hooks/useReports';
@@ -24,6 +25,9 @@ const SEGMENT_ICONS: Record<string, React.ReactNode> = {
 };
 
 export function CustomerReportTab() {
+  const t = useTranslations('reports');
+  const tCustomers = useTranslations('customers');
+  const tDashboard = useTranslations('dashboard');
   const [query, setQuery] = useState<ReportQuery>({ period: 'monthly', limit: 10 });
   const { data: report, isLoading } = useCustomerReport(query);
 
@@ -51,7 +55,7 @@ export function CustomerReportTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-secondary">Total Clientes</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">{tCustomers('totalCustomers')}</CardTitle>
             <Users className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
@@ -60,22 +64,22 @@ export function CustomerReportTab() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-secondary">Clientes Activos</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">{t('customerTab.activeCustomers')}</CardTitle>
             <Users className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{report.activeCustomers}</div>
-            <p className="text-xs text-tertiary mt-1">Últimos 30 días</p>
+            <p className="text-xs text-tertiary mt-1">{t('customerTab.last30Days')}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-secondary">Nuevos Clientes</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">{t('customerTab.newCustomers')}</CardTitle>
             <UserPlus className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{report.newCustomers}</div>
-            <p className="text-xs text-tertiary mt-1">En el período</p>
+            <p className="text-xs text-tertiary mt-1">{t('customerTab.inPeriod')}</p>
           </CardContent>
         </Card>
       </div>
@@ -83,8 +87,8 @@ export function CustomerReportTab() {
       {/* Segmentación */}
       <Card>
         <CardHeader>
-          <CardTitle>Segmentación de Clientes</CardTitle>
-          <CardDescription>Distribución por comportamiento de compra</CardDescription>
+          <CardTitle>{t('customerTab.segmentation')}</CardTitle>
+          <CardDescription>{t('customerTab.segmentationDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -94,12 +98,12 @@ export function CustomerReportTab() {
                   {SEGMENT_ICONS[seg.segment]}
                   <div>
                     <p className="font-semibold">{seg.segment}</p>
-                    <p className="text-sm">{seg.customerCount} clientes · {seg.percentage.toFixed(1)}%</p>
+                    <p className="text-sm">{t('customerTab.customersPct', { count: seg.customerCount, pct: seg.percentage.toFixed(1) })}</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-bold">{formatCOP(seg.totalRevenue)}</p>
-                  <p className="text-xs">{formatCOP(seg.averageSpent)} promedio</p>
+                  <p className="text-xs">{t('customerTab.avgSpent', { amount: formatCOP(seg.averageSpent) })}</p>
                 </div>
               </div>
             ))}
@@ -110,8 +114,8 @@ export function CustomerReportTab() {
       {/* Top Buyers */}
       <Card>
         <CardHeader>
-          <CardTitle>Mejores Clientes</CardTitle>
-          <CardDescription>Clientes con mayor gasto en el período</CardDescription>
+          <CardTitle>{t('customerTab.topBuyers')}</CardTitle>
+          <CardDescription>{t('customerTab.topBuyersDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -119,12 +123,12 @@ export function CustomerReportTab() {
               <thead>
                 <tr className="border-b text-tertiary text-xs uppercase">
                   <th className="text-left py-3 px-4">#</th>
-                  <th className="text-left py-3 px-4">Cliente</th>
-                  <th className="text-left py-3 px-4">Contacto</th>
-                  <th className="text-right py-3 px-4">Compras</th>
-                  <th className="text-right py-3 px-4">Total Gastado</th>
-                  <th className="text-right py-3 px-4">Ticket Prom.</th>
-                  <th className="text-right py-3 px-4">Puntos</th>
+                  <th className="text-left py-3 px-4">{tDashboard('customer')}</th>
+                  <th className="text-left py-3 px-4">{t('customerTab.contact')}</th>
+                  <th className="text-right py-3 px-4">{t('customerTab.purchases')}</th>
+                  <th className="text-right py-3 px-4">{t('customerTab.totalSpent')}</th>
+                  <th className="text-right py-3 px-4">{t('avgTicket')}</th>
+                  <th className="text-right py-3 px-4">{t('customerTab.points')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -145,7 +149,7 @@ export function CustomerReportTab() {
                     <td className="py-3 px-4 text-right">{formatCOP(customer.averageTicket)}</td>
                     <td className="py-3 px-4 text-right">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-secondary">
-                        {customer.loyaltyPoints} pts
+                        {t('customerTab.pts', { count: customer.loyaltyPoints })}
                       </span>
                     </td>
                   </tr>

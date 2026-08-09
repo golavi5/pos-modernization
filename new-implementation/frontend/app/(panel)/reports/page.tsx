@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { BarChart3, Package, Users, Warehouse } from 'lucide-react';
 import { SalesReportTab } from '@/components/reports/SalesReportTab';
 import { ProductReportTab } from '@/components/reports/ProductReportTab';
@@ -9,22 +10,23 @@ import { InventoryReportTab } from '@/components/reports/InventoryReportTab';
 
 type TabId = 'sales' | 'products' | 'customers' | 'inventory';
 
-const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'sales', label: 'Ventas', icon: <BarChart3 className="h-4 w-4" /> },
-  { id: 'products', label: 'Productos', icon: <Package className="h-4 w-4" /> },
-  { id: 'customers', label: 'Clientes', icon: <Users className="h-4 w-4" /> },
-  { id: 'inventory', label: 'Inventario', icon: <Warehouse className="h-4 w-4" /> },
+const TABS: { id: TabId; icon: React.ReactNode }[] = [
+  { id: 'sales', icon: <BarChart3 className="h-4 w-4" /> },
+  { id: 'products', icon: <Package className="h-4 w-4" /> },
+  { id: 'customers', icon: <Users className="h-4 w-4" /> },
+  { id: 'inventory', icon: <Warehouse className="h-4 w-4" /> },
 ];
 
 export default function ReportsPage() {
+  const t = useTranslations('reports');
   const [activeTab, setActiveTab] = useState<TabId>('sales');
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Reportes y Analítica</h1>
-        <p className="text-secondary mt-1">Visualiza métricas, tendencias y análisis de tu negocio</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+        <p className="text-secondary mt-1">{t('description')}</p>
       </div>
 
       {/* Tab Navigation */}
@@ -41,7 +43,7 @@ export default function ReportsPage() {
               }`}
             >
               {tab.icon}
-              {tab.label}
+              {t(tab.id)}
             </button>
           ))}
         </nav>
