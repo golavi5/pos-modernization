@@ -18,6 +18,8 @@
 - **Frontend only.** No backend change in this plan.
 - **`npm run lint` cannot run** — `next lint` drops into interactive ESLint setup because no config exists (SPEC-CUT-001 S-01). **`npm run build` is the gate**; it typechecks.
 - **There is no unit-test runner.** Pure logic is verified by the compiled smoke pattern in Task 3; UI behaviour by Playwright specs that **cannot execute without a running stack** (backend + DB + seeded admin). Write them; run them when a stack exists.
+- **Playwright against the compose stack needs `BASE_URL=http://localhost:3001`.** The compose backend owns port 3000, and `playwright.config.ts` sets `webServer.url: http://localhost:3000` with `reuseExistingServer` — without the override, Playwright sees the NestJS backend answering on 3000, "reuses" it, and runs every spec against the wrong server. Prefix every Playwright command in this plan with `BASE_URL=http://localhost:3001` when the stack is the compose one.
+- **Smoke scripts are `.cjs`, not `.mjs`.** They use `require`/`__dirname`, and Node parses `.mjs` as ESM where neither exists.
 - All commands below run from `new-implementation/frontend`.
 
 ---
@@ -28,7 +30,7 @@ Smallest shippable slice: a keyboard user can read nav labels. No state, no new 
 
 **Files:**
 - Modify: `components/layout/DashboardLayout.tsx:13`
-- Modify: `components/layout/Sidebar.tsx:42`
+- Modify: `components/layout/Sidebar.tsx:42,110` (both `opacity-0` label spans — nav item and user name)
 - Test: `tests/e2e/sidebar-reachability.spec.ts` (create)
 
 **Interfaces:**
@@ -64,7 +66,7 @@ test.describe('Sidebar reachability', () => {
 Run: `npx playwright test tests/e2e/sidebar-reachability.spec.ts --reporter=line`
 Expected: FAIL — the label stays at `opacity: 0` because only `group-hover` reveals it.
 
-If no stack is running, the run errors at `login()` instead. That is not a pass — bring a stack up (`docker compose up -d` from `new-implementation`) or record the step as blocked and verify by the Step 4 fallback.
+If no stack is running, the run errors at `login()` instead. That is not a pass — bring a stack up (`docker compose up -d` from `new-implementation`, then run Playwright with `BASE_URL=http://localhost:3001` per Global Constraints) or record the step as blocked and verify by the Step 4 fallback.
 
 - [ ] **Step 3: Add the focus-within variants**
 
@@ -82,6 +84,14 @@ If no stack is running, the run errors at `login()` instead. That is not a pass 
       </span>
 ```
 
+`Sidebar.tsx:110` — the user-name span in the avatar button has the same `opacity-0 group-hover:opacity-100` pattern and needs the same variant, or the rail expands under keyboard focus with the user's name still invisible:
+
+```tsx
+              <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 truncate">
+                {user?.name || 'Usuario'}
+              </span>
+```
+
 - [ ] **Step 4: Verify**
 
 Run: `npm run build`
@@ -91,7 +101,7 @@ Then re-run the Playwright spec if a stack is up. Fallback when it is not — as
 
 ```bash
 grep -c "focus-within:w-\[220px\]" components/layout/DashboardLayout.tsx   # expect 1
-grep -c "group-focus-within:opacity-100" components/layout/Sidebar.tsx     # expect 1
+grep -c "group-focus-within:opacity-100" components/layout/Sidebar.tsx     # expect 2 (nav label + user name)
 ```
 
 - [ ] **Step 5: Commit**
@@ -144,6 +154,10 @@ Append to `tests/e2e/sidebar-reachability.spec.ts`, inside the existing `describ
   test('unpinning hides the labels again', async ({ page }) => {
     await page.getByTestId('sidebar-pin').click();
     await page.getByTestId('sidebar-pin').click();
+    // The click leaves the pin button focused, and Task 1's focus-within
+    // variants alone would keep the labels visible — blur before asserting,
+    // or this test fails against a correct implementation.
+    await page.getByTestId('sidebar-pin').blur();
     await page.mouse.move(600, 400);
 
     await expect(page.getByRole('link', { name: 'Ventas' }).locator('span'))
@@ -236,12 +250,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
 In `Sidebar.tsx`, import `PanelLeftClose`, `PanelLeftOpen` from `lucide-react` and `useUIStore`.
 
-The label span must now reveal when pinned too. Tailwind cannot see JS state, so drive it from the `data-pinned` attribute set in Step 4 — add this variant alongside the existing two:
+Both label spans — the nav-item label and the user-name span from Task 1 — must now reveal when pinned too. Tailwind cannot see JS state, so drive it from the `data-pinned` attribute set in Step 4 — add this variant alongside the existing two, in both places:
 
 ```tsx
       <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-data-[pinned=true]:opacity-100 transition-opacity duration-150">
         {label}
       </span>
+```
+
+```tsx
+              <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-data-[pinned=true]:opacity-100 transition-opacity duration-150 truncate">
+                {user?.name || 'Usuario'}
+              </span>
 ```
 
 Add the pin control inside the logo row (`Sidebar.tsx:72-76`), so it sits in the 52px header strip:
@@ -285,7 +305,7 @@ Re-run the Playwright spec if a stack is up. Fallback:
 
 ```bash
 grep -c "aria-pressed" components/layout/Sidebar.tsx                       # expect 1
-grep -c "group-data-\[pinned=true\]:opacity-100" components/layout/Sidebar.tsx  # expect 2
+grep -c "group-data-\[pinned=true\]:opacity-100" components/layout/Sidebar.tsx  # expect 3 (nav label + user name + pin button)
 ```
 
 - [ ] **Step 7: Commit**
@@ -304,7 +324,10 @@ git commit -m "feat(front): add a persisted sidebar pin for touch and mouse user
 **Files:**
 - Modify: `lib/navigation/nav-items.ts`
 - Modify: `components/layout/Header.tsx:12-29` (delete `ROUTE_LABELS` and `getLabel`)
+- Modify: `components/language/LanguageSwitcher.tsx` (add `data-testid="language-switcher"` to the trigger — it has none today)
+- Modify: `.gitignore` (add `.smoke-out/`)
 - Test: compiled smoke run (below) — this is pure logic, so it gets a real executable test
+- Test: `tests/e2e/sidebar-reachability.spec.ts` (append the locale-switch spec in Step 6)
 
 **Interfaces:**
 - Consumes: `NAV_ITEMS`, `SETTINGS_NAV_ITEM` from `@/lib/navigation/nav-items`.
@@ -312,11 +335,13 @@ git commit -m "feat(front): add a persisted sidebar pin for touch and mouse user
 
 - [ ] **Step 1: Write the failing test**
 
-Create `scripts/smoke/nav-label-key.mjs` at the repo root of the frontend app:
+Create `scripts/smoke/nav-label-key.cjs` at the repo root of the frontend app:
 
 ```javascript
 // Compiled-smoke harness: the frontend has no unit runner, so pure logic is
 // compiled with tsc and exercised here. See Step 2 for the compile command.
+// `.cjs` on purpose: this file uses require(), which does not exist in the
+// ESM context Node gives `.mjs` files.
 const Module = require('module');
 const OUT = process.env.SMOKE_OUT;
 const orig = Module._resolveFilename;
@@ -354,20 +379,23 @@ cat > /tmp/navsmoke/tsconfig.json <<'EOF'
   "compilerOptions": {
     "noEmit": false, "module": "commonjs", "target": "es2019", "jsx": "react",
     "moduleResolution": "node",
-    "outDir": "/tmp/navsmoke/out",
+    "outDir": "<ABS_PATH_TO>/new-implementation/frontend/.smoke-out",
     "baseUrl": "<ABS_PATH_TO>/new-implementation/frontend",
     "paths": { "@/*": ["./*"] }
   },
   "include": ["<ABS_PATH_TO>/new-implementation/frontend/lib/navigation/nav-items.ts"]
 }
 EOF
+grep -qx '.smoke-out/' .gitignore || echo '.smoke-out/' >> .gitignore
 npx tsc -p /tmp/navsmoke/tsconfig.json
-SMOKE_OUT=/tmp/navsmoke/out node scripts/smoke/nav-label-key.mjs
+SMOKE_OUT="$PWD/.smoke-out" node scripts/smoke/nav-label-key.cjs
 ```
 
 Expected: FAIL — `findNavLabelKey is not a function`.
 
-Note: `moduleResolution: "node"` is set explicitly because the app's tsconfig uses `"bundler"`, which `tsc` rejects alongside `module: commonjs`.
+Two deliberate choices here:
+- `moduleResolution: "node"` is set explicitly because the app's tsconfig uses `"bundler"`, which `tsc` rejects alongside `module: commonjs`.
+- `outDir` lives **inside the frontend tree** (gitignored), not `/tmp`: `NAV_ITEMS` imports icon *values* from `lucide-react`, so the compiled module `require`s it at runtime, and Node resolves `node_modules` upward from the module's own path — output under `/tmp` dies with `MODULE_NOT_FOUND`. `SMOKE_OUT` must stay absolute (`$PWD/...`) because the harness passes it to `require()`, which resolves relative paths against the script's directory, not the cwd.
 
 - [ ] **Step 3: Implement the lookup**
 
@@ -396,7 +424,7 @@ export function findNavLabelKey(pathname: string): string | undefined {
 
 ```bash
 npx tsc -p /tmp/navsmoke/tsconfig.json
-SMOKE_OUT=/tmp/navsmoke/out node scripts/smoke/nav-label-key.mjs
+SMOKE_OUT="$PWD/.smoke-out" node scripts/smoke/nav-label-key.cjs
 ```
 
 Expected: 6 PASS, exit 0.
@@ -446,14 +474,18 @@ covers both this task and the sidebar. Append to
   });
 ```
 
-If `LanguageSwitcher` exposes no `data-testid`, add one rather than selecting by
-visible text — the label itself is translated, so a text selector would break in
-exactly the case this test exists to check.
+`LanguageSwitcher` exposes no `data-testid` today (verified) — add
+`data-testid="language-switcher"` to its trigger `Button` rather than selecting
+by visible text; the label itself is translated, so a text selector would break
+in exactly the case this test exists to check. Its menu items render
+`Español` / `English`, so `{ name: /english/i }` matches as written.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add lib/navigation/nav-items.ts components/layout/Header.tsx scripts/smoke/nav-label-key.mjs
+git add lib/navigation/nav-items.ts components/layout/Header.tsx \
+  components/language/LanguageSwitcher.tsx scripts/smoke/nav-label-key.cjs \
+  tests/e2e/sidebar-reachability.spec.ts .gitignore
 git commit -m "refactor(front): breadcrumb reads the shared nav table, drops hardcoded labels"
 ```
 
@@ -465,7 +497,7 @@ git commit -m "refactor(front): breadcrumb reads the shared nav table, drops har
 - Modify: `app/(panel)/products/page.tsx`
 - Modify: `app/(panel)/products/new/page.tsx`
 - Modify: `messages/es.json`, `messages/en.json`
-- Create: `scripts/smoke/i18n-parity.mjs`
+- Create: `scripts/smoke/i18n-parity.cjs`
 
 `app/(panel)/products/categories/page.tsx` is out of scope: it is an 8-line
 wrapper around `<CategoryManager />`, and `components/products/CategoryManager.tsx`
@@ -479,11 +511,12 @@ change here.
 
 - [ ] **Step 1: Write the failing parity test**
 
-Create `scripts/smoke/i18n-parity.mjs`:
+Create `scripts/smoke/i18n-parity.cjs`:
 
 ```javascript
 // Every key in one catalog must exist in the other. SPEC-FRONT-002 will add
 // ~20 more translated files; this keeps them from drifting.
+// `.cjs` on purpose: uses require()/__dirname, which don't exist in `.mjs`.
 const fs = require('fs');
 const path = require('path');
 
@@ -509,7 +542,7 @@ process.exit(missingInEn.length || missingInEs.length ? 1 : 0);
 
 - [ ] **Step 2: Run it — it should PASS before you start**
 
-Run: `node scripts/smoke/i18n-parity.mjs`
+Run: `node scripts/smoke/i18n-parity.cjs`
 Expected: `PASS  <n> keys in sync`. This is the baseline; it must still pass at Step 5.
 
 - [ ] **Step 3: Add the keys**
@@ -556,7 +589,7 @@ Watch for strings inside `placeholder`, `aria-label`, `title` and toast calls, n
 - [ ] **Step 5: Verify**
 
 ```bash
-node scripts/smoke/i18n-parity.mjs      # expect PASS, key count higher than Step 2
+node scripts/smoke/i18n-parity.cjs      # expect PASS, key count higher than Step 2
 npm run build                            # expect ✓ Compiled successfully
 
 # Accented Spanish between JSX tags.
@@ -577,7 +610,7 @@ All three greps should return no matches. Accented or listed Spanish text remain
 - [ ] **Step 6: Commit**
 
 ```bash
-git add "app/(panel)/products" messages scripts/smoke/i18n-parity.mjs
+git add "app/(panel)/products" messages scripts/smoke/i18n-parity.cjs
 git commit -m "i18n(front): translate the product list and new pages"
 ```
 
