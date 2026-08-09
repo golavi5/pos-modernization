@@ -49,3 +49,20 @@ export const SETTINGS_NAV_ITEM: NavItem = {
   icon: Settings,
   labelKey: 'settings',
 };
+
+/**
+ * Longest-prefix match from a pathname to its `sidebar` i18n key, so the header
+ * breadcrumb names a route exactly as the sidebar and palette do.
+ *
+ * Matches the route itself or a path below it (`/products/123/edit` →
+ * `products`) but never a sibling that merely shares a prefix
+ * (`/salesperson` ↛ `/sales`). Returns `undefined` for unknown routes; the
+ * breadcrumb then renders `POS` alone, as it does today.
+ */
+export function findNavLabelKey(pathname: string): string | undefined {
+  const all = [...NAV_ITEMS, SETTINGS_NAV_ITEM];
+  const match = all
+    .filter((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  return match?.labelKey;
+}

@@ -49,6 +49,7 @@ export function LanguageSwitcher() {
           size="sm"
           title={t('changeLanguage')}
           disabled={isPending}
+          data-testid="language-switcher"
         >
           <span className="text-base">{currentLanguage.flag}</span>
         </Button>

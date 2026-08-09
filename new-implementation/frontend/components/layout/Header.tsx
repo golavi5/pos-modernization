@@ -8,30 +8,14 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { LanguageSwitcher } from '@/components/language/LanguageSwitcher';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { CommandPalette } from '@/components/layout/CommandPalette';
-
-const ROUTE_LABELS: Record<string, string> = {
-  '/dashboard':     'Dashboard',
-  '/sales':         'Ventas',
-  '/products':      'Productos',
-  '/inventory':     'Inventario',
-  '/customers':     'Clientes',
-  '/users':         'Usuarios',
-  '/reports':       'Reportes',
-  '/notifications': 'Notificaciones',
-  '/settings':      'Configuración',
-};
-
-function getLabel(pathname: string): string {
-  const key = Object.keys(ROUTE_LABELS).find(
-    (k) => pathname === k || pathname.startsWith(k + '/')
-  );
-  return key ? ROUTE_LABELS[key] : '';
-}
+import { findNavLabelKey } from '@/lib/navigation/nav-items';
 
 export function Header() {
   const pathname = usePathname();
-  const label = getLabel(pathname);
+  const tNav = useTranslations('sidebar');
   const t = useTranslations('commandPalette');
+  const labelKey = findNavLabelKey(pathname);
+  const label = labelKey ? tNav(labelKey) : '';
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   // The badge promises ⌘K (Ctrl+K off macOS), so the shortcut is bound here —
