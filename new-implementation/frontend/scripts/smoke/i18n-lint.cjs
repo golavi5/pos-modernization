@@ -16,16 +16,11 @@ const ROOT = path.join(__dirname, '..', '..');
 const DIRS = ['app', 'components'];
 
 const ALLOWLIST = new Set([
-  'app/(panel)/customers/page.tsx',
   'app/(panel)/dashboard/page.tsx',
   'app/(panel)/inventory/page.tsx',
   'app/(panel)/notifications/page.tsx',
   'app/(panel)/settings/page.tsx',
   'app/(panel)/users/page.tsx',
-  'components/customers/CustomerFilters.tsx',
-  'components/customers/CustomerForm.tsx',
-  'components/customers/CustomersTable.tsx',
-  'components/customers/LoyaltyPointsModal.tsx',
   'components/dashboard/QuickActions.tsx',
   'components/inventory/AdjustStockModal.tsx',
   'components/inventory/InventoryFilters.tsx',

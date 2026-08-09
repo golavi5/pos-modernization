@@ -263,7 +263,50 @@
     "additionalInfo": "Información adicional",
     "loyaltyPoints": "Puntos de lealtad:",
     "totalPurchases": "Total compras:",
-    "pointsNote": "* Los puntos de lealtad se gestionan desde el botón de acción en la tabla"
+    "pointsNote": "* Los puntos de lealtad se gestionan desde el botón de acción en la tabla",
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre, email o teléfono...",
+      "minPoints": "Puntos mínimos",
+      "registrationDate": "Fecha de registro",
+      "totalPurchases": "Total compras",
+      "loyaltyPoints": "Puntos de lealtad"
+    },
+    "table": {
+      "empty": "No se encontraron clientes",
+      "emptyHint": "Intenta ajustar los filtros o crear un nuevo cliente",
+      "lastPurchase": "Última compra",
+      "actions": "Acciones",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "viewDetails": "Ver detalles",
+      "managePoints": "Gestionar puntos"
+    },
+    "form": {
+      "create": "Crear cliente"
+    },
+    "loyalty": {
+      "title": "Gestionar Puntos",
+      "currentBalance": "Balance actual",
+      "pointsCount": "{count} puntos",
+      "operation": "Operación",
+      "add": "Agregar",
+      "addDesc": "Sumar puntos al balance actual",
+      "subtract": "Restar",
+      "subtractDesc": "Restar puntos del balance actual",
+      "set": "Establecer",
+      "setDesc": "Definir un nuevo balance exacto",
+      "newBalance": "Nuevo balance",
+      "pointsAmount": "Cantidad de puntos",
+      "addLabel": "Sumar:",
+      "subtractLabel": "Restar:",
+      "invalidAmount": "Ingresa una cantidad válida de puntos",
+      "insufficientPoints": "No hay suficientes puntos para restar"
+    },
+    "page": {
+      "searchPlaceholder": "Buscar clientes...",
+      "newCustomer": "Nuevo cliente",
+      "editCustomer": "Editar cliente"
+    }
   },
   "inventory": {
     "title": "Inventario",

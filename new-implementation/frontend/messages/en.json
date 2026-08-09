@@ -263,7 +263,50 @@
     "additionalInfo": "Additional information",
     "loyaltyPoints": "Loyalty points:",
     "totalPurchases": "Total purchases:",
-    "pointsNote": "* Loyalty points are managed from the action button in the table"
+    "pointsNote": "* Loyalty points are managed from the action button in the table",
+    "filters": {
+      "searchPlaceholder": "Search by name, email or phone...",
+      "minPoints": "Minimum points",
+      "registrationDate": "Registration date",
+      "totalPurchases": "Total purchases",
+      "loyaltyPoints": "Loyalty points"
+    },
+    "table": {
+      "empty": "No customers found",
+      "emptyHint": "Try adjusting the filters or create a new customer",
+      "lastPurchase": "Last purchase",
+      "actions": "Actions",
+      "active": "Active",
+      "inactive": "Inactive",
+      "viewDetails": "View details",
+      "managePoints": "Manage points"
+    },
+    "form": {
+      "create": "Create customer"
+    },
+    "loyalty": {
+      "title": "Manage Points",
+      "currentBalance": "Current balance",
+      "pointsCount": "{count} points",
+      "operation": "Operation",
+      "add": "Add",
+      "addDesc": "Add points to the current balance",
+      "subtract": "Subtract",
+      "subtractDesc": "Subtract points from the current balance",
+      "set": "Set",
+      "setDesc": "Define an exact new balance",
+      "newBalance": "New balance",
+      "pointsAmount": "Points amount",
+      "addLabel": "Add:",
+      "subtractLabel": "Subtract:",
+      "invalidAmount": "Enter a valid amount of points",
+      "insufficientPoints": "Not enough points to subtract"
+    },
+    "page": {
+      "searchPlaceholder": "Search customers...",
+      "newCustomer": "New customer",
+      "editCustomer": "Edit customer"
+    }
   },
   "inventory": {
     "title": "Inventory",
