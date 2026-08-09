@@ -53,7 +53,13 @@
     "register": "Register",
     "alreadyHaveAccount": "Already have an account?",
     "logout": "Logout",
-    "settings": "Settings"
+    "settings": "Settings",
+    "layout": {
+      "brand": "POS",
+      "title": "POS Modernization",
+      "subtitle": "Modern Point of Sale System",
+      "copyright": "© 2024 POS System. All rights reserved."
+    }
   },
   "sidebar": {
     "posSystem": "POS System",

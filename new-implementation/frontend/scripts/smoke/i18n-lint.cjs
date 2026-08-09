@@ -15,11 +15,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const DIRS = ['app', 'components'];
 
-const ALLOWLIST = new Set([
-  'components/layout/AuthLayout.tsx',
-  'components/theme/ThemeToggle.tsx',
-  'components/ui/slide-over.tsx',
-]);
+const ALLOWLIST = new Set([]);
 
 const HAS_LETTERS = /[A-Za-zÁÉÍÓÚÑáéíóúñ]{3}/;
 

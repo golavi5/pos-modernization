@@ -53,7 +53,13 @@
     "register": "Registrarse",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
     "logout": "Cerrar sesión",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "layout": {
+      "brand": "POS",
+      "title": "POS Modernization",
+      "subtitle": "Sistema de Punto de Venta moderno",
+      "copyright": "© 2024 POS System. Todos los derechos reservados."
+    }
   },
   "sidebar": {
     "posSystem": "Sistema POS",
