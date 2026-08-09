@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { LogOut } from 'lucide-react';
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
+import { useUIStore } from '@/stores/uiStore';
 import { canAccessRoute } from '@/lib/auth/roles';
 import { NAV_ITEMS, SETTINGS_NAV_ITEM } from '@/lib/navigation/nav-items';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -39,7 +40,7 @@ function NavItem({
       )}
     >
       <Icon size={18} className="shrink-0" />
-      <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150">
+      <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-data-[pinned=true]:opacity-100 transition-opacity duration-150">
         {label}
       </span>
     </Link>
@@ -51,6 +52,8 @@ export function Sidebar() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const t = useTranslations('sidebar');
+  const sidebarPinned = useUIStore((s) => s.sidebarPinned);
+  const toggleSidebarPinned = useUIStore((s) => s.toggleSidebarPinned);
 
   const visibleNav = NAV_ITEMS.filter((item) =>
     canAccessRoute(item.href, user?.roles),
@@ -68,11 +71,21 @@ export function Sidebar() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="flex items-center justify-center h-[52px] border-b border-border shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+      {/* Logo + pin */}
+      <div className="flex items-center gap-2 h-[52px] px-2.5 border-b border-border shrink-0">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
           P
         </div>
+        <button
+          type="button"
+          onClick={toggleSidebarPinned}
+          aria-pressed={sidebarPinned}
+          aria-label={sidebarPinned ? t('collapseSidebar') : t('expandSidebar')}
+          data-testid="sidebar-pin"
+          className="ml-auto rounded-md p-1 text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-data-[pinned=true]:opacity-100 transition-opacity hover:bg-accent hover:text-foreground"
+        >
+          {sidebarPinned ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
+        </button>
       </div>
 
       {/* Nav */}
@@ -107,7 +120,7 @@ export function Sidebar() {
                   {getInitials(user?.name || 'U')}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 truncate">
+              <span className="text-sm font-medium opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-data-[pinned=true]:opacity-100 transition-opacity duration-150 truncate">
                 {user?.name || 'Usuario'}
               </span>
             </button>
