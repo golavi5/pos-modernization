@@ -26,10 +26,10 @@ needed)", is why: it specified the pointer case and stopped. Two message-catalog
 keys, `expandSidebar` and `collapseSidebar`, exist in both `es.json` and
 `en.json` and are referenced nowhere — a toggle was anticipated and never built.
 
-Separately, the route→label mapping now exists three times: hardcoded Spanish in
-`Header.ROUTE_LABELS`, hardcoded Spanish again in `Sidebar.NAV_ITEMS`, and a
-third in `lib/navigation/command-items.ts` from the command-palette work — that
-one already keyed to the `sidebar` i18n namespace and RBAC-filtered.
+Separately, the route→label mapping was duplicated three times. #35's review
+pass consolidated two of them into `lib/navigation/nav-items.ts`, which the
+sidebar and the palette now share, translating through the `sidebar` namespace.
+`Header.ROUTE_LABELS` is the last hardcoded Spanish copy.
 
 ## 2. Goals / non-goals
 
@@ -49,10 +49,10 @@ the 2026-05-15 redesign is shipped.
 2. **Persist the pin in a new `stores/uiStore.ts`,** Zustand + `persist`,
    mirroring `authStore`. Not in `authStore`: a UI preference must survive
    logout, and must not be cleared by an auth reset.
-3. **`COMMAND_ROUTES` becomes the single route table.** It already carries
-   `{href, labelKey}` and is already the RBAC-filtered source for the palette.
-   Header and Sidebar adopt it; their hardcoded copies are deleted. This is why
-   the spec depends on #35.
+3. **`NAV_ITEMS` is the single route table.** #35's review pass (`c11e6512`)
+   extracted `lib/navigation/nav-items.ts` and moved the sidebar and the palette
+   onto it. Only the header breadcrumb still hand-copies labels; it adopts the
+   same table and `Header.ROUTE_LABELS` is deleted.
 4. **Labels resolve at render through `useTranslations('sidebar')`,** not at
    table-definition time, so a locale switch re-renders without a reload.
 
@@ -109,8 +109,9 @@ ships an ESLint config; `npm run build` typechecks and is the gate.
 
 ## 8. Risks
 
-1. **Depends on #35.** If that PR changes shape, the shared-table consolidation
-   changes with it. Nothing else in this design moves.
+1. ~~Depends on #35.~~ Resolved: #35 merged 2026-08-09 and its review pass
+   already landed the shared table, shrinking this design's i18n work to the
+   header breadcrumb plus three product pages.
 2. **A pinned sidebar costs 168px of width** on the sales workspace, which the
    redesign optimised for screen real estate. Mitigated by defaulting to
    unpinned — the user opts in, and the setting is theirs.

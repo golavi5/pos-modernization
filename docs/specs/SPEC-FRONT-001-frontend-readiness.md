@@ -1,6 +1,6 @@
 # M3 — Frontend Readiness: shell reachability, i18n, dead types
 
-**Status**: DRAFT — not started. Depends on #35 (command palette) merging first, which introduces the shared route table this spec consolidates onto.
+**Status**: DRAFT — not started. #35 merged 2026-08-09 and its review pass (`c11e6512`) landed the shared `NAV_ITEMS` table plus sidebar/palette i18n, so part of §3.2 is already closed; the header breadcrumb is the remaining copy.
 
 One Plane issue (`POS-FRONT-001`) tracking the frontend module's known open work.
 
@@ -28,10 +28,11 @@ shell. It is deliberately not a charter for the whole frontend.
   is a sighted-keyboard and touch gap.
 - **`expandSidebar` / `collapseSidebar` exist in both message catalogs and are
   referenced nowhere in code.** A toggle was planned and never built.
-- **The route→label mapping is duplicated.** `Header.ROUTE_LABELS` and
-  `Sidebar.NAV_ITEMS` are two hardcoded Spanish copies of the same table, and
-  #35 adds a third in `lib/navigation/command-items.ts` — that one already keyed
-  to the `sidebar` i18n namespace.
+- **The route→label mapping was duplicated three times; one copy remains.**
+  The review pass on #35 (`c11e6512`) extracted `lib/navigation/nav-items.ts` as
+  the single source of truth and moved both the sidebar and the palette onto it,
+  with labels resolved through `useTranslations('sidebar')`. **`Header.ROUTE_LABELS`
+  is the last hardcoded Spanish copy** and is what remains to fold in.
 - **S-09 is wrong about both the size and the files.** SPEC-CUT-001 §4 describes
   it as the product detail/edit and category pages. In fact
   `products/[id]/page.tsx` and `products/[id]/edit/page.tsx` **already use**
@@ -49,10 +50,11 @@ shell. It is deliberately not a charter for the whole frontend.
    persisted to `localStorage`. Labels reveal on hover ∪ focus-within ∪ pinned.
    Hover behaviour is unchanged; the pin uses the two catalog keys that already
    exist.
-2. **App-shell i18n** — one shared route table feeding Header, Sidebar and the
-   palette, with labels resolved through `useTranslations('sidebar')`. Removes
-   both hardcoded copies. Plus the three untranslated product pages named in §2:
-   `products/page.tsx`, `products/categories/page.tsx`, `products/new/page.tsx`.
+2. **App-shell i18n** — move the header breadcrumb onto the shared
+   `NAV_ITEMS` table and delete `Header.ROUTE_LABELS`, the last hardcoded copy
+   (the sidebar and palette were consolidated by #35's review pass). Plus the
+   three untranslated product pages named in §2: `products/page.tsx`,
+   `products/categories/page.tsx`, `products/new/page.tsx`.
 3. **S-10** — delete the dead token fields from `types/auth.ts`.
 
 ## 4. Acceptance
@@ -66,7 +68,8 @@ shell. It is deliberately not a charter for the whole frontend.
 - [ ] The pin control is a real button with `aria-pressed`, labelled from the
       existing `expandSidebar` / `collapseSidebar` keys.
 - [ ] Exactly one route→label table remains in the codebase; Header, Sidebar and
-      the palette all read from it, and no route label is a hardcoded string.
+      the palette all read from `lib/navigation/nav-items.ts`, and no route label
+      is a hardcoded string.
 - [ ] Switching locale changes the sidebar nav labels and the header breadcrumb.
 - [ ] The three product pages in §3.2 render no hardcoded Spanish; any new keys
       exist in both `es.json` and `en.json`.
@@ -81,14 +84,14 @@ shell. It is deliberately not a charter for the whole frontend.
   navigation-only by design.
 - Any backend change. This spec is frontend-only.
 - Restyling. The 2026-05-15 redesign's three pillars — split-pane sales view,
-  collapsed icon sidebar, ⌘K search — are **all shipped** once #35 merges. The
-  sidebar was mis-audited as missing because the width lives on the parent
-  `<aside>` in `DashboardLayout.tsx`, not in `Sidebar.tsx`.
+  collapsed icon sidebar, ⌘K search — are **all shipped** as of #35. The sidebar
+  was mis-audited as missing because the width lives on the parent `<aside>` in
+  `DashboardLayout.tsx`, not in `Sidebar.tsx`.
 
 ## 6. References
 
 - `docs/superpowers/specs/2026-05-15-frontend-redesign-design.md` — the original
   redesign; §"App Shell & Navigation" specifies the 52px→220px behaviour.
 - `SPEC-CUT-001` §4 — S-09 (i18n) and S-10 (dead token fields).
-- PR #35 — the command palette and `lib/navigation/command-items.ts`.
+- PR #35 — the command palette; its review pass added `lib/navigation/nav-items.ts`.
 - PR #33 — untracked the redesign design doc, removing the regenerating issue.
