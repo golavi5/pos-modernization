@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,8 @@ import {
 import type { StockLevel, MovementQueryParams } from '@/types/inventory';
 
 export default function InventoryPage() {
+  const t = useTranslations('inventory');
+  const tCommon = useTranslations('common');
   const [search, setSearch] = useState('');
   const [movementParams, setMovementParams] = useState<MovementQueryParams>({
     page: 1,
@@ -57,7 +60,7 @@ export default function InventoryPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar producto o SKU..."
+            placeholder={t('page.searchPlaceholder')}
             className="pl-8 h-9 text-sm"
           />
         </div>
@@ -73,7 +76,7 @@ export default function InventoryPage() {
                 : 'hover:bg-muted'
             }`}
           >
-            Stock
+            {tCommon('stock')}
           </button>
           <button
             onClick={() => setActiveTab('movements')}
@@ -83,7 +86,7 @@ export default function InventoryPage() {
                 : 'hover:bg-muted'
             }`}
           >
-            Movimientos
+            {t('movements')}
             {movementsData && movementsData.total > 0 && (
               <Badge variant="default" className="text-xs px-1 py-0">
                 {movementsData.total}
@@ -111,9 +114,11 @@ export default function InventoryPage() {
             {movementsData && movementsData.total > 0 && (
               <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Mostrando {((movementsData.page - 1) * movementsData.pageSize) + 1}–
-                  {Math.min(movementsData.page * movementsData.pageSize, movementsData.total)}{' '}
-                  de {movementsData.total} movimientos
+                  {t('showingMovements', {
+                    from: ((movementsData.page - 1) * movementsData.pageSize) + 1,
+                    to: Math.min(movementsData.page * movementsData.pageSize, movementsData.total),
+                    total: movementsData.total,
+                  })}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -123,7 +128,7 @@ export default function InventoryPage() {
                     disabled={movementsData.page === 1}
                     className="px-3 py-1 border rounded text-sm hover:bg-muted disabled:opacity-50"
                   >
-                    Anterior
+                    {tCommon('previous')}
                   </button>
                   <button
                     onClick={() =>
@@ -134,7 +139,7 @@ export default function InventoryPage() {
                     }
                     className="px-3 py-1 border rounded text-sm hover:bg-muted disabled:opacity-50"
                   >
-                    Siguiente
+                    {tCommon('next')}
                   </button>
                 </div>
               </div>

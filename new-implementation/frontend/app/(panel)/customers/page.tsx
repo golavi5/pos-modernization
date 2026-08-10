@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,8 @@ import { useUpdateLoyaltyPoints, useDeleteCustomer } from '@/hooks/useCustomers'
 import type { Customer } from '@/types/customer';
 
 export default function CustomersPage() {
+  const t = useTranslations('customers');
+  const tCommon = useTranslations('common');
   const [search, setSearch] = useState('');
   const [slideOver, setSlideOver] = useState<'closed' | 'new' | 'edit'>('closed');
   const [editTarget, setEditTarget] = useState<Customer | null>(null);
@@ -26,9 +29,7 @@ export default function CustomersPage() {
 
   const handleDelete = async (customer: Customer) => {
     if (
-      window.confirm(
-        `¿Estás seguro de eliminar el cliente "${customer.name}"? Esta acción es irreversible.`
-      )
+      window.confirm(t('deleteConfirm', { name: customer.name }))
     ) {
       try {
         await deleteMutation.mutateAsync(customer.id);
@@ -63,13 +64,13 @@ export default function CustomersPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar clientes..."
+            placeholder={t('page.searchPlaceholder')}
             className="pl-8 h-9 text-sm"
           />
         </div>
         <div className="flex-1" />
         <Button onClick={openNew} size="sm" className="gap-1.5">
-          <Plus size={14} /> Nuevo cliente
+          <Plus size={14} /> {t('page.newCustomer')}
         </Button>
       </div>
 
@@ -87,11 +88,11 @@ export default function CustomersPage() {
       <SlideOver
         open={slideOver !== 'closed'}
         onClose={close}
-        title={slideOver === 'new' ? 'Nuevo cliente' : 'Editar cliente'}
+        title={slideOver === 'new' ? t('page.newCustomer') : t('page.editCustomer')}
         footer={
           <>
-            <Button variant="outline" onClick={close} className="flex-1">Cancelar</Button>
-            <Button form="customer-form" type="submit" className="flex-1">Guardar</Button>
+            <Button variant="outline" onClick={close} className="flex-1">{tCommon('cancel')}</Button>
+            <Button form="customer-form" type="submit" className="flex-1">{tCommon('save')}</Button>
           </>
         }
       >

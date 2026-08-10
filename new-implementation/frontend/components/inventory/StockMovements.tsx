@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowUpCircle, ArrowDownCircle, Edit3, TrendingUp, AlertCircle, RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import type { StockMovement } from '@/types/inventory';
 
@@ -10,40 +11,43 @@ interface StockMovementsProps {
 }
 
 export function StockMovements({ movements, isLoading }: StockMovementsProps) {
+  const t = useTranslations('inventory');
+  const tReports = useTranslations('reports');
+  const tCommon = useTranslations('common');
   const getMovementConfig = (type: StockMovement['movement_type']) => {
     const configs = {
       IN: {
-        label: 'Entrada',
+        label: t('movementTypes.IN'),
         icon: ArrowUpCircle,
         variant: 'success' as const,
         color: 'text-green-600',
       },
       OUT: {
-        label: 'Salida',
+        label: t('movementTypes.OUT'),
         icon: ArrowDownCircle,
         variant: 'destructive' as const,
         color: 'text-red-600',
       },
       ADJUST: {
-        label: 'Ajuste',
+        label: t('movementTypes.ADJUST'),
         icon: Edit3,
         variant: 'default' as const,
         color: 'text-blue-600',
       },
       TRANSFER: {
-        label: 'Transferencia',
+        label: t('movementTypes.TRANSFER'),
         icon: TrendingUp,
         variant: 'secondary' as const,
         color: 'text-purple-600',
       },
       DAMAGE: {
-        label: 'Daño',
+        label: t('movementTypes.DAMAGE'),
         icon: AlertCircle,
         variant: 'warning' as const,
         color: 'text-orange-600',
       },
       RETURN: {
-        label: 'Devolución',
+        label: t('movementTypes.RETURN'),
         icon: RotateCcw,
         variant: 'secondary' as const,
         color: 'text-indigo-600',
@@ -77,9 +81,9 @@ export function StockMovements({ movements, isLoading }: StockMovementsProps) {
     return (
       <div className="text-center py-12">
         <TrendingUp className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-        <p className="text-tertiary text-lg">No hay movimientos registrados</p>
+        <p className="text-tertiary text-lg">{t('movementsList.empty')}</p>
         <p className="text-quaternary text-sm mt-2">
-          Los movimientos de stock aparecerán aquí
+          {t('movementsList.emptyHint')}
         </p>
       </div>
     );
@@ -105,19 +109,19 @@ export function StockMovements({ movements, isLoading }: StockMovementsProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h4 className="font-medium ">
-                  {movement.product_name || 'Producto'}
+                  {movement.product_name || tCommon('product')}
                 </h4>
                 <Badge variant={config.variant}>{config.label}</Badge>
               </div>
               <div className="text-sm text-secondary space-y-1">
                 <div className="flex items-center gap-4">
                   <span>
-                    <span className="font-medium">Almacén:</span> {movement.warehouse_name}
+                    <span className="font-medium">{tReports('productTab.warehouse')}:</span> {movement.warehouse_name}
                     {movement.location_name && ` - ${movement.location_name}`}
                   </span>
                   {movement.reference_number && (
                     <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                      Ref: {movement.reference_number}
+                      {t('movementsList.reference', { number: movement.reference_number })}
                     </span>
                   )}
                 </div>
@@ -138,7 +142,7 @@ export function StockMovements({ movements, isLoading }: StockMovementsProps) {
               </div>
               {movement.user_name && (
                 <div className="text-xs text-quaternary mt-1">
-                  Por: {movement.user_name}
+                  {t('movementsList.by', { name: movement.user_name })}
                 </div>
               )}
             </div>

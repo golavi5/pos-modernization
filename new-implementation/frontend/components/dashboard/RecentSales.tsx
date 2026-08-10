@@ -6,16 +6,17 @@ import { useSales } from '@/hooks/useSales';
 import { formatCOP } from '@/lib/utils';
 import type { Sale } from '@/types/sale';
 
-const STATUS_MAP: Record<string, { key: string; className: string }> = {
+const STATUS_MAP = {
   paid:     { key: 'statusPaid',     className: 'bg-emerald-950/50 text-emerald-500 border-emerald-500/20' },
   pending:  { key: 'statusPending',  className: 'bg-amber-950/50 text-amber-500 border-amber-500/20' },
   partial:  { key: 'statusPartial',  className: 'bg-blue-950/50 text-blue-500 border-blue-500/20' },
   refunded: { key: 'statusRefunded', className: 'bg-red-950/50 text-red-500 border-red-500/20' },
-};
+} as const;
 
 export function RecentSales() {
   const router = useRouter();
   const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
   const { data } = useSales({ page: 1, pageSize: 8 });
   const sales: Sale[] = data?.data ?? [];
 
@@ -36,9 +37,9 @@ export function RecentSales() {
           <thead>
             <tr className="text-muted-foreground uppercase text-[10px] tracking-widest border-b border-border">
               <th className="pb-2 text-left font-semibold">#</th>
-              <th className="pb-2 text-left font-semibold">{t('customer')}</th>
-              <th className="pb-2 text-right font-semibold">{t('total')}</th>
-              <th className="pb-2 text-right font-semibold">{t('status')}</th>
+              <th className="pb-2 text-left font-semibold">{tCommon('customer')}</th>
+              <th className="pb-2 text-right font-semibold">{tCommon('total')}</th>
+              <th className="pb-2 text-right font-semibold">{tCommon('status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -49,7 +50,7 @@ export function RecentSales() {
                 <td className="py-2 text-right font-semibold">{formatCOP(sale.total_amount)}</td>
                 <td className="py-2 text-right">
                   {(() => {
-                    const s = STATUS_MAP[sale.payment_status] ?? STATUS_MAP['pending'];
+                    const s = STATUS_MAP[sale.payment_status as keyof typeof STATUS_MAP] ?? STATUS_MAP.pending;
                     return (
                       <span className={`${s.className} border text-[9px] font-semibold px-2 py-0.5 rounded-full`}>
                         {t(s.key)}

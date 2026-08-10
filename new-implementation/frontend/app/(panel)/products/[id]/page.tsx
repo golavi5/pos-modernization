@@ -73,7 +73,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
               <p>{product.tax_rate}%</p>
             </div>
             <div>
-              <h3 className="text-sm font-medium text-tertiary">{t('status')}</h3>
+              <h3 className="text-sm font-medium text-tertiary">{tc('status')}</h3>
               <p>{product.is_active ? tc('active') : tc('inactive')}</p>
             </div>
           </CardContent>

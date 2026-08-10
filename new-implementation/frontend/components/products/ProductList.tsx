@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import type { Product } from '@/types/product';
 import { StockBadge } from './StockBadge';
 import { Button } from '@/components/ui/button';
@@ -11,17 +12,20 @@ interface ProductListProps {
 }
 
 export function ProductList({ products, onDelete }: ProductListProps) {
+  const t = useTranslations('products');
+  const tCommon = useTranslations('common');
+  const tCustomers = useTranslations('customers');
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b">
-            <th className="text-left p-3">Name</th>
-            <th className="text-left p-3">SKU</th>
-            <th className="text-left p-3">Price</th>
-            <th className="text-left p-3">Stock</th>
-            <th className="text-left p-3">Status</th>
-            <th className="text-right p-3">Actions</th>
+            <th className="text-left p-3">{t('name')}</th>
+            <th className="text-left p-3">{t('skuLabel')}</th>
+            <th className="text-left p-3">{t('price')}</th>
+            <th className="text-left p-3">{tCommon('stock')}</th>
+            <th className="text-left p-3">{tCommon('status')}</th>
+            <th className="text-right p-3">{tCommon('actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -43,18 +47,18 @@ export function ProductList({ products, onDelete }: ProductListProps) {
               </td>
               <td className="p-3">
                 {product.is_active ? (
-                  <span className="text-green-600">Active</span>
+                  <span className="text-green-600">{tCommon('statusActive')}</span>
                 ) : (
-                  <span className="text-quaternary">Inactive</span>
+                  <span className="text-quaternary">{tCommon('statusInactive')}</span>
                 )}
               </td>
               <td className="p-3 text-right">
                 <div className="flex gap-2 justify-end">
                   <Link href={`/products/${product.id}`}>
-                    <Button size="sm" variant="outline">View</Button>
+                    <Button size="sm" variant="outline">{t('view')}</Button>
                   </Link>
                   <Link href={`/products/${product.id}/edit`}>
-                    <Button size="sm">Edit</Button>
+                    <Button size="sm">{tCommon('edit')}</Button>
                   </Link>
                   {onDelete && (
                     <Button
@@ -62,7 +66,7 @@ export function ProductList({ products, onDelete }: ProductListProps) {
                       variant="destructive"
                       onClick={() => onDelete(product.id)}
                     >
-                      Delete
+                      {tCommon('delete')}
                     </Button>
                   )}
                 </div>

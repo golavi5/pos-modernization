@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +22,10 @@ interface UserFormProps {
 }
 
 export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoading: isLoadingProp }: UserFormProps) {
+  const t = useTranslations('users');
+  const tCommon = useTranslations('common');
+  const tCustomers = useTranslations('customers');
+  const tAuth = useTranslations('auth');
   const isEdit = !!user;
   const { data: roles = [] } = useRoles();
 
@@ -59,10 +64,10 @@ export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoadin
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!form.name.trim()) errs.name = 'El nombre es requerido';
-    if (!isEdit && !form.email.trim()) errs.email = 'El email es requerido';
-    if (!isEdit && !form.password) errs.password = 'La contraseña es requerida';
-    if (!isEdit && form.password.length < 8) errs.password = 'Mínimo 8 caracteres';
+    if (!form.name.trim()) errs.name = t('form.nameRequired');
+    if (!isEdit && !form.email.trim()) errs.email = t('form.emailRequired');
+    if (!isEdit && !form.password) errs.password = t('form.passwordRequired');
+    if (!isEdit && form.password.length < 8) errs.password = t('resetPassword.minChars');
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -129,12 +134,12 @@ export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoadin
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-4">
-        {field('name', 'Nombre completo', 'text', true)}
-        {!isEdit && field('email', 'Email', 'email', true)}
-        {!isEdit && field('password', 'Contraseña', 'password', true)}
-        {field('firstName', 'Primer nombre')}
-        {field('lastName', 'Apellido')}
-        {field('phone', 'Teléfono')}
+        {field('name', tAuth('fullName'), 'text', true)}
+        {!isEdit && field('email', tCommon('email'), 'email', true)}
+        {!isEdit && field('password', tCommon('password'), 'password', true)}
+        {field('firstName', t('form.firstName'))}
+        {field('lastName', t('form.lastName'))}
+        {field('phone', tCustomers('phone'))}
       </div>
 
       {/* Status */}
@@ -146,13 +151,13 @@ export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoadin
           onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
           className="h-4 w-4"
         />
-        <Label htmlFor="isActive">Usuario activo</Label>
+        <Label htmlFor="isActive">{t('form.activeUser')}</Label>
       </div>
 
       {/* Roles (only for create) */}
       {!isEdit && roles.length > 0 && (
         <div className="space-y-2">
-          <Label>Roles asignados</Label>
+          <Label>{t('form.assignedRoles')}</Label>
           <div className="grid grid-cols-1 gap-2">
             {roles.map((role: Role) => (
               <label
@@ -183,10 +188,10 @@ export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoadin
       {!formId && (
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
+            {tCommon('cancel')}
           </Button>
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear usuario'}
+            {isLoading ? tCommon('saving') : isEdit ? tCommon('saveChanges') : t('form.createUser')}
           </Button>
         </div>
       )}

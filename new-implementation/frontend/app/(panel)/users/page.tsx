@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,8 @@ import {
 import type { UserResponse } from '@/types/users';
 
 export default function UsersPage() {
+  const t = useTranslations('users');
+  const tCommon = useTranslations('common');
   const [search, setSearch] = useState('');
   const [slideOver, setSlideOver] = useState<'closed' | 'new' | 'edit'>('closed');
   const [editTarget, setEditTarget] = useState<UserResponse | null>(null);
@@ -54,13 +57,13 @@ export default function UsersPage() {
   };
 
   const handleToggleStatus = async (user: UserResponse) => {
-    if (confirm(`¿${user.isActive ? 'Desactivar' : 'Activar'} usuario "${user.name}"?`)) {
+    if (confirm(t('toggleUserStatus', { action: user.isActive ? t('deactivate') : t('activate'), name: user.name }))) {
       await toggleStatus.mutateAsync(user.id);
     }
   };
 
   const handleDelete = async (user: UserResponse) => {
-    if (confirm(`¿Eliminar usuario "${user.name}"? Esta acción no se puede deshacer.`)) {
+    if (confirm(t('deleteConfirm', { name: user.name }))) {
       await deleteUser.mutateAsync(user.id);
     }
   };
@@ -74,13 +77,13 @@ export default function UsersPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar usuarios..."
+            placeholder={t('page.searchPlaceholder')}
             className="pl-8 h-9 text-sm"
           />
         </div>
         <div className="flex-1" />
         <Button onClick={openNew} size="sm" className="gap-1.5">
-          <Plus size={14} /> Nuevo usuario
+          <Plus size={14} /> {t('page.newUser')}
         </Button>
       </div>
 
@@ -100,11 +103,11 @@ export default function UsersPage() {
       <SlideOver
         open={slideOver !== 'closed'}
         onClose={close}
-        title={slideOver === 'new' ? 'Nuevo usuario' : 'Editar usuario'}
+        title={slideOver === 'new' ? t('page.newUser') : t('page.editUser')}
         footer={
           <>
-            <Button variant="outline" onClick={close} className="flex-1">Cancelar</Button>
-            <Button form="user-form" type="submit" className="flex-1">Guardar</Button>
+            <Button variant="outline" onClick={close} className="flex-1">{tCommon('cancel')}</Button>
+            <Button form="user-form" type="submit" className="flex-1">{tCommon('save')}</Button>
           </>
         }
       >

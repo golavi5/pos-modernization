@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Numpad } from './Numpad';
 import { cn, formatCOP } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ export function CashPaymentSection({
   onChange,
   quickAmounts,
 }: CashPaymentSectionProps) {
+  const t = useTranslations('sales');
   const received = parseFloat(cashReceived) || 0;
   const change = received - total;
 
@@ -29,7 +31,7 @@ export function CashPaymentSection({
         )}
       >
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">
-          Efectivo recibido
+          {t('efectivoRecibido')}
         </p>
         <p className="text-3xl font-bold">
           {received > 0 ? formatCOP(received) : '—'}
@@ -39,7 +41,7 @@ export function CashPaymentSection({
       {/* Change */}
       {received >= total && (
         <div className="bg-emerald-950/60 border border-emerald-800 rounded-xl px-4 py-3 flex justify-between items-center">
-          <span className="text-emerald-400 text-sm font-semibold">💚 Cambio</span>
+          <span className="text-emerald-400 text-sm font-semibold">💚 {t('change')}</span>
           <span className="text-emerald-400 text-2xl font-bold">
             {formatCOP(change)}
           </span>

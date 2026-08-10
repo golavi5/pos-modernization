@@ -101,7 +101,7 @@ export function ProductFilters({ onFilterChange, categories = [] }: ProductFilte
           {/* Status */}
           <div>
             <label className="block text-sm font-medium text-tertiary mb-2">
-              {t('status')}
+              {tCommon('status')}
             </label>
             <select
               value={isActive === undefined ? '' : isActive ? 'true' : 'false'}
@@ -131,7 +131,7 @@ export function ProductFilters({ onFilterChange, categories = [] }: ProductFilte
               <option value="created_at">{t('creationDate')}</option>
               <option value="name">{t('name')}</option>
               <option value="price">{t('price')}</option>
-              <option value="stock_quantity">{t('stock')}</option>
+              <option value="stock_quantity">{tCommon('stock')}</option>
             </select>
           </div>
 

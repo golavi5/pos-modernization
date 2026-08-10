@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,8 @@ interface ReportFiltersProps {
 }
 
 export function ReportFilters({ onFilterChange, onExport, showExport = true }: ReportFiltersProps) {
+  const t = useTranslations('reports.filters');
+  const tCommon = useTranslations('common');
   const [period, setPeriod] = useState<PeriodType>('monthly');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -43,18 +46,18 @@ export function ReportFilters({ onFilterChange, onExport, showExport = true }: R
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
           {/* Period */}
           <div className="space-y-2">
-            <Label htmlFor="period">Período</Label>
+            <Label htmlFor="period">{t('period')}</Label>
             <select
               id="period"
               value={period}
               onChange={(e) => setPeriod(e.target.value as PeriodType)}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
-              <option value="daily">Hoy</option>
-              <option value="weekly">Última Semana</option>
-              <option value="monthly">Último Mes</option>
-              <option value="yearly">Último Año</option>
-              <option value="custom">Personalizado</option>
+              <option value="daily">{t('today')}</option>
+              <option value="weekly">{t('lastWeek')}</option>
+              <option value="monthly">{t('lastMonth')}</option>
+              <option value="yearly">{t('lastYear')}</option>
+              <option value="custom">{t('custom')}</option>
             </select>
           </div>
 
@@ -62,17 +65,17 @@ export function ReportFilters({ onFilterChange, onExport, showExport = true }: R
           {period === 'custom' ? (
             <>
               <div className="space-y-2">
-                <Label htmlFor="startDate">Fecha Inicio</Label>
+                <Label htmlFor="startDate">{t('startDate')}</Label>
                 <Input id="startDate" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endDate">Fecha Fin</Label>
+                <Label htmlFor="endDate">{t('endDate')}</Label>
                 <Input id="endDate" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </>
           ) : (
             <div className="space-y-2">
-              <Label htmlFor="limit">Límite resultados</Label>
+              <Label htmlFor="limit">{t('limit')}</Label>
               <Input
                 id="limit"
                 type="number"
@@ -88,10 +91,10 @@ export function ReportFilters({ onFilterChange, onExport, showExport = true }: R
           <div className="flex gap-2 md:col-span-2">
             <Button onClick={handleApply} className="flex-1">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Aplicar
+              {tCommon('apply')}
             </Button>
             <Button variant="outline" onClick={handleReset}>
-              Limpiar
+              {tCommon('clear')}
             </Button>
           </div>
         </div>
@@ -101,15 +104,15 @@ export function ReportFilters({ onFilterChange, onExport, showExport = true }: R
           <div className="mt-4 flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => onExport('csv')}>
               <Download className="h-4 w-4 mr-2" />
-              Exportar CSV
+              {t('exportCsv')}
             </Button>
-            <Button variant="outline" size="sm" disabled title="Próximamente">
+            <Button variant="outline" size="sm" disabled title={t('comingSoon')}>
               <Download className="h-4 w-4 mr-2" />
-              Exportar Excel
+              {t('exportExcel')}
             </Button>
-            <Button variant="outline" size="sm" disabled title="Próximamente">
+            <Button variant="outline" size="sm" disabled title={t('comingSoon')}>
               <Download className="h-4 w-4 mr-2" />
-              Exportar PDF
+              {t('exportPdf')}
             </Button>
           </div>
         )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,14 +17,16 @@ interface ResetPasswordModalProps {
 }
 
 export function ResetPasswordModal({ user, onSubmit, onCancel, isLoading }: ResetPasswordModalProps) {
+  const t = useTranslations('users.resetPassword');
+  const tCommon = useTranslations('common');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) { setError('Mínimo 8 caracteres'); return; }
-    if (password !== confirm) { setError('Las contraseñas no coinciden'); return; }
+    if (password.length < 8) { setError(t('minChars')); return; }
+    if (password !== confirm) { setError(tCommon('passwordMismatch')); return; }
     setError('');
     onSubmit(password);
   };
@@ -35,7 +38,7 @@ export function ResetPasswordModal({ user, onSubmit, onCancel, isLoading }: Rese
           <div>
             <CardTitle className="flex items-center gap-2">
               <KeyRound className="h-5 w-5" />
-              Resetear Contraseña
+              {t('title')}
             </CardTitle>
             <CardDescription>{user.name} · {user.email}</CardDescription>
           </div>
@@ -46,31 +49,31 @@ export function ResetPasswordModal({ user, onSubmit, onCancel, isLoading }: Rese
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="newPwd">Nueva Contraseña *</Label>
+              <Label htmlFor="newPwd">{t('newPassword')}</Label>
               <Input
                 id="newPwd"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
+                placeholder={t('minChars')}
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="confirmPwd">Confirmar Contraseña *</Label>
+              <Label htmlFor="confirmPwd">{t('confirmPassword')}</Label>
               <Input
                 id="confirmPwd"
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Repetir contraseña"
+                placeholder={t('repeatPassword')}
               />
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
 
             <div className="flex justify-end gap-3 pt-2 border-t">
-              <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+              <Button type="button" variant="outline" onClick={onCancel}>{tCommon('cancel')}</Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Guardando...' : 'Resetear contraseña'}
+                {isLoading ? tCommon('saving') : t('action')}
               </Button>
             </div>
           </form>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +30,9 @@ export function CustomerForm({
   onCancel,
   isLoading: isLoadingProp,
 }: CustomerFormProps) {
+  const t = useTranslations('customers');
+  const tCommon = useTranslations('common');
+  const tAuth = useTranslations('auth');
   const createMutation = useCreateCustomer();
   const updateMutation = useUpdateCustomer();
   const isLoadingInternal = createMutation.isPending || updateMutation.isPending;
@@ -98,61 +102,61 @@ export function CustomerForm({
         {/* Nombre */}
         <div className="md:col-span-2">
           <Label htmlFor="name">
-            Nombre completo <span className="text-red-500">*</span>
+            {tAuth('fullName')} <span className="text-red-500">*</span>
           </Label>
           <Input
             id="name"
             type="text"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            placeholder="Ej: Juan Pérez García"
+            placeholder={t('fullNamePlaceholder')}
             required
           />
         </div>
 
         {/* Email */}
         <div>
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{tCommon('email')}</Label>
           <Input
             id="email"
             type="email"
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
-            placeholder="ejemplo@correo.com"
+            placeholder={t('emailPlaceholder')}
           />
           <p className="text-xs text-tertiary mt-1">
-            Usado para enviar recibos y notificaciones
+            {t('emailHelp')}
           </p>
         </div>
 
         {/* Teléfono */}
         <div>
-          <Label htmlFor="phone">Teléfono</Label>
+          <Label htmlFor="phone">{t('phone')}</Label>
           <Input
             id="phone"
             type="tel"
             value={formData.phone}
             onChange={(e) => handleChange('phone', e.target.value)}
-            placeholder="+57 300 123 4567"
+            placeholder={t('phonePlaceholder')}
           />
           <p className="text-xs text-tertiary mt-1">
-            Incluye código de país (+57 para Colombia)
+            {t('phoneHelp')}
           </p>
         </div>
 
         {/* Dirección */}
         <div className="md:col-span-2">
-          <Label htmlFor="address">Dirección</Label>
+          <Label htmlFor="address">{t('address')}</Label>
           <textarea
             id="address"
             value={formData.address}
             onChange={(e) => handleChange('address', e.target.value)}
-            placeholder="Calle 123 #45-67, Apartamento 8B, Ciudad"
+            placeholder={t('addressPlaceholder')}
             rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <p className="text-xs text-tertiary mt-1">
-            Dirección de envío o facturación
+            {t('addressHelp')}
           </p>
         </div>
       </div>
@@ -160,23 +164,23 @@ export function CustomerForm({
       {/* Info adicional para edición */}
       {customer && (
         <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <h4 className="font-semibold text-blue-900 mb-2">Información adicional</h4>
+          <h4 className="font-semibold text-blue-900 mb-2">{t('additionalInfo')}</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-blue-700">Puntos de lealtad:</span>
+              <span className="text-blue-700">{t('loyaltyPoints')}</span>
               <span className="ml-2 font-semibold text-blue-900">
                 {customer.loyalty_points}
               </span>
             </div>
             <div>
-              <span className="text-blue-700">Total compras:</span>
+              <span className="text-blue-700">{t('totalPurchases')}</span>
               <span className="ml-2 font-semibold text-blue-900">
                 {formatCOP(customer.total_purchases)}
               </span>
             </div>
           </div>
           <p className="text-xs text-blue-600 mt-2">
-            * Los puntos de lealtad se gestionan desde el botón de acción en la tabla
+            {t('pointsNote')}
           </p>
         </div>
       )}
@@ -185,10 +189,10 @@ export function CustomerForm({
       {!formId && (
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
-            Cancelar
+            {tCommon('cancel')}
           </Button>
           <Button type="submit" disabled={isLoading || !formData.name.trim()}>
-            {isLoading ? 'Guardando...' : customer ? 'Actualizar' : 'Crear cliente'}
+            {isLoading ? tCommon('saving') : customer ? tCommon('update') : t('form.create')}
           </Button>
         </div>
       )}

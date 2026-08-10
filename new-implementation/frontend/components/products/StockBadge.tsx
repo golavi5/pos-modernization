@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 
 interface StockBadgeProps {
@@ -6,13 +7,16 @@ interface StockBadgeProps {
 }
 
 export function StockBadge({ stock, reorderLevel }: StockBadgeProps) {
+  const t = useTranslations('products');
+  const tInventory = useTranslations('inventory');
+
   if (stock === 0) {
-    return <Badge variant="destructive">Out of Stock</Badge>;
+    return <Badge variant="destructive">{tInventory('table.noStock')}</Badge>;
   }
 
   if (stock <= reorderLevel) {
-    return <Badge variant="warning">Low Stock ({stock})</Badge>;
+    return <Badge variant="warning">{t('lowStockCount', { stock })}</Badge>;
   }
 
-  return <Badge variant="success">In Stock ({stock})</Badge>;
+  return <Badge variant="success">{t('inStockCount', { stock })}</Badge>;
 }

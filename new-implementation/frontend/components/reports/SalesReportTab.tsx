@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ReportFilters } from './ReportFilters';
 import { useSalesSummary, useSalesByPeriod, useRevenueTrends } from '@/hooks/useReports';
@@ -12,6 +13,8 @@ import { formatCOP } from '@/lib/utils';
 const formatPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
 
 export function SalesReportTab() {
+  const t = useTranslations('reports');
+  const tSales = useTranslations('sales');
   const [query, setQuery] = useState<ReportQuery>({ period: 'monthly', limit: 10 });
 
   const { data: summary, isLoading: sumLoading } = useSalesSummary(query);
@@ -42,7 +45,7 @@ export function SalesReportTab() {
         {/* Total Ventas */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-secondary">Total Ventas</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">{tSales('totalSales')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
@@ -55,7 +58,7 @@ export function SalesReportTab() {
                 <span className={summary.comparedToLastPeriod.salesChange >= 0 ? 'text-green-600' : 'text-red-600'}>
                   {formatPct(summary.comparedToLastPeriod.salesChange)}
                 </span>
-                vs período anterior
+                {t('vsLastPeriod')}
               </p>
             )}
           </CardContent>
@@ -64,7 +67,7 @@ export function SalesReportTab() {
         {/* Ingresos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-secondary">Ingresos Totales</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">{t('salesTab.totalRevenue')}</CardTitle>
             <DollarSign className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
@@ -77,7 +80,7 @@ export function SalesReportTab() {
                 <span className={summary.comparedToLastPeriod.revenueChange >= 0 ? 'text-green-600' : 'text-red-600'}>
                   {formatPct(summary.comparedToLastPeriod.revenueChange)}
                 </span>
-                vs período anterior
+                {t('vsLastPeriod')}
               </p>
             )}
           </CardContent>
@@ -86,7 +89,7 @@ export function SalesReportTab() {
         {/* Ganancia */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-secondary">Ganancia Total</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">{t('salesTab.totalProfit')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
@@ -99,7 +102,7 @@ export function SalesReportTab() {
                 <span className={summary.comparedToLastPeriod.profitChange >= 0 ? 'text-green-600' : 'text-red-600'}>
                   {formatPct(summary.comparedToLastPeriod.profitChange)}
                 </span>
-                vs período anterior
+                {t('vsLastPeriod')}
               </p>
             )}
           </CardContent>
@@ -108,12 +111,12 @@ export function SalesReportTab() {
         {/* Ticket Promedio */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-secondary">Ticket Promedio</CardTitle>
+            <CardTitle className="text-sm font-medium text-secondary">{tSales('averageTicket')}</CardTitle>
             <Package className="h-4 w-4 text-quaternary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCOP(summary?.averageTicket ?? 0)}</div>
-            <p className="text-xs text-tertiary mt-1">{summary?.totalItems ?? 0} artículos vendidos</p>
+            <p className="text-xs text-tertiary mt-1">{t('salesTab.itemsSold', { count: summary?.totalItems ?? 0 })}</p>
           </CardContent>
         </Card>
       </div>
@@ -122,8 +125,8 @@ export function SalesReportTab() {
       {trends && trends.byPaymentMethod.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Ingresos por Método de Pago</CardTitle>
-            <CardDescription>Distribución de ingresos según forma de pago</CardDescription>
+            <CardTitle>{t('salesTab.byPaymentMethod')}</CardTitle>
+            <CardDescription>{t('salesTab.byPaymentMethodDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -133,7 +136,7 @@ export function SalesReportTab() {
                     <CreditCard className="h-5 w-5 text-tertiary" />
                     <div>
                       <p className="font-medium capitalize">{method.paymentMethod}</p>
-                      <p className="text-sm text-tertiary">{method.transactionCount} transacciones</p>
+                      <p className="text-sm text-tertiary">{t('salesTab.transactions', { count: method.transactionCount })}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -151,19 +154,19 @@ export function SalesReportTab() {
       {periodData && periodData.periodData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Ventas por Período</CardTitle>
-            <CardDescription>Desglose detallado de ventas en el período seleccionado</CardDescription>
+            <CardTitle>{t('salesTab.byPeriod')}</CardTitle>
+            <CardDescription>{t('salesTab.byPeriodDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-tertiary text-xs uppercase">
-                    <th className="text-left py-3 px-4">Fecha</th>
-                    <th className="text-right py-3 px-4">Ventas</th>
-                    <th className="text-right py-3 px-4">Ingresos</th>
-                    <th className="text-right py-3 px-4">Artículos</th>
-                    <th className="text-right py-3 px-4">Ticket Prom.</th>
+                    <th className="text-left py-3 px-4">{t('salesTab.date')}</th>
+                    <th className="text-right py-3 px-4">{t('sales')}</th>
+                    <th className="text-right py-3 px-4">{t('revenue')}</th>
+                    <th className="text-right py-3 px-4">{t('salesTab.items')}</th>
+                    <th className="text-right py-3 px-4">{t('avgTicket')}</th>
                   </tr>
                 </thead>
                 <tbody>

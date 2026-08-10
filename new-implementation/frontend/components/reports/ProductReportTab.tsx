@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ReportFilters } from './ReportFilters';
@@ -11,6 +12,11 @@ import type { ReportQuery, ExportFormat } from '@/types/reports';
 import { formatCOP } from '@/lib/utils';
 
 export function ProductReportTab() {
+  const t = useTranslations('reports');
+  const tProducts = useTranslations('products');
+  const tDashboard = useTranslations('dashboard');
+  const tInventory = useTranslations('inventory');
+  const tCommon = useTranslations('common');
   const [query, setQuery] = useState<ReportQuery>({ period: 'monthly', limit: 10 });
 
   const { data: topSelling, isLoading: topLoading } = useTopSellingProducts(query);
@@ -39,9 +45,9 @@ export function ProductReportTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Productos Más Vendidos
+            {t('productTab.topSelling')}
           </CardTitle>
-          <CardDescription>Los {topSelling?.length ?? 0} productos con mejor desempeño en el período</CardDescription>
+          <CardDescription>{t('productTab.topSellingDesc', { count: topSelling?.length ?? 0 })}</CardDescription>
         </CardHeader>
         <CardContent>
           {topSelling && topSelling.length > 0 ? (
@@ -50,11 +56,11 @@ export function ProductReportTab() {
                 <thead>
                   <tr className="border-b text-tertiary text-xs uppercase">
                     <th className="text-left py-3 px-4">#</th>
-                    <th className="text-left py-3 px-4">Producto</th>
-                    <th className="text-left py-3 px-4">Categoría</th>
-                    <th className="text-right py-3 px-4">Cantidad</th>
-                    <th className="text-right py-3 px-4">Ingresos</th>
-                    <th className="text-right py-3 px-4">Precio Prom.</th>
+                    <th className="text-left py-3 px-4">{tCommon('product')}</th>
+                    <th className="text-left py-3 px-4">{tProducts('category')}</th>
+                    <th className="text-right py-3 px-4">{tCommon('quantity')}</th>
+                    <th className="text-right py-3 px-4">{t('revenue')}</th>
+                    <th className="text-right py-3 px-4">{t('productTab.avgPrice')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -77,7 +83,7 @@ export function ProductReportTab() {
               </table>
             </div>
           ) : (
-            <p className="text-center text-tertiary py-8">No hay datos de ventas disponibles</p>
+            <p className="text-center text-tertiary py-8">{t('productTab.noSalesData')}</p>
           )}
         </CardContent>
       </Card>
@@ -87,9 +93,9 @@ export function ProductReportTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
-            Alertas de Stock Bajo
+            {tCommon('lowStockAlerts')}
           </CardTitle>
-          <CardDescription>Productos que necesitan reabastecimiento urgente</CardDescription>
+          <CardDescription>{t('productTab.lowStockDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           {lowStock && lowStock.length > 0 ? (
@@ -97,12 +103,12 @@ export function ProductReportTab() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-tertiary text-xs uppercase">
-                    <th className="text-left py-3 px-4">Producto</th>
-                    <th className="text-left py-3 px-4">Almacén</th>
-                    <th className="text-right py-3 px-4">Stock Actual</th>
-                    <th className="text-right py-3 px-4">Punto Reorden</th>
-                    <th className="text-center py-3 px-4">Estado</th>
-                    <th className="text-right py-3 px-4">Días Restantes</th>
+                    <th className="text-left py-3 px-4">{tCommon('product')}</th>
+                    <th className="text-left py-3 px-4">{t('productTab.warehouse')}</th>
+                    <th className="text-right py-3 px-4">{tInventory('currentStock')}</th>
+                    <th className="text-right py-3 px-4">{t('productTab.reorderPoint')}</th>
+                    <th className="text-center py-3 px-4">{tCommon('status')}</th>
+                    <th className="text-right py-3 px-4">{t('productTab.daysRemaining')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -123,11 +129,11 @@ export function ProductReportTab() {
                             ? 'bg-red-100 text-red-700'
                             : 'bg-orange-100 text-orange-700'
                         }`}>
-                          {product.stockLevel === 'critical' ? '⚠️ Crítico' : '⚠️ Bajo'}
+                          {product.stockLevel === 'critical' ? t('productTab.critical') : t('productTab.low')}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right text-secondary">
-                        {product.daysUntilStockout !== undefined ? `${product.daysUntilStockout} días` : 'N/A'}
+                        {product.daysUntilStockout !== undefined ? t('days', { count: product.daysUntilStockout }) : 'N/A'}
                       </td>
                     </tr>
                   ))}
@@ -136,7 +142,7 @@ export function ProductReportTab() {
             </div>
           ) : (
             <p className="text-center text-tertiary py-8">
-              ✅ Todos los productos tienen stock suficiente
+              {t('productTab.allStocked')}
             </p>
           )}
         </CardContent>

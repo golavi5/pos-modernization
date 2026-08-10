@@ -1,16 +1,20 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { CreateProductDto } from '@/types/product';
+import type { Translate } from '@/types/i18n';
 
 interface ProductFormFieldsProps {
   formData: CreateProductDto;
   onChange: (field: keyof CreateProductDto, value: string | number) => void;
-  t: (key: string) => string;
+  t: Translate<'products'>;
 }
 
 export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsProps) {
+  const tCommon = useTranslations('common');
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="md:col-span-2">
@@ -168,7 +172,7 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
           <div className="mt-2">
             <img
               src={formData.image_url}
-              alt={t('preview')}
+              alt={tCommon('preview')}
               className="w-32 h-32 object-cover rounded border"
               onError={(e) => { e.currentTarget.style.display = 'none'; }}
             />

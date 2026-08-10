@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUsers } from '@/hooks/useUsers';
@@ -36,6 +37,10 @@ export function UsersTable({
   onToggleStatus,
   onDelete,
 }: UsersTableProps) {
+  const t = useTranslations('users');
+  const tCommon = useTranslations('common');
+  const tCustomers = useTranslations('customers');
+  const tDashboard = useTranslations('dashboard');
   const queryEnabled = search !== undefined;
   const { data: usersData, isLoading: isLoadingQuery } = useUsers(
     queryEnabled ? { search: search || undefined, page: 1, pageSize: 50 } : {}
@@ -55,14 +60,14 @@ export function UsersTable({
   if (users.length === 0) {
     return (
       <div className="text-center py-12 text-tertiary">
-        <p className="text-lg font-medium">No se encontraron usuarios</p>
-        <p className="text-sm mt-1">Intenta cambiar los filtros o crear un nuevo usuario</p>
+        <p className="text-lg font-medium">{t('table.empty')}</p>
+        <p className="text-sm mt-1">{t('table.emptyHint')}</p>
       </div>
     );
   }
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'Nunca';
+    if (!dateStr) return t('table.never');
     return new Date(dateStr).toLocaleDateString('es-CO', {
       day: '2-digit',
       month: 'short',
@@ -75,13 +80,13 @@ export function UsersTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-tertiary text-xs uppercase">
-            <th className="text-left py-3 px-4">Usuario</th>
-            <th className="text-left py-3 px-4">Email</th>
-            <th className="text-left py-3 px-4">Roles</th>
-            <th className="text-center py-3 px-4">Estado</th>
-            <th className="text-left py-3 px-4">Último acceso</th>
-            <th className="text-left py-3 px-4">Registrado</th>
-            <th className="text-right py-3 px-4">Acciones</th>
+            <th className="text-left py-3 px-4">{t('table.user')}</th>
+            <th className="text-left py-3 px-4">{tCommon('email')}</th>
+            <th className="text-left py-3 px-4">{t('table.roles')}</th>
+            <th className="text-center py-3 px-4">{tCommon('status')}</th>
+            <th className="text-left py-3 px-4">{t('table.lastAccess')}</th>
+            <th className="text-left py-3 px-4">{t('table.registered')}</th>
+            <th className="text-right py-3 px-4">{tCommon('actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -97,7 +102,7 @@ export function UsersTable({
               <td className="py-3 px-4">
                 <div className="flex flex-wrap gap-1">
                   {user.roles.length === 0 ? (
-                    <span className="text-quaternary text-xs">Sin roles</span>
+                    <span className="text-quaternary text-xs">{t('table.noRoles')}</span>
                   ) : (
                     user.roles.map((role) => (
                       <span
@@ -118,27 +123,27 @@ export function UsersTable({
                     user.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-tertiary'
                   }`}
                 >
-                  {user.isActive ? 'Activo' : 'Inactivo'}
+                  {user.isActive ? tCommon('statusActive') : tCommon('statusInactive')}
                 </span>
               </td>
               <td className="py-3 px-4 text-tertiary">{formatDate(user.lastLogin)}</td>
               <td className="py-3 px-4 text-tertiary">{formatDate(user.createdAt)}</td>
               <td className="py-3 px-4">
                 <div className="flex items-center justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => onEdit?.(user)} title="Editar">
+                  <Button variant="ghost" size="sm" onClick={() => onEdit?.(user)} title={tCommon('edit')}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onAssignRoles?.(user)} title="Asignar roles">
+                  <Button variant="ghost" size="sm" onClick={() => onAssignRoles?.(user)} title={t('table.assignRoles')}>
                     <Shield className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onResetPassword?.(user)} title="Resetear contraseña">
+                  <Button variant="ghost" size="sm" onClick={() => onResetPassword?.(user)} title={t('resetPassword.action')}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onToggleStatus?.(user)}
-                    title={user.isActive ? 'Desactivar' : 'Activar'}
+                    title={user.isActive ? t('deactivate') : t('activate')}
                   >
                     {user.isActive
                       ? <ToggleRight className="h-4 w-4 text-green-600" />
@@ -148,7 +153,7 @@ export function UsersTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete?.(user)}
-                    title="Eliminar"
+                    title={tCommon('delete')}
                     className="text-red-500 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" />

@@ -28,7 +28,30 @@
     "yes": "Yes",
     "no": "No",
     "optional": "Optional",
-    "required": "Required"
+    "required": "Required",
+    "brand": "POS",
+    "logout": "Logout",
+    "customer": "Customer",
+    "status": "Status",
+    "total": "Total",
+    "contact": "Contact",
+    "purchases": "Purchases",
+    "points": "Points",
+    "email": "Email",
+    "actions": "Actions",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "product": "Product",
+    "quantity": "Quantity",
+    "notesOptional": "Notes (Optional)",
+    "preview": "Preview",
+    "processing": "Processing...",
+    "stock": "Stock",
+    "password": "Password",
+    "passwordMismatch": "Passwords do not match",
+    "lowStockAlerts": "Low Stock Alerts",
+    "subtractLabel": "Subtract:",
+    "system": "System"
   },
   "auth": {
     "signIn": "Sign in",
@@ -36,7 +59,6 @@
     "enterCredentials": "Enter your credentials to access the POS system",
     "emailAddress": "Email address",
     "emailPlaceholder": "you@example.com",
-    "password": "Password",
     "passwordPlaceholder": "••••••••",
     "signingIn": "Signing in...",
     "needAccount": "Need an account?",
@@ -47,13 +69,16 @@
     "fullName": "Full Name",
     "fullNamePlaceholder": "John Doe",
     "confirmPassword": "Confirm Password",
-    "passwordMismatch": "Passwords do not match",
     "passwordMinLength": "Password must be at least 6 characters",
     "registrationFailed": "Registration failed",
     "register": "Register",
     "alreadyHaveAccount": "Already have an account?",
-    "logout": "Logout",
-    "settings": "Settings"
+    "settings": "Settings",
+    "layout": {
+      "title": "POS Modernization",
+      "subtitle": "Modern Point of Sale System",
+      "copyright": "© 2024 POS System. All rights reserved."
+    }
   },
   "sidebar": {
     "posSystem": "POS System",
@@ -90,20 +115,32 @@
     "fromTransactions": "from {count} transactions",
     "totalProducts": "Total Products",
     "inInventory": "in inventory",
-    "lowStockAlerts": "Low Stock Alerts",
     "itemsNeedRestock": "items need restock",
     "pendingOrders": "Pending Orders",
     "awaitingShipment": "awaiting shipment",
     "recentSales": "Recent sales",
-    "customer": "Customer",
-    "total": "Total",
-    "status": "Status",
     "noCustomer": "No customer",
     "viewAll": "View all",
     "statusPaid": "Paid",
     "statusPending": "Pending",
     "statusPartial": "Partial",
-    "statusRefunded": "Refunded"
+    "statusRefunded": "Refunded",
+    "kpi": {
+      "salesToday": "Sales today",
+      "transactions": "Transactions",
+      "avgTicket": "Average ticket",
+      "totalSales": "Total sales",
+      "deltaRevenue": "+12% vs yesterday",
+      "deltaTransactions": "+5 vs yesterday"
+    },
+    "quickActions": {
+      "title": "Quick actions",
+      "newSale": "New sale",
+      "adjustInventory": "Adjust inventory",
+      "viewDailyReport": "View daily report",
+      "addProduct": "Add product"
+    },
+    "salesLast7Days": "Sales — last 7 days"
   },
   "sales": {
     "title": "Sales",
@@ -130,10 +167,8 @@
     "credit": "Credit",
     "cashReceived": "Cash received",
     "change": "Change",
-    "notes": "Notes (Optional)",
     "notesPlaceholder": "E.g.: Customer requested invoice, home delivery...",
     "amountMustBeGreater": "Amount received must be greater than or equal to total",
-    "processing": "Processing...",
     "confirmSale": "Confirm Sale",
     "cartEmpty": "Cart empty",
     "searchToAdd": "Search products to add to cart",
@@ -149,9 +184,32 @@
     "efectivoRecibido": "Cash received",
     "cambio": "Change",
     "confirmarPago": "Confirm payment",
+    "confirmShortcutHint": "Enter ↵",
     "pagoCompletado": "Payment complete!",
     "nuevaVenta": "+ New sale",
-    "autoRegresa": "Auto-returns in {seconds}s..."
+    "autoRegresa": "Auto-returns in {seconds}s...",
+    "customerSelect": {
+      "label": "Customer (Optional)",
+      "search": "Search customer...",
+      "loading": "Loading customers...",
+      "error": "Could not load customers"
+    },
+    "payment": {
+      "backToCart": "Back to cart",
+      "inProgress": "Sale in progress",
+      "mixed": "Mixed",
+      "cardInstructions": "Process the payment on the terminal",
+      "cardConfirm": "Confirm once the terminal approves",
+      "mixedComingSoon": "Mixed payment — coming soon",
+      "error": "Error processing the payment",
+      "totalCharged": "Total charged",
+      "received": "Received"
+    },
+    "cartHeader": "Cart · {count} items",
+    "cartSubtotal": "Subtotal",
+    "cartTax": "VAT (19%)",
+    "cartDiscount": "Discount",
+    "clearCartConfirm": "Clear the cart?"
   },
   "products": {
     "title": "Products",
@@ -196,7 +254,6 @@
     "taxRate": "Tax rate (%)",
     "imageUrl": "Image URL",
     "imageUrlPlaceholder": "https://example.com/image.jpg",
-    "preview": "Preview",
     "searchPlaceholder": "Search by name, SKU or barcode...",
     "filters": "Filters",
     "allCategories": "All",
@@ -205,7 +262,6 @@
     "creationDate": "Creation date",
     "name": "Name",
     "price": "Price",
-    "stock": "Stock",
     "order": "Order",
     "ascending": "Ascending",
     "descending": "Descending",
@@ -213,7 +269,6 @@
     "productNotFound": "Product not found",
     "noDescription": "No description",
     "stockStatus": "Stock status",
-    "status": "Status",
     "updateProductInfo": "Update product information",
     "loadingCategories": "Loading categories...",
     "categoryManagement": "Category Management",
@@ -222,7 +277,18 @@
     "addCategory": "Add Category",
     "searchProducts": "Search products...",
     "createProductSubtitle": "Add a new product to your catalog",
-    "productInformation": "Product Information"
+    "productInformation": "Product Information",
+    "view": "View",
+    "skuLabel": "SKU",
+    "inStock": "In stock",
+    "lowStockCount": "Low stock ({stock})",
+    "inStockCount": "In stock ({stock})",
+    "table": {
+      "empty": "No products found",
+      "emptyHint": "Try adjusting the search or create a new product",
+      "img": "IMG",
+      "deleteConfirm": "Delete \"{name}\"?"
+    }
   },
   "customers": {
     "title": "Customers",
@@ -251,7 +317,6 @@
     "pointsUpdateError": "Error updating points",
     "fullName": "Full name *",
     "fullNamePlaceholder": "E.g.: John Smith",
-    "email": "Email",
     "emailPlaceholder": "example@email.com",
     "emailHelp": "Used to send receipts and notifications",
     "phone": "Phone",
@@ -263,7 +328,46 @@
     "additionalInfo": "Additional information",
     "loyaltyPoints": "Loyalty points:",
     "totalPurchases": "Total purchases:",
-    "pointsNote": "* Loyalty points are managed from the action button in the table"
+    "pointsNote": "* Loyalty points are managed from the action button in the table",
+    "filters": {
+      "searchPlaceholder": "Search by name, email or phone...",
+      "minPoints": "Minimum points",
+      "registrationDate": "Registration date",
+      "totalPurchases": "Total purchases",
+      "loyaltyPoints": "Loyalty points"
+    },
+    "table": {
+      "empty": "No customers found",
+      "emptyHint": "Try adjusting the filters or create a new customer",
+      "lastPurchase": "Last purchase",
+      "viewDetails": "View details",
+      "managePoints": "Manage points"
+    },
+    "form": {
+      "create": "Create customer"
+    },
+    "loyalty": {
+      "title": "Manage Points",
+      "currentBalance": "Current balance",
+      "pointsCount": "{count} points",
+      "operation": "Operation",
+      "add": "Add",
+      "addDesc": "Add points to the current balance",
+      "subtract": "Subtract",
+      "subtractDesc": "Subtract points from the current balance",
+      "set": "Set",
+      "setDesc": "Define an exact new balance",
+      "newBalance": "New balance",
+      "pointsAmount": "Points amount",
+      "addLabel": "Add:",
+      "invalidAmount": "Enter a valid amount of points",
+      "insufficientPoints": "Not enough points to subtract"
+    },
+    "page": {
+      "searchPlaceholder": "Search customers...",
+      "newCustomer": "New customer",
+      "editCustomer": "Edit customer"
+    }
   },
   "inventory": {
     "title": "Inventory",
@@ -281,7 +385,67 @@
     "showingProducts": "Showing {from} - {to} of {total} products",
     "showingMovements": "Showing {from} - {to} of {total} movements",
     "adjustSuccess": "Stock adjusted successfully",
-    "adjustError": "Error adjusting stock"
+    "adjustError": "Error adjusting stock",
+    "adjust": {
+      "title": "Adjust Stock",
+      "currentStock": "Current stock",
+      "movementType": "Movement type",
+      "newQuantity": "New quantity",
+      "exceedsStock": "Quantity exceeds available stock ({available})",
+      "reference": "Reference number (Optional)",
+      "referencePlaceholder": "E.g.: PO-12345, INVOICE-001",
+      "notesPlaceholder": "Reason for adjustment, observations...",
+      "newStock": "New stock",
+      "addLabel": "Add:",
+      "invalidQuantity": "Enter a valid quantity",
+      "insufficientStock": "Not enough stock available",
+      "confirmAdjust": "Confirm Adjustment"
+    },
+    "movementTypes": {
+      "IN": "Inbound",
+      "OUT": "Outbound",
+      "ADJUST": "Adjustment",
+      "TRANSFER": "Transfer",
+      "DAMAGE": "Damage",
+      "RETURN": "Return"
+    },
+    "movementDesc": {
+      "IN": "Receive stock",
+      "OUT": "Remove stock",
+      "ADJUST": "Adjust to exact quantity",
+      "DAMAGE": "Record damage",
+      "RETURN": "Customer return"
+    },
+    "filters": {
+      "allWarehouses": "All warehouses",
+      "stockLevel": "Stock level",
+      "normalStock": "Normal stock",
+      "productName": "Product name",
+      "lastMovement": "Last movement",
+      "applyFilters": "Apply filters"
+    },
+    "movementsList": {
+      "empty": "No movements recorded",
+      "emptyHint": "Stock movements will appear here",
+      "reference": "Ref: {number}",
+      "by": "By: {name}"
+    },
+    "table": {
+      "empty": "No stock available",
+      "emptyHint": "Adjust filters or add products to inventory",
+      "reserved": "Reserved",
+      "available": "Available",
+      "action": "Action",
+      "adjustStock": "Adjust stock",
+      "adjust": "Adjust",
+      "min": "Min: {value}",
+      "noName": "Unnamed product",
+      "noStock": "Out of stock",
+      "restock": "Restock"
+    },
+    "page": {
+      "searchPlaceholder": "Search product or SKU..."
+    }
   },
   "users": {
     "title": "User Management",
@@ -302,7 +466,46 @@
     "toggleUserStatus": "{action} user \"{name}\"?",
     "activate": "Activate",
     "deactivate": "Deactivate",
-    "deleteConfirm": "Delete user \"{name}\"? This action cannot be undone."
+    "deleteConfirm": "Delete user \"{name}\"? This action cannot be undone.",
+    "roles": {
+      "assignTitle": "Assign Roles",
+      "userLabel": "User: {name} ({email})",
+      "saveRoles": "Save roles"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "newPassword": "New Password *",
+      "confirmPassword": "Confirm Password *",
+      "minChars": "Minimum 8 characters",
+      "repeatPassword": "Repeat password",
+      "action": "Reset password"
+    },
+    "form": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "activeUser": "Active user",
+      "assignedRoles": "Assigned roles",
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "passwordRequired": "Password is required",
+      "createUser": "Create user"
+    },
+    "table": {
+      "empty": "No users found",
+      "emptyHint": "Try changing the filters or create a new user",
+      "user": "User",
+      "roles": "Roles",
+      "lastAccess": "Last access",
+      "registered": "Registered",
+      "noRoles": "No roles",
+      "never": "Never",
+      "assignRoles": "Assign roles"
+    },
+    "page": {
+      "searchPlaceholder": "Search users...",
+      "newUser": "New user",
+      "editUser": "Edit user"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -327,6 +530,13 @@
       "system": "System",
       "reorder": "Reorder",
       "largeSale": "Large sale"
+    },
+    "bell": {
+      "unread": "{count} unread",
+      "markAllRead": "Mark all as read",
+      "justNow": "Now",
+      "minutesAgo": "{min}m ago",
+      "viewAll": "View all notifications"
     }
   },
   "reports": {
@@ -335,7 +545,86 @@
     "sales": "Sales",
     "products": "Products",
     "customers": "Customers",
-    "inventory": "Inventory"
+    "inventory": "Inventory",
+    "vsLastPeriod": "vs last period",
+    "revenue": "Revenue",
+    "avgTicket": "Avg. Ticket",
+    "days": "{count} days",
+    "salesTab": {
+      "totalRevenue": "Total Revenue",
+      "totalProfit": "Total Profit",
+      "itemsSold": "{count} items sold",
+      "byPaymentMethod": "Revenue by Payment Method",
+      "byPaymentMethodDesc": "Revenue distribution by payment method",
+      "transactions": "{count} transactions",
+      "byPeriod": "Sales by Period",
+      "byPeriodDesc": "Detailed sales breakdown for the selected period",
+      "date": "Date",
+      "items": "Items"
+    },
+    "customerTab": {
+      "activeCustomers": "Active Customers",
+      "last30Days": "Last 30 days",
+      "newCustomers": "New Customers",
+      "inPeriod": "In the period",
+      "segmentation": "Customer Segmentation",
+      "segmentationDesc": "Distribution by purchasing behavior",
+      "customersPct": "{count} customers · {pct}%",
+      "avgSpent": "{amount} average",
+      "topBuyers": "Top Customers",
+      "topBuyersDesc": "Customers with the highest spend in the period",
+      "totalSpent": "Total Spent",
+      "pts": "{count} pts"
+    },
+    "inventoryTab": {
+      "avgRate": "Avg rate: {rate}x",
+      "fastMoving": "Fast Moving",
+      "fastMovingDesc": "Turnover ≥ 4x",
+      "slowMoving": "Slow Moving",
+      "slowMovingDesc": "Turnover 1-4x",
+      "deadStock": "Dead Stock",
+      "deadStockDesc": "Turnover < 1x",
+      "valueByWarehouse": "Inventory Value by Warehouse",
+      "valueByWarehouseDesc": "Total stock valuation at each location",
+      "warehouseSummary": "{products} products · {units} units",
+      "turnover": "Inventory Turnover",
+      "turnoverDesc": "Product movement analysis · Average rate: {rate}x",
+      "avgStock": "Avg. Stock",
+      "sold": "Sold",
+      "rotation": "Turnover",
+      "daysInv": "Inv. Days",
+      "statusFast": "Fast",
+      "statusSlow": "Slow",
+      "statusDead": "Dead"
+    },
+    "productTab": {
+      "topSelling": "Top Selling Products",
+      "topSellingDesc": "The {count} best performing products in the period",
+      "noSalesData": "No sales data available",
+      "lowStockDesc": "Products that need urgent restocking",
+      "warehouse": "Warehouse",
+      "reorderPoint": "Reorder Point",
+      "daysRemaining": "Days Remaining",
+      "critical": "⚠️ Critical",
+      "low": "⚠️ Low",
+      "allStocked": "✅ All products have sufficient stock",
+      "avgPrice": "Avg. Price"
+    },
+    "filters": {
+      "period": "Period",
+      "today": "Today",
+      "lastWeek": "Last Week",
+      "lastMonth": "Last Month",
+      "lastYear": "Last Year",
+      "custom": "Custom",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "limit": "Result limit",
+      "exportCsv": "Export CSV",
+      "exportExcel": "Export Excel",
+      "exportPdf": "Export PDF",
+      "comingSoon": "Coming soon"
+    }
   },
   "settings": {
     "title": "Settings",
@@ -407,7 +696,8 @@
     "enableLoyaltyDesc": "Customers accumulate points with each purchase",
     "pointsPerAmount": "Points per $ spent",
     "pointValue": "Value of 1 point ($)",
-    "loyaltyCalculation": "💡 With this configuration: $10,000 purchase generates {points} points worth ${value}"
+    "loyaltyCalculation": "💡 With this configuration: $10,000 purchase generates <b>{points} points</b> worth <b>${value}</b>",
+    "resetConfirm": "Reset settings to default values?"
   },
   "theme": {
     "light": "Light",

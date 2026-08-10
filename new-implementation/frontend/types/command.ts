@@ -1,3 +1,5 @@
+import type { MessageKey } from '@/types/i18n';
+
 /**
  * Command palette (⌘K) — navigation entries.
  *
@@ -18,5 +20,5 @@ export interface CommandItem {
 export interface CommandRoute {
   href: string;
   /** Key inside the `sidebar` i18n namespace. */
-  labelKey: string;
+  labelKey: MessageKey<'sidebar'>;
 }

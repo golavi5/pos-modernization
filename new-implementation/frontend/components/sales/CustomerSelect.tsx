@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { User, Search, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,8 @@ export function CustomerSelect({
   selectedCustomer,
   onSelect,
 }: CustomerSelectProps) {
+  const t = useTranslations('sales.customerSelect');
+  const tCustomers = useTranslations('customers');
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -54,7 +57,7 @@ export function CustomerSelect({
   return (
     <div className="bg-white rounded-lg border p-4">
       <div className="flex items-center justify-between mb-3">
-        <label className="text-sm font-medium text-secondary">Cliente (Opcional)</label>
+        <label className="text-sm font-medium text-secondary">{t('label')}</label>
         {selectedCustomer && (
           <Button
             variant="ghost"
@@ -81,7 +84,7 @@ export function CustomerSelect({
           {selectedCustomer.loyalty_points !== undefined &&
             selectedCustomer.loyalty_points > 0 && (
               <Badge variant="success">
-                {selectedCustomer.loyalty_points} puntos
+                {tCustomers('loyalty.pointsCount', { count: selectedCustomer.loyalty_points })}
               </Badge>
             )}
         </div>
@@ -93,7 +96,7 @@ export function CustomerSelect({
             className="w-full justify-start"
           >
             <Search className="w-4 h-4 mr-2" />
-            Buscar cliente...
+            {t('search')}
           </Button>
 
           {showSearch && (
@@ -103,7 +106,7 @@ export function CustomerSelect({
                 <div className="p-3 border-b">
                   <Input
                     type="text"
-                    placeholder="Buscar por nombre, email o teléfono..."
+                    placeholder={tCustomers('filters.searchPlaceholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoFocus
@@ -115,17 +118,17 @@ export function CustomerSelect({
                   {isLoading ? (
                     <div className="p-8 text-center text-tertiary">
                       <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-gray-300" />
-                      <p>Cargando clientes...</p>
+                      <p>{t('loading')}</p>
                     </div>
                   ) : isError ? (
                     <div className="p-8 text-center text-tertiary">
                       <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                      <p>No se pudieron cargar los clientes</p>
+                      <p>{t('error')}</p>
                     </div>
                   ) : customers.length === 0 ? (
                     <div className="p-8 text-center text-tertiary">
                       <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                      <p>No se encontraron clientes</p>
+                      <p>{tCustomers('table.empty')}</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100">

@@ -28,7 +28,30 @@
     "yes": "Sí",
     "no": "No",
     "optional": "Opcional",
-    "required": "Requerido"
+    "required": "Requerido",
+    "brand": "POS",
+    "logout": "Cerrar sesión",
+    "customer": "Cliente",
+    "status": "Estado",
+    "total": "Total",
+    "contact": "Contacto",
+    "purchases": "Compras",
+    "points": "Puntos",
+    "email": "Email",
+    "actions": "Acciones",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "product": "Producto",
+    "quantity": "Cantidad",
+    "notesOptional": "Notas (Opcional)",
+    "preview": "Vista previa",
+    "processing": "Procesando...",
+    "stock": "Stock",
+    "password": "Contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "lowStockAlerts": "Alertas de Stock Bajo",
+    "subtractLabel": "Restar:",
+    "system": "Sistema"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -36,7 +59,6 @@
     "enterCredentials": "Ingresa tus credenciales para acceder al sistema POS",
     "emailAddress": "Correo electrónico",
     "emailPlaceholder": "tu@ejemplo.com",
-    "password": "Contraseña",
     "passwordPlaceholder": "••••••••",
     "signingIn": "Iniciando sesión...",
     "needAccount": "¿Necesitas una cuenta?",
@@ -47,13 +69,16 @@
     "fullName": "Nombre completo",
     "fullNamePlaceholder": "Juan Pérez",
     "confirmPassword": "Confirmar contraseña",
-    "passwordMismatch": "Las contraseñas no coinciden",
     "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
     "registrationFailed": "Falló el registro",
     "register": "Registrarse",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
-    "logout": "Cerrar sesión",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "layout": {
+      "title": "POS Modernization",
+      "subtitle": "Sistema de Punto de Venta moderno",
+      "copyright": "© 2024 POS System. Todos los derechos reservados."
+    }
   },
   "sidebar": {
     "posSystem": "Sistema POS",
@@ -90,20 +115,32 @@
     "fromTransactions": "de {count} transacciones",
     "totalProducts": "Total de Productos",
     "inInventory": "en inventario",
-    "lowStockAlerts": "Alertas de Stock Bajo",
     "itemsNeedRestock": "artículos necesitan reabastecimiento",
     "pendingOrders": "Pedidos Pendientes",
     "awaitingShipment": "esperando envío",
     "recentSales": "Ventas recientes",
-    "customer": "Cliente",
-    "total": "Total",
-    "status": "Estado",
     "noCustomer": "Sin cliente",
     "viewAll": "Ver todas",
     "statusPaid": "Pagado",
     "statusPending": "Pendiente",
     "statusPartial": "Parcial",
-    "statusRefunded": "Devuelto"
+    "statusRefunded": "Devuelto",
+    "kpi": {
+      "salesToday": "Ventas hoy",
+      "transactions": "Transacciones",
+      "avgTicket": "Ticket promedio",
+      "totalSales": "Total ventas",
+      "deltaRevenue": "+12% vs ayer",
+      "deltaTransactions": "+5 vs ayer"
+    },
+    "quickActions": {
+      "title": "Acciones rápidas",
+      "newSale": "Nueva venta",
+      "adjustInventory": "Ajustar inventario",
+      "viewDailyReport": "Ver reporte del día",
+      "addProduct": "Agregar producto"
+    },
+    "salesLast7Days": "Ventas — últimos 7 días"
   },
   "sales": {
     "title": "Ventas",
@@ -130,10 +167,8 @@
     "credit": "Crédito",
     "cashReceived": "Efectivo recibido",
     "change": "Cambio",
-    "notes": "Notas (Opcional)",
     "notesPlaceholder": "Ej: Cliente pidió factura, entregar en domicilio...",
     "amountMustBeGreater": "El monto recibido debe ser mayor o igual al total",
-    "processing": "Procesando...",
     "confirmSale": "Confirmar Venta",
     "cartEmpty": "Carrito vacío",
     "searchToAdd": "Busca productos para agregar al carrito",
@@ -149,9 +184,32 @@
     "efectivoRecibido": "Efectivo recibido",
     "cambio": "Cambio",
     "confirmarPago": "Confirmar pago",
+    "confirmShortcutHint": "Enter ↵",
     "pagoCompletado": "¡Pago completado!",
     "nuevaVenta": "+ Nueva venta",
-    "autoRegresa": "Auto-regresa en {seconds}s..."
+    "autoRegresa": "Auto-regresa en {seconds}s...",
+    "customerSelect": {
+      "label": "Cliente (Opcional)",
+      "search": "Buscar cliente...",
+      "loading": "Cargando clientes...",
+      "error": "No se pudieron cargar los clientes"
+    },
+    "payment": {
+      "backToCart": "Volver al carrito",
+      "inProgress": "Venta en curso",
+      "mixed": "Mixto",
+      "cardInstructions": "Procesa el pago en el terminal",
+      "cardConfirm": "Confirma cuando el terminal apruebe",
+      "mixedComingSoon": "Funcionalidad de pago mixto — próximamente",
+      "error": "Error al procesar el pago",
+      "totalCharged": "Total cobrado",
+      "received": "Recibido"
+    },
+    "cartHeader": "Carrito · {count} items",
+    "cartSubtotal": "Subtotal",
+    "cartTax": "IVA (19%)",
+    "cartDiscount": "Descuento",
+    "clearCartConfirm": "¿Limpiar el carrito?"
   },
   "products": {
     "title": "Productos",
@@ -196,7 +254,6 @@
     "taxRate": "Tasa de impuesto (%)",
     "imageUrl": "URL de imagen",
     "imageUrlPlaceholder": "https://example.com/image.jpg",
-    "preview": "Vista previa",
     "searchPlaceholder": "Buscar por nombre, SKU o código de barras...",
     "filters": "Filtros",
     "allCategories": "Todas",
@@ -205,7 +262,6 @@
     "creationDate": "Fecha de creación",
     "name": "Nombre",
     "price": "Precio",
-    "stock": "Stock",
     "order": "Orden",
     "ascending": "Ascendente",
     "descending": "Descendente",
@@ -213,7 +269,6 @@
     "productNotFound": "Producto no encontrado",
     "noDescription": "Sin descripción",
     "stockStatus": "Estado de stock",
-    "status": "Estado",
     "updateProductInfo": "Actualizar información del producto",
     "loadingCategories": "Cargando categorías...",
     "categoryManagement": "Gestión de categorías",
@@ -222,7 +277,18 @@
     "addCategory": "Agregar categoría",
     "searchProducts": "Buscar productos...",
     "createProductSubtitle": "Agrega un nuevo producto a tu catálogo",
-    "productInformation": "Información del producto"
+    "productInformation": "Información del producto",
+    "view": "Ver",
+    "skuLabel": "SKU",
+    "inStock": "En stock",
+    "lowStockCount": "Stock bajo ({stock})",
+    "inStockCount": "En stock ({stock})",
+    "table": {
+      "empty": "No se encontraron productos",
+      "emptyHint": "Intenta ajustar la búsqueda o crear un nuevo producto",
+      "img": "IMG",
+      "deleteConfirm": "¿Eliminar \"{name}\"?"
+    }
   },
   "customers": {
     "title": "Clientes",
@@ -251,7 +317,6 @@
     "pointsUpdateError": "Error al actualizar los puntos",
     "fullName": "Nombre completo *",
     "fullNamePlaceholder": "Ej: Juan Pérez García",
-    "email": "Email",
     "emailPlaceholder": "ejemplo@correo.com",
     "emailHelp": "Usado para enviar recibos y notificaciones",
     "phone": "Teléfono",
@@ -263,7 +328,46 @@
     "additionalInfo": "Información adicional",
     "loyaltyPoints": "Puntos de lealtad:",
     "totalPurchases": "Total compras:",
-    "pointsNote": "* Los puntos de lealtad se gestionan desde el botón de acción en la tabla"
+    "pointsNote": "* Los puntos de lealtad se gestionan desde el botón de acción en la tabla",
+    "filters": {
+      "searchPlaceholder": "Buscar por nombre, email o teléfono...",
+      "minPoints": "Puntos mínimos",
+      "registrationDate": "Fecha de registro",
+      "totalPurchases": "Total compras",
+      "loyaltyPoints": "Puntos de lealtad"
+    },
+    "table": {
+      "empty": "No se encontraron clientes",
+      "emptyHint": "Intenta ajustar los filtros o crear un nuevo cliente",
+      "lastPurchase": "Última compra",
+      "viewDetails": "Ver detalles",
+      "managePoints": "Gestionar puntos"
+    },
+    "form": {
+      "create": "Crear cliente"
+    },
+    "loyalty": {
+      "title": "Gestionar Puntos",
+      "currentBalance": "Balance actual",
+      "pointsCount": "{count} puntos",
+      "operation": "Operación",
+      "add": "Agregar",
+      "addDesc": "Sumar puntos al balance actual",
+      "subtract": "Restar",
+      "subtractDesc": "Restar puntos del balance actual",
+      "set": "Establecer",
+      "setDesc": "Definir un nuevo balance exacto",
+      "newBalance": "Nuevo balance",
+      "pointsAmount": "Cantidad de puntos",
+      "addLabel": "Sumar:",
+      "invalidAmount": "Ingresa una cantidad válida de puntos",
+      "insufficientPoints": "No hay suficientes puntos para restar"
+    },
+    "page": {
+      "searchPlaceholder": "Buscar clientes...",
+      "newCustomer": "Nuevo cliente",
+      "editCustomer": "Editar cliente"
+    }
   },
   "inventory": {
     "title": "Inventario",
@@ -281,7 +385,67 @@
     "showingProducts": "Mostrando {from} - {to} de {total} productos",
     "showingMovements": "Mostrando {from} - {to} de {total} movimientos",
     "adjustSuccess": "Stock ajustado exitosamente",
-    "adjustError": "Error al ajustar el stock"
+    "adjustError": "Error al ajustar el stock",
+    "adjust": {
+      "title": "Ajustar Stock",
+      "currentStock": "Stock actual",
+      "movementType": "Tipo de movimiento",
+      "newQuantity": "Nueva cantidad",
+      "exceedsStock": "Cantidad excede el stock disponible ({available})",
+      "reference": "Número de referencia (Opcional)",
+      "referencePlaceholder": "Ej: PO-12345, FACTURA-001",
+      "notesPlaceholder": "Motivo del ajuste, observaciones...",
+      "newStock": "Nuevo stock",
+      "addLabel": "Agregar:",
+      "invalidQuantity": "Ingresa una cantidad válida",
+      "insufficientStock": "No hay suficiente stock disponible",
+      "confirmAdjust": "Confirmar Ajuste"
+    },
+    "movementTypes": {
+      "IN": "Entrada",
+      "OUT": "Salida",
+      "ADJUST": "Ajuste",
+      "TRANSFER": "Transferencia",
+      "DAMAGE": "Daño",
+      "RETURN": "Devolución"
+    },
+    "movementDesc": {
+      "IN": "Recibir stock",
+      "OUT": "Retirar stock",
+      "ADJUST": "Ajustar a cantidad exacta",
+      "DAMAGE": "Registrar daño",
+      "RETURN": "Devolución de cliente"
+    },
+    "filters": {
+      "allWarehouses": "Todos los almacenes",
+      "stockLevel": "Nivel de stock",
+      "normalStock": "Stock normal",
+      "productName": "Nombre del producto",
+      "lastMovement": "Último movimiento",
+      "applyFilters": "Aplicar filtros"
+    },
+    "movementsList": {
+      "empty": "No hay movimientos registrados",
+      "emptyHint": "Los movimientos de stock aparecerán aquí",
+      "reference": "Ref: {number}",
+      "by": "Por: {name}"
+    },
+    "table": {
+      "empty": "No hay stock disponible",
+      "emptyHint": "Ajusta filtros o agrega productos al inventario",
+      "reserved": "Reservado",
+      "available": "Disponible",
+      "action": "Acción",
+      "adjustStock": "Ajustar stock",
+      "adjust": "Ajustar",
+      "min": "Min: {value}",
+      "noName": "Producto sin nombre",
+      "noStock": "Sin stock",
+      "restock": "Reabastecer"
+    },
+    "page": {
+      "searchPlaceholder": "Buscar producto o SKU..."
+    }
   },
   "users": {
     "title": "Gestión de Usuarios",
@@ -302,7 +466,46 @@
     "toggleUserStatus": "¿{action} usuario \"{name}\"?",
     "activate": "Activar",
     "deactivate": "Desactivar",
-    "deleteConfirm": "¿Eliminar usuario \"{name}\"? Esta acción no se puede deshacer."
+    "deleteConfirm": "¿Eliminar usuario \"{name}\"? Esta acción no se puede deshacer.",
+    "roles": {
+      "assignTitle": "Asignar Roles",
+      "userLabel": "Usuario: {name} ({email})",
+      "saveRoles": "Guardar roles"
+    },
+    "resetPassword": {
+      "title": "Resetear Contraseña",
+      "newPassword": "Nueva Contraseña *",
+      "confirmPassword": "Confirmar Contraseña *",
+      "minChars": "Mínimo 8 caracteres",
+      "repeatPassword": "Repetir contraseña",
+      "action": "Resetear contraseña"
+    },
+    "form": {
+      "firstName": "Primer nombre",
+      "lastName": "Apellido",
+      "activeUser": "Usuario activo",
+      "assignedRoles": "Roles asignados",
+      "nameRequired": "El nombre es requerido",
+      "emailRequired": "El email es requerido",
+      "passwordRequired": "La contraseña es requerida",
+      "createUser": "Crear usuario"
+    },
+    "table": {
+      "empty": "No se encontraron usuarios",
+      "emptyHint": "Intenta cambiar los filtros o crear un nuevo usuario",
+      "user": "Usuario",
+      "roles": "Roles",
+      "lastAccess": "Último acceso",
+      "registered": "Registrado",
+      "noRoles": "Sin roles",
+      "never": "Nunca",
+      "assignRoles": "Asignar roles"
+    },
+    "page": {
+      "searchPlaceholder": "Buscar usuarios...",
+      "newUser": "Nuevo usuario",
+      "editUser": "Editar usuario"
+    }
   },
   "notifications": {
     "title": "Notificaciones",
@@ -327,6 +530,13 @@
       "system": "Sistema",
       "reorder": "Reorden",
       "largeSale": "Venta grande"
+    },
+    "bell": {
+      "unread": "{count} sin leer",
+      "markAllRead": "Marcar todas como leídas",
+      "justNow": "Ahora",
+      "minutesAgo": "hace {min}m",
+      "viewAll": "Ver todas las notificaciones"
     }
   },
   "reports": {
@@ -335,7 +545,86 @@
     "sales": "Ventas",
     "products": "Productos",
     "customers": "Clientes",
-    "inventory": "Inventario"
+    "inventory": "Inventario",
+    "vsLastPeriod": "vs período anterior",
+    "revenue": "Ingresos",
+    "avgTicket": "Ticket Prom.",
+    "days": "{count} días",
+    "salesTab": {
+      "totalRevenue": "Ingresos Totales",
+      "totalProfit": "Ganancia Total",
+      "itemsSold": "{count} artículos vendidos",
+      "byPaymentMethod": "Ingresos por Método de Pago",
+      "byPaymentMethodDesc": "Distribución de ingresos según forma de pago",
+      "transactions": "{count} transacciones",
+      "byPeriod": "Ventas por Período",
+      "byPeriodDesc": "Desglose detallado de ventas en el período seleccionado",
+      "date": "Fecha",
+      "items": "Artículos"
+    },
+    "customerTab": {
+      "activeCustomers": "Clientes Activos",
+      "last30Days": "Últimos 30 días",
+      "newCustomers": "Nuevos Clientes",
+      "inPeriod": "En el período",
+      "segmentation": "Segmentación de Clientes",
+      "segmentationDesc": "Distribución por comportamiento de compra",
+      "customersPct": "{count} clientes · {pct}%",
+      "avgSpent": "{amount} promedio",
+      "topBuyers": "Mejores Clientes",
+      "topBuyersDesc": "Clientes con mayor gasto en el período",
+      "totalSpent": "Total Gastado",
+      "pts": "{count} pts"
+    },
+    "inventoryTab": {
+      "avgRate": "Tasa prom: {rate}x",
+      "fastMoving": "Movimiento Rápido",
+      "fastMovingDesc": "Rotación ≥ 4x",
+      "slowMoving": "Movimiento Lento",
+      "slowMovingDesc": "Rotación 1-4x",
+      "deadStock": "Stock Muerto",
+      "deadStockDesc": "Rotación < 1x",
+      "valueByWarehouse": "Valor de Inventario por Almacén",
+      "valueByWarehouseDesc": "Valoración total del stock en cada ubicación",
+      "warehouseSummary": "{products} productos · {units} unidades",
+      "turnover": "Rotación de Inventario",
+      "turnoverDesc": "Análisis de movimiento de productos · Tasa promedio: {rate}x",
+      "avgStock": "Stock Prom.",
+      "sold": "Vendido",
+      "rotation": "Rotación",
+      "daysInv": "Días Inv.",
+      "statusFast": "Rápido",
+      "statusSlow": "Lento",
+      "statusDead": "Muerto"
+    },
+    "productTab": {
+      "topSelling": "Productos Más Vendidos",
+      "topSellingDesc": "Los {count} productos con mejor desempeño en el período",
+      "noSalesData": "No hay datos de ventas disponibles",
+      "lowStockDesc": "Productos que necesitan reabastecimiento urgente",
+      "warehouse": "Almacén",
+      "reorderPoint": "Punto Reorden",
+      "daysRemaining": "Días Restantes",
+      "critical": "⚠️ Crítico",
+      "low": "⚠️ Bajo",
+      "allStocked": "✅ Todos los productos tienen stock suficiente",
+      "avgPrice": "Precio Prom."
+    },
+    "filters": {
+      "period": "Período",
+      "today": "Hoy",
+      "lastWeek": "Última Semana",
+      "lastMonth": "Último Mes",
+      "lastYear": "Último Año",
+      "custom": "Personalizado",
+      "startDate": "Fecha Inicio",
+      "endDate": "Fecha Fin",
+      "limit": "Límite resultados",
+      "exportCsv": "Exportar CSV",
+      "exportExcel": "Exportar Excel",
+      "exportPdf": "Exportar PDF",
+      "comingSoon": "Próximamente"
+    }
   },
   "settings": {
     "title": "Configuración",
@@ -407,7 +696,8 @@
     "enableLoyaltyDesc": "Los clientes acumulan puntos en cada compra",
     "pointsPerAmount": "Puntos por $ gastado",
     "pointValue": "Valor de 1 punto ($)",
-    "loyaltyCalculation": "💡 Con esta configuración: compra de $10,000 genera {points} puntos equivalentes a ${value}"
+    "loyaltyCalculation": "💡 Con esta configuración: compra de $10,000 genera <b>{points} puntos</b> equivalentes a <b>${value}</b>",
+    "resetConfirm": "¿Restaurar configuración a valores por defecto?"
   },
   "theme": {
     "light": "Claro",

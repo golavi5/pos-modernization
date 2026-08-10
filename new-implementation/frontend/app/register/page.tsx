@@ -17,13 +17,14 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (password !== confirmPassword) {
-      setError(t('passwordMismatch'));
+      setError(tCommon('passwordMismatch'));
       return;
     }
 
@@ -90,7 +91,7 @@ export default function RegisterPage() {
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('password')}
+                {tCommon('password')}
               </label>
               <Input
                 id="password"

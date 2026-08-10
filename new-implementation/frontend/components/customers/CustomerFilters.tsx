@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Search, X, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,10 @@ interface CustomerFiltersProps {
 }
 
 export function CustomerFilters({ onFilterChange }: CustomerFiltersProps) {
+  const t = useTranslations('customers');
+  const tCommon = useTranslations('common');
+  const tProducts = useTranslations('products');
+  const tDashboard = useTranslations('dashboard');
   const [search, setSearch] = useState('');
   const [isActive, setIsActive] = useState<boolean | undefined>(undefined);
   const [minLoyaltyPoints, setMinLoyaltyPoints] = useState<number | undefined>(undefined);
@@ -48,18 +53,18 @@ export function CustomerFilters({ onFilterChange }: CustomerFiltersProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-quaternary" />
           <Input
             type="text"
-            placeholder="Buscar por nombre, email o teléfono..."
+            placeholder={t('filters.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             className="pl-10"
           />
         </div>
-        <Button onClick={handleSearch}>Buscar</Button>
+        <Button onClick={handleSearch}>{tCommon('search')}</Button>
         {hasActiveFilters && (
           <Button variant="outline" onClick={handleReset}>
             <X className="w-4 h-4 mr-2" />
-            Limpiar
+            {tCommon('clear')}
           </Button>
         )}
         <Button
@@ -68,7 +73,7 @@ export function CustomerFilters({ onFilterChange }: CustomerFiltersProps) {
           className={showAdvanced ? 'bg-gray-100' : ''}
         >
           <Filter className="w-4 h-4 mr-2" />
-          Filtros
+          {tProducts('filters')}
         </Button>
       </div>
 
@@ -78,7 +83,7 @@ export function CustomerFilters({ onFilterChange }: CustomerFiltersProps) {
           {/* Estado */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Estado
+              {tCommon('status')}
             </label>
             <select
               value={isActive === undefined ? '' : isActive ? 'true' : 'false'}
@@ -89,16 +94,16 @@ export function CustomerFilters({ onFilterChange }: CustomerFiltersProps) {
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Todos</option>
-              <option value="true">Activos</option>
-              <option value="false">Inactivos</option>
+              <option value="">{tProducts('allStatus')}</option>
+              <option value="true">{tCommon('active')}</option>
+              <option value="false">{tCommon('inactive')}</option>
             </select>
           </div>
 
           {/* Puntos mínimos */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Puntos mínimos
+              {t('filters.minPoints')}
             </label>
             <Input
               type="number"
@@ -116,32 +121,32 @@ export function CustomerFilters({ onFilterChange }: CustomerFiltersProps) {
           {/* Ordenar por */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Ordenar por
+              {tProducts('sortBy')}
             </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as CustomerQueryParams['sortBy'])}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="created_at">Fecha de registro</option>
-              <option value="name">Nombre</option>
-              <option value="total_purchases">Total compras</option>
-              <option value="loyalty_points">Puntos de lealtad</option>
+              <option value="created_at">{t('filters.registrationDate')}</option>
+              <option value="name">{tProducts('name')}</option>
+              <option value="total_purchases">{t('filters.totalPurchases')}</option>
+              <option value="loyalty_points">{t('filters.loyaltyPoints')}</option>
             </select>
           </div>
 
           {/* Orden */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              Orden
+              {tProducts('order')}
             </label>
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value as 'ASC' | 'DESC')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="ASC">Ascendente</option>
-              <option value="DESC">Descendente</option>
+              <option value="ASC">{tProducts('ascending')}</option>
+              <option value="DESC">{tProducts('descending')}</option>
             </select>
           </div>
         </div>

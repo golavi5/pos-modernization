@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +14,7 @@ interface SlideOverProps {
 }
 
 export function SlideOver({ open, onClose, title, children, footer }: SlideOverProps) {
+  const tCommon = useTranslations('common');
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -44,7 +46,7 @@ export function SlideOver({ open, onClose, title, children, footer }: SlideOverP
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Cerrar"
+            aria-label={tCommon('close')}
           >
             <X size={16} />
           </button>

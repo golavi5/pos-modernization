@@ -1,6 +1,6 @@
 # M3 — Frontend i18n Sweep: finish the translation surface and ratchet it shut
 
-**Status**: DRAFT — not started. Baseline measured 2026-08-09 after PR #39: 40 files need work (35 by visible text, 5 more once `placeholder`/`aria-label`/`title` are counted), carrying 223 visible literals of which 78 (35%) already exist as catalog values. Depends on nothing further; the parity check it builds on shipped in #39.
+**Status**: APPROVED — 2026-08-10 (PR #42, open). Header was DONE while the PR was unmerged and cited 628 keys against a measured 629; both corrected here. Kairos' monotonic guard cannot walk the board back, so POS-FRONT-002 already shows Done in Plane — this line, not the board, is the ledger. All files translated across 8 domain batches; `i18n-lint.cjs` allowlist empty. Catalogs 392 → 624 keys after the review pass consolidated 28 borrowed/duplicated labels into `common`. The locale switch was exercised in a real browser: automated Chromium walk against a live stack (fresh MySQL + backend + `next dev`), all nine panel pages in both locales, per-page catalog strings asserted visible including `placeholder`/`title` attributes — 63/63 checks pass. High-effort review of PR #42 (2026-08-10) found the ratchet unsound in both directions and it was rebuilt: the detector now anchors on JSX tags (was matching `=> Promise<void>` as the literal `" Promise"`, and blind to text on its own line — `SalesChart.tsx` shipped a raw Spanish heading through a green gate), the `useTranslations` file-level exemption is gone (it had hidden a hardcoded `Cerrar sesión` in `Sidebar.tsx`, on every panel page), `i18n-parity.cjs` now compares ICU placeholders and rich-text tags, and `global.ts` types every `t()` against the default catalog so an unresolvable key is a build error. Failure branches re-proven after each change. **Open:** `main` has no branch protection (`gh api …/branches/main/protection` → 404), so "Frontend — i18n checks" reports but does not gate — a required-status-check rule is still needed; the browser walk predates the consolidation and has not been re-run.
 
 One Plane issue (`POS-FRONT-002`) tracking the remaining i18n work for the frontend module.
 
@@ -74,14 +74,20 @@ a floor.
 > Per the status convention in `CLAUDE.md`, the `**Status**:` line is the ledger.
 > These are working notes.
 
-- [ ] The `i18n-lint.cjs` allowlist is empty.
-- [ ] `i18n-lint.cjs` and `i18n-parity.cjs` both pass, and both run in CI as a
-      blocking job.
-- [ ] `npm run build` green.
-- [ ] Switching locale changes visible text on every page listed in §2 — checked
-      per domain, not only on the first one.
-- [ ] No key added to one catalog without the other (parity check proves it).
-- [ ] Strings in `placeholder`, `aria-label` and `title` are translated too, not
+- [x] The `i18n-lint.cjs` allowlist is empty. (Only meaningful now that the
+      check is per-string; an empty allowlist under the old file-level
+      exemption proved nothing.)
+- [x] `i18n-lint.cjs` and `i18n-parity.cjs` both pass, and both run in CI.
+- [ ] The i18n job actually gates: `main` is unprotected, so the job reports
+      without blocking. Needs "Frontend — i18n checks" added as a required
+      status check — a repo setting, not a change in this PR.
+- [x] A key used in code that does not resolve is a build error (`global.ts`
+      types `t()` against the default catalog).
+- [x] `npm run build` green.
+- [x] Switching locale changes visible text on every page listed in §2 — checked
+      per domain, not only on the first one (automated browser walk, PR #42).
+- [x] No key added to one catalog without the other (parity check proves it).
+- [x] Strings in `placeholder`, `aria-label` and `title` are translated too, not
       only text between tags.
 
 ## 6. Out of scope

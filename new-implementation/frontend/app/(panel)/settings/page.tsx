@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { MessageKey } from '@/types/i18n';
 import {
   useSettings,
   useUpdateCompany,
@@ -21,13 +23,13 @@ import {
 
 type SectionId = 'company' | 'tax' | 'payments' | 'inventory' | 'sales' | 'loyalty';
 
-const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode }[] = [
-  { id: 'company',   label: 'Empresa',       icon: <Building2 className="h-4 w-4" /> },
-  { id: 'tax',       label: 'Impuestos',      icon: <Receipt className="h-4 w-4" /> },
-  { id: 'payments',  label: 'Pagos',          icon: <CreditCard className="h-4 w-4" /> },
-  { id: 'inventory', label: 'Inventario',     icon: <Package className="h-4 w-4" /> },
-  { id: 'sales',     label: 'Ventas',         icon: <ShoppingCart className="h-4 w-4" /> },
-  { id: 'loyalty',   label: 'Fidelización',   icon: <Star className="h-4 w-4" /> },
+const SECTIONS: { id: SectionId; labelKey: MessageKey<'settings'>; icon: React.ReactNode }[] = [
+  { id: 'company',   labelKey: 'company',   icon: <Building2 className="h-4 w-4" /> },
+  { id: 'tax',       labelKey: 'taxes',     icon: <Receipt className="h-4 w-4" /> },
+  { id: 'payments',  labelKey: 'payments',  icon: <CreditCard className="h-4 w-4" /> },
+  { id: 'inventory', labelKey: 'inventory', icon: <Package className="h-4 w-4" /> },
+  { id: 'sales',     labelKey: 'sales',     icon: <ShoppingCart className="h-4 w-4" /> },
+  { id: 'loyalty',   labelKey: 'loyalty',   icon: <Star className="h-4 w-4" /> },
 ];
 
 // Reusable toggle component
@@ -53,6 +55,7 @@ function Section({ title, description, children, onSave, saving }: {
   title: string; description: string; children: React.ReactNode;
   onSave: () => void; saving: boolean;
 }) {
+  const tCommon = useTranslations('common');
   return (
     <Card>
       <CardHeader>
@@ -64,7 +67,7 @@ function Section({ title, description, children, onSave, saving }: {
         <div className="flex justify-end pt-4 border-t">
           <Button onClick={onSave} disabled={saving}>
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Guardando...' : 'Guardar cambios'}
+            {saving ? tCommon('saving') : tCommon('saveChanges')}
           </Button>
         </div>
       </CardContent>
@@ -73,6 +76,8 @@ function Section({ title, description, children, onSave, saving }: {
 }
 
 export default function SettingsPage() {
+  const t = useTranslations('settings');
+  const tCommon = useTranslations('common');
   const [activeSection, setActiveSection] = useState<SectionId>('company');
   const [saved, setSaved] = useState('');
 
@@ -178,24 +183,24 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Configuración</h1>
-          <p className="text-secondary mt-1">Ajusta los parámetros de tu sistema POS</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-secondary mt-1">{t('description')}</p>
         </div>
         <Button
           variant="outline"
           className="text-red-600 hover:text-red-700 border-red-200"
-          onClick={() => confirm('¿Restaurar configuración a valores por defecto?') && reset.mutate()}
+          onClick={() => confirm(t('resetConfirm')) && reset.mutate()}
           disabled={reset.isPending}
         >
           <RotateCcw className="h-4 w-4 mr-2" />
-          Restaurar defaults
+          {tCommon('restoreDefaults')}
         </Button>
       </div>
 
       {/* Saved toast */}
       {saved && (
         <div className="fixed bottom-4 right-4 z-50 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-medium">
-          ✅ Configuración guardada
+          {t('saveSuccess')}
         </div>
       )}
 
@@ -213,7 +218,7 @@ export default function SettingsPage() {
               }`}
             >
               {sec.icon}
-              {sec.label}
+              {t(sec.labelKey)}
             </button>
           ))}
         </nav>
@@ -221,26 +226,26 @@ export default function SettingsPage() {
 
       {/* ── EMPRESA ─────────────────────────────────── */}
       {activeSection === 'company' && (
-        <Section title="Información de la empresa" description="Datos que aparecerán en recibos y facturas"
+        <Section title={t('companyInfo')} description={t('companyInfoDesc')}
           onSave={() => handleSave('company')} saving={isSaving('company')}>
-          {field('Nombre empresa', 'companyName', company.companyName, (v) => setCompany((p) => ({ ...p, companyName: v })))}
-          {field('NIT / RUT', 'nit', company.nit, (v) => setCompany((p) => ({ ...p, nit: v })))}
-          {field('Dirección', 'address', company.address, (v) => setCompany((p) => ({ ...p, address: v })))}
-          {field('Teléfono', 'phone', company.phone, (v) => setCompany((p) => ({ ...p, phone: v })), 'tel')}
-          {field('Email', 'email', company.email, (v) => setCompany((p) => ({ ...p, email: v })), 'email')}
-          {field('Sitio web', 'website', company.website, (v) => setCompany((p) => ({ ...p, website: v })))}
-          {field('Ciudad', 'city', company.city, (v) => setCompany((p) => ({ ...p, city: v })))}
-          {field('País', 'country', company.country, (v) => setCompany((p) => ({ ...p, country: v })))}
+          {field(t('companyName'), 'companyName', company.companyName, (v) => setCompany((p) => ({ ...p, companyName: v })))}
+          {field(t('taxId'), 'nit', company.nit, (v) => setCompany((p) => ({ ...p, nit: v })))}
+          {field(t('address'), 'address', company.address, (v) => setCompany((p) => ({ ...p, address: v })))}
+          {field(t('phone'), 'phone', company.phone, (v) => setCompany((p) => ({ ...p, phone: v })), 'tel')}
+          {field(t('email'), 'email', company.email, (v) => setCompany((p) => ({ ...p, email: v })), 'email')}
+          {field(t('website'), 'website', company.website, (v) => setCompany((p) => ({ ...p, website: v })))}
+          {field(t('city'), 'city', company.city, (v) => setCompany((p) => ({ ...p, city: v })))}
+          {field(t('country'), 'country', company.country, (v) => setCompany((p) => ({ ...p, country: v })))}
         </Section>
       )}
 
       {/* ── IMPUESTOS ────────────────────────────────── */}
       {activeSection === 'tax' && (
-        <Section title="Impuestos y moneda" description="Configura el IVA y la moneda de tu país"
+        <Section title={t('taxesAndCurrency')} description={t('taxesDesc')}
           onSave={() => handleSave('tax')} saving={isSaving('tax')}>
-          {numField('IVA (%)', 'taxRate', tax.taxRate, (v) => setTax((p) => ({ ...p, taxRate: v })), 0.5, 0)}
+          {numField(t('vatRate'), 'taxRate', tax.taxRate, (v) => setTax((p) => ({ ...p, taxRate: v })), 0.5, 0)}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-            <Label htmlFor="currency" className="text-sm font-medium">Moneda</Label>
+            <Label htmlFor="currency" className="text-sm font-medium">{t('currency')}</Label>
             <div className="sm:col-span-2">
               <select
                 id="currency"
@@ -248,52 +253,52 @@ export default function SettingsPage() {
                 onChange={(e) => setTax((p) => ({ ...p, currency: e.target.value }))}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="COP">COP - Peso colombiano</option>
-                <option value="USD">USD - Dólar americano</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="MXN">MXN - Peso mexicano</option>
-                <option value="PEN">PEN - Sol peruano</option>
+                <option value="COP">{t('currencyCOP')}</option>
+                <option value="USD">{t('currencyUSD')}</option>
+                <option value="EUR">{t('currencyEUR')}</option>
+                <option value="MXN">{t('currencyMXN')}</option>
+                <option value="PEN">{t('currencyPEN')}</option>
               </select>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-            <Label className="text-sm font-medium">Locale</Label>
+            <Label className="text-sm font-medium">{t('locale')}</Label>
             <div className="sm:col-span-2">
               <select
                 value={tax.locale}
                 onChange={(e) => setTax((p) => ({ ...p, locale: e.target.value }))}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="es-CO">es-CO (Colombia)</option>
-                <option value="es-MX">es-MX (México)</option>
-                <option value="es-PE">es-PE (Perú)</option>
-                <option value="en-US">en-US (EE.UU.)</option>
+                <option value="es-CO">{t('localeESCO')}</option>
+                <option value="es-MX">{t('localeESMX')}</option>
+                <option value="es-PE">{t('localeESPE')}</option>
+                <option value="en-US">{t('localeENUS')}</option>
               </select>
             </div>
           </div>
-          {toggleRow('IVA incluido en precio', 'Los precios ya incluyen el impuesto', 'taxIncluded',
+          {toggleRow(t('taxIncluded'), t('taxIncludedDesc'), 'taxIncluded',
             tax.taxIncludedInPrice, (v) => setTax((p) => ({ ...p, taxIncludedInPrice: v })))}
         </Section>
       )}
 
       {/* ── PAGOS ────────────────────────────────────── */}
       {activeSection === 'payments' && (
-        <Section title="Métodos de pago" description="Activa los métodos que acepta tu negocio"
+        <Section title={t('paymentMethods')} description={t('paymentMethodsDesc')}
           onSave={() => handleSave('payments')} saving={isSaving('payments')}>
-          {toggleRow('Efectivo', 'Pago en efectivo', 'cash', payments.paymentCash, (v) => setPayments((p) => ({ ...p, paymentCash: v })))}
-          {toggleRow('Tarjeta', 'Débito o crédito con dataphone', 'card', payments.paymentCard, (v) => setPayments((p) => ({ ...p, paymentCard: v })))}
-          {toggleRow('Transferencia', 'Transferencia bancaria / PSE', 'transfer', payments.paymentTransfer, (v) => setPayments((p) => ({ ...p, paymentTransfer: v })))}
-          {toggleRow('Crédito', 'Venta a crédito / fiado', 'credit', payments.paymentCredit, (v) => setPayments((p) => ({ ...p, paymentCredit: v })))}
+          {toggleRow(t('cashMethod'), t('cashDesc'), 'cash', payments.paymentCash, (v) => setPayments((p) => ({ ...p, paymentCash: v })))}
+          {toggleRow(t('cardMethod'), t('cardDesc'), 'card', payments.paymentCard, (v) => setPayments((p) => ({ ...p, paymentCard: v })))}
+          {toggleRow(t('transferMethod'), t('transferDesc'), 'transfer', payments.paymentTransfer, (v) => setPayments((p) => ({ ...p, paymentTransfer: v })))}
+          {toggleRow(t('creditMethod'), t('creditDesc'), 'credit', payments.paymentCredit, (v) => setPayments((p) => ({ ...p, paymentCredit: v })))}
           {payments.paymentTransfer && (
             <div className="space-y-1 pt-2">
               <Label htmlFor="transferInstructions" className="text-sm font-medium">
-                Instrucciones de transferencia
+                {t('transferInstructions')}
               </Label>
               <textarea
                 id="transferInstructions"
                 value={payments.paymentTransferInstructions}
                 onChange={(e) => setPayments((p) => ({ ...p, paymentTransferInstructions: e.target.value }))}
-                placeholder="Ej: Banco Bogotá, cta 123456789, a nombre de Mi Empresa SAS"
+                placeholder={t('transferPlaceholder')}
                 rows={3}
                 className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
@@ -304,28 +309,28 @@ export default function SettingsPage() {
 
       {/* ── INVENTARIO ───────────────────────────────── */}
       {activeSection === 'inventory' && (
-        <Section title="Inventario" description="Controla cómo se gestiona el stock"
+        <Section title={t('inventorySettings')} description={t('inventoryDesc')}
           onSave={() => handleSave('inventory')} saving={isSaving('inventory')}>
-          {toggleRow('Rastrear inventario', 'Controla el stock de productos', 'trackInv', inventory.trackInventory, (v) => setInventory((p) => ({ ...p, trackInventory: v })))}
-          {toggleRow('Permitir stock negativo', 'Permite ventas cuando stock es 0', 'negStock', inventory.allowNegativeStock, (v) => setInventory((p) => ({ ...p, allowNegativeStock: v })))}
-          {numField('Punto de reorden por defecto', 'defaultReorder', inventory.defaultReorderPoint, (v) => setInventory((p) => ({ ...p, defaultReorderPoint: v })))}
+          {toggleRow(t('trackInventory'), t('trackInventoryDesc'), 'trackInv', inventory.trackInventory, (v) => setInventory((p) => ({ ...p, trackInventory: v })))}
+          {toggleRow(t('allowNegativeStock'), t('allowNegativeStockDesc'), 'negStock', inventory.allowNegativeStock, (v) => setInventory((p) => ({ ...p, allowNegativeStock: v })))}
+          {numField(t('defaultReorderPoint'), 'defaultReorder', inventory.defaultReorderPoint, (v) => setInventory((p) => ({ ...p, defaultReorderPoint: v })))}
         </Section>
       )}
 
       {/* ── VENTAS ───────────────────────────────────── */}
       {activeSection === 'sales' && (
-        <Section title="Ventas" description="Configura el comportamiento del punto de venta"
+        <Section title={t('salesSettings')} description={t('salesDesc')}
           onSave={() => handleSave('sales')} saving={isSaving('sales')}>
-          {toggleRow('Requerir cliente', 'Obliga seleccionar un cliente en cada venta', 'reqCustomer', sales.requireCustomer, (v) => setSales((p) => ({ ...p, requireCustomer: v })))}
-          {toggleRow('Imprimir recibo automáticamente', 'Imprime al confirmar pago', 'printAuto', sales.printReceiptAutomatically, (v) => setSales((p) => ({ ...p, printReceiptAutomatically: v })))}
-          {numField('Umbral venta grande ($)', 'largeThreshold', sales.largeSaleThreshold, (v) => setSales((p) => ({ ...p, largeSaleThreshold: v })), 10000)}
+          {toggleRow(t('requireCustomer'), t('requireCustomerDesc'), 'reqCustomer', sales.requireCustomer, (v) => setSales((p) => ({ ...p, requireCustomer: v })))}
+          {toggleRow(t('autoPrintReceipt'), t('autoPrintReceiptDesc'), 'printAuto', sales.printReceiptAutomatically, (v) => setSales((p) => ({ ...p, printReceiptAutomatically: v })))}
+          {numField(t('largeSaleThreshold'), 'largeThreshold', sales.largeSaleThreshold, (v) => setSales((p) => ({ ...p, largeSaleThreshold: v })), 10000)}
           <div className="space-y-1">
-            <Label htmlFor="receiptFooter" className="text-sm font-medium">Pie de recibo</Label>
+            <Label htmlFor="receiptFooter" className="text-sm font-medium">{t('receiptFooter')}</Label>
             <textarea
               id="receiptFooter"
               value={sales.receiptFooter}
               onChange={(e) => setSales((p) => ({ ...p, receiptFooter: e.target.value }))}
-              placeholder="Ej: Gracias por su compra. No se aceptan devoluciones después de 3 días."
+              placeholder={t('receiptFooterPlaceholder')}
               rows={2}
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             />
@@ -335,18 +340,19 @@ export default function SettingsPage() {
 
       {/* ── FIDELIZACIÓN ─────────────────────────────── */}
       {activeSection === 'loyalty' && (
-        <Section title="Programa de fidelización" description="Configura los puntos de lealtad para clientes"
+        <Section title={t('loyaltyProgram')} description={t('loyaltyDesc')}
           onSave={() => handleSave('loyalty')} saving={isSaving('loyalty')}>
-          {toggleRow('Habilitar programa de puntos', 'Los clientes acumulan puntos en cada compra', 'loyaltyOn', loyalty.loyaltyEnabled, (v) => setLoyalty((p) => ({ ...p, loyaltyEnabled: v })))}
+          {toggleRow(t('enableLoyalty'), t('enableLoyaltyDesc'), 'loyaltyOn', loyalty.loyaltyEnabled, (v) => setLoyalty((p) => ({ ...p, loyaltyEnabled: v })))}
           {loyalty.loyaltyEnabled && (
             <>
-              {numField('Puntos por $ gastado', 'pointsPerCurrency', loyalty.loyaltyPointsPerCurrency, (v) => setLoyalty((p) => ({ ...p, loyaltyPointsPerCurrency: v })), 0.1, 0)}
-              {numField('Valor de 1 punto ($)', 'pointValue', loyalty.loyaltyPointValue, (v) => setLoyalty((p) => ({ ...p, loyaltyPointValue: v })), 0.001, 0)}
+              {numField(t('pointsPerAmount'), 'pointsPerCurrency', loyalty.loyaltyPointsPerCurrency, (v) => setLoyalty((p) => ({ ...p, loyaltyPointsPerCurrency: v })), 0.1, 0)}
+              {numField(t('pointValue'), 'pointValue', loyalty.loyaltyPointValue, (v) => setLoyalty((p) => ({ ...p, loyaltyPointValue: v })), 0.001, 0)}
               <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-700">
-                💡 Con esta configuración: compra de $10,000 genera{' '}
-                <strong>{(10000 * loyalty.loyaltyPointsPerCurrency).toLocaleString('es-CO')} puntos</strong>
-                {' '}equivalentes a{' '}
-                <strong>${(10000 * loyalty.loyaltyPointsPerCurrency * loyalty.loyaltyPointValue).toLocaleString('es-CO')}</strong>
+                {t.rich('loyaltyCalculation', {
+                  b: (chunks) => <strong>{chunks}</strong>,
+                  points: (10000 * loyalty.loyaltyPointsPerCurrency).toLocaleString('es-CO'),
+                  value: (10000 * loyalty.loyaltyPointsPerCurrency * loyalty.loyaltyPointValue).toLocaleString('es-CO'),
+                })}
               </div>
             </>
           )}

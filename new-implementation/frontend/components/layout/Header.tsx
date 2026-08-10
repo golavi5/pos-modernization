@@ -14,6 +14,7 @@ export function Header() {
   const pathname = usePathname();
   const tNav = useTranslations('sidebar');
   const t = useTranslations('commandPalette');
+  const tCommon = useTranslations('common');
   const labelKey = findNavLabelKey(pathname);
   const label = labelKey ? tNav(labelKey) : '';
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -36,7 +37,7 @@ export function Header() {
     <header className="h-[52px] shrink-0 border-b border-border bg-card flex items-center px-4 gap-3">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs shrink-0">
-        <span className="text-muted-foreground">POS</span>
+        <span className="text-muted-foreground">{tCommon('brand')}</span>
         {label && (
           <>
             <span className="text-muted-foreground">/</span>

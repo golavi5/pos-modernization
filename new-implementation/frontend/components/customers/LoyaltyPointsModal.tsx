@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { X, Award, Plus, Minus, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,11 @@ export function LoyaltyPointsModal({
   onConfirm,
   isLoading,
 }: LoyaltyPointsModalProps) {
+  const t = useTranslations('customers.loyalty');
+  const tCommon = useTranslations('common');
+  const tSales = useTranslations('sales');
+  const tProducts = useTranslations('products');
+  const tDashboard = useTranslations('dashboard');
   const [operation, setOperation] = useState<'add' | 'subtract' | 'set'>('add');
   const [points, setPoints] = useState<number>(0);
 
@@ -29,12 +35,12 @@ export function LoyaltyPointsModal({
 
   const handleConfirm = () => {
     if (points <= 0) {
-      alert('Ingresa una cantidad válida de puntos');
+      alert(t('invalidAmount'));
       return;
     }
 
     if (operation === 'subtract' && points > customer.loyalty_points) {
-      alert('No hay suficientes puntos para restar');
+      alert(t('insufficientPoints'));
       return;
     }
 
@@ -58,24 +64,24 @@ export function LoyaltyPointsModal({
   const operations = [
     {
       id: 'add' as const,
-      label: 'Agregar',
+      label: t('add'),
       icon: Plus,
       color: 'green',
-      description: 'Sumar puntos al balance actual',
+      description: t('addDesc'),
     },
     {
       id: 'subtract' as const,
-      label: 'Restar',
+      label: t('subtract'),
       icon: Minus,
       color: 'red',
-      description: 'Restar puntos del balance actual',
+      description: t('subtractDesc'),
     },
     {
       id: 'set' as const,
-      label: 'Establecer',
+      label: t('set'),
       icon: Edit,
       color: 'blue',
-      description: 'Definir un nuevo balance exacto',
+      description: t('setDesc'),
     },
   ];
 
@@ -86,7 +92,7 @@ export function LoyaltyPointsModal({
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
             <Award className="w-6 h-6 text-yellow-500" />
-            <h2 className="text-2xl font-bold">Gestionar Puntos</h2>
+            <h2 className="text-2xl font-bold">{t('title')}</h2>
           </div>
           <button
             onClick={onClose}
@@ -101,19 +107,19 @@ export function LoyaltyPointsModal({
         <div className="p-6 space-y-6">
           {/* Customer info */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-secondary mb-1">Cliente</p>
+            <p className="text-sm text-secondary mb-1">{tCommon('customer')}</p>
             <p className="text-lg font-semibold">{customer.name}</p>
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-secondary">Balance actual:</span>
+              <span className="text-sm text-secondary">{t('currentBalance')}:</span>
               <span className="text-xl font-bold text-yellow-600">
-                {customer.loyalty_points} puntos
+                {t('pointsCount', { count: customer.loyalty_points })}
               </span>
             </div>
           </div>
 
           {/* Operation selection */}
           <div>
-            <Label className="mb-3">Operación</Label>
+            <Label className="mb-3">{t('operation')}</Label>
             <div className="grid grid-cols-3 gap-3">
               {operations.map((op) => {
                 const Icon = op.icon;
@@ -155,7 +161,7 @@ export function LoyaltyPointsModal({
           {/* Points input */}
           <div>
             <Label htmlFor="points">
-              {operation === 'set' ? 'Nuevo balance' : 'Cantidad de puntos'}
+              {operation === 'set' ? t('newBalance') : t('pointsAmount')}
             </Label>
             <Input
               id="points"
@@ -170,9 +176,9 @@ export function LoyaltyPointsModal({
           {/* Preview */}
           {points > 0 && (
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <p className="text-sm text-blue-700 mb-2">Vista previa</p>
+              <p className="text-sm text-blue-700 mb-2">{tCommon('preview')}</p>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-600">Balance actual:</span>
+                <span className="text-sm text-blue-600">{t('currentBalance')}:</span>
                 <span className="font-semibold text-blue-900">
                   {customer.loyalty_points}
                 </span>
@@ -180,7 +186,7 @@ export function LoyaltyPointsModal({
               {operation !== 'set' && (
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-sm text-blue-600">
-                    {operation === 'add' ? 'Sumar:' : 'Restar:'}
+                    {operation === 'add' ? t('addLabel') : tCommon('subtractLabel')}
                   </span>
                   <span
                     className={`font-semibold ${
@@ -194,7 +200,7 @@ export function LoyaltyPointsModal({
               )}
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-blue-300">
                 <span className="text-sm font-semibold text-blue-700">
-                  Nuevo balance:
+                  {t('newBalance')}:
                 </span>
                 <span className="text-xl font-bold text-blue-900">
                   {getNewBalance()}
@@ -212,14 +218,14 @@ export function LoyaltyPointsModal({
             disabled={isLoading}
             className="flex-1"
           >
-            Cancelar
+            {tCommon('cancel')}
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={isLoading || points <= 0}
             className="flex-1"
           >
-            {isLoading ? 'Procesando...' : 'Confirmar'}
+            {isLoading ? tCommon('processing') : tCommon('confirm')}
           </Button>
         </div>
       </div>

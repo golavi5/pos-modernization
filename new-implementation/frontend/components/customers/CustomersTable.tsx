@@ -1,6 +1,7 @@
 'use client';
 
 import { Pencil, Trash2, Eye, Award } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -28,6 +29,10 @@ export function CustomersTable({
   onManageLoyalty,
   isLoading: isLoadingProp,
 }: CustomersTableProps) {
+  const t = useTranslations('customers');
+  const tCommon = useTranslations('common');
+  const tDashboard = useTranslations('dashboard');
+  const tReports = useTranslations('reports');
   const queryEnabled = search !== undefined;
   const { data: customersData, isLoading: isLoadingQuery } = useCustomers(
     queryEnabled ? { search: search || undefined, page: 1, pageSize: 50 } : {}
@@ -57,9 +62,9 @@ export function CustomersTable({
   if (customers.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-tertiary text-lg">No se encontraron clientes</p>
+        <p className="text-tertiary text-lg">{t('table.empty')}</p>
         <p className="text-quaternary text-sm mt-2">
-          Intenta ajustar los filtros o crear un nuevo cliente
+          {t('table.emptyHint')}
         </p>
       </div>
     );
@@ -70,13 +75,13 @@ export function CustomersTable({
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left p-4 font-semibold text-secondary">Cliente</th>
-            <th className="text-left p-4 font-semibold text-secondary">Contacto</th>
-            <th className="text-right p-4 font-semibold text-secondary">Compras</th>
-            <th className="text-center p-4 font-semibold text-secondary">Puntos</th>
-            <th className="text-center p-4 font-semibold text-secondary">Última compra</th>
-            <th className="text-center p-4 font-semibold text-secondary">Estado</th>
-            <th className="text-center p-4 font-semibold text-secondary">Acciones</th>
+            <th className="text-left p-4 font-semibold text-secondary">{tCommon('customer')}</th>
+            <th className="text-left p-4 font-semibold text-secondary">{tCommon('contact')}</th>
+            <th className="text-right p-4 font-semibold text-secondary">{tCommon('purchases')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('points')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{t('table.lastPurchase')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('status')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -113,7 +118,7 @@ export function CustomersTable({
                   <div className="font-semibold">
                     {formatCOP(customer.total_purchases)}
                   </div>
-                  <div className="text-sm text-tertiary">Total</div>
+                  <div className="text-sm text-tertiary">{tCommon('total')}</div>
                 </div>
               </td>
               <td className="p-4 text-center">
@@ -131,9 +136,9 @@ export function CustomersTable({
               </td>
               <td className="p-4 text-center">
                 {customer.is_active ? (
-                  <Badge variant="success">Activo</Badge>
+                  <Badge variant="success">{tCommon('statusActive')}</Badge>
                 ) : (
-                  <Badge variant="secondary">Inactivo</Badge>
+                  <Badge variant="secondary">{tCommon('statusInactive')}</Badge>
                 )}
               </td>
               <td className="p-4">
@@ -142,7 +147,7 @@ export function CustomersTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => onView?.(customer)}
-                    title="Ver detalles"
+                    title={t('table.viewDetails')}
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -150,7 +155,7 @@ export function CustomersTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => onManageLoyalty?.(customer)}
-                    title="Gestionar puntos"
+                    title={t('table.managePoints')}
                     className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                   >
                     <Award className="w-4 h-4" />
@@ -159,7 +164,7 @@ export function CustomersTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit?.(customer)}
-                    title="Editar"
+                    title={tCommon('edit')}
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -167,7 +172,7 @@ export function CustomersTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete?.(customer)}
-                    title="Eliminar"
+                    title={tCommon('delete')}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
