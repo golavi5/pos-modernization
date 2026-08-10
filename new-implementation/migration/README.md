@@ -23,18 +23,23 @@ schema and verifies row-by-row parity. It is the real cutover tool once
   cd new-implementation/migration && npm install
   ```
 
-- **`.env` file** — copy and fill:
+- **Config in the environment.** The CLI reads `process.env` directly — there is
+  no dotenv loader, so a `.env` file sitting in this directory does **nothing**.
+  `.env.example` is documentation of the variable names; export them (or
+  `set -a; . ./.env; set +a` yourself):
 
   ```bash
-  cp .env.example .env
-  # fill DB_PASSWORD at minimum
+  export NODE_ENV=migration DB_HOST=127.0.0.1 DB_PORT=3308 \
+         DB_USER=pos_user DB_PASSWORD='…' \
+         TARGET_DB_NAME=pos_db_migration LEGACY_DB_NAME=pos_legacy
   ```
 
 ---
 
 ## Environment Variables
 
-From `.env.example` — all required:
+Names documented in `.env.example`; all required, all read from the process
+environment (that file is never loaded — see Prerequisites):
 
 | Variable | Default | Notes |
 |----------|---------|-------|
@@ -127,28 +132,64 @@ locally after confirming `npm test` is green.
 ```bash
 # 1. Load the real legacy dump into pos_legacy on the dev MySQL (port 3308).
 #    The dump is from MySQL 5.7; strip the removed NO_AUTO_CREATE_USER sql_mode
-#    token so it loads on MySQL 8.0:
-mysql -h127.0.0.1 -P3308 -upos_user -p -e "CREATE DATABASE IF NOT EXISTS pos_legacy CHARACTER SET utf8mb4"
+#    token so it loads on MySQL 8.0.
+#
+#    LOAD AS root, NOT pos_user. The dump ends with a TRIGGER carrying
+#    `DEFINER=root@%` (after_insert_encabmovs_update_cantinventarios, which CALLs
+#    the `updatecant` procedure). Creating it as a non-SUPER user with binary
+#    logging on fails with ERROR 1419 and mysql ABORTS the load at that line —
+#    leaving `inventarios` and every later table missing. Check the exit code:
+#    a `sed | mysql` pipeline reports the last command's status, so wrapping it
+#    in anything that ends in `tail` will show 0 while the load has failed.
+mysql -h127.0.0.1 -P3308 -uroot -p -e "CREATE DATABASE IF NOT EXISTS pos_legacy CHARACTER SET utf8mb4"
 sed -e 's/,NO_AUTO_CREATE_USER//g; s/NO_AUTO_CREATE_USER,//g; s/NO_AUTO_CREATE_USER//g' ../../info/bd_ex.sql \
-  | mysql -h127.0.0.1 -P3308 -upos_user -p pos_legacy
+  | mysql -h127.0.0.1 -P3308 -uroot -p pos_legacy
 
-# 2. Copy and fill .env (DB_PASSWORD at minimum):
-cp .env.example .env
+# 2. Grant the migration user access to BOTH schemas — the compose `pos_user`
+#    is scoped to `pos_db` only, and `verify` needs a cross-schema JOIN:
+mysql -h127.0.0.1 -P3308 -uroot -p -e "
+  CREATE DATABASE IF NOT EXISTS pos_db_migration CHARACTER SET utf8mb4;
+  GRANT ALL PRIVILEGES ON \`pos_legacy\`.* TO 'pos_user'@'%';
+  GRANT ALL PRIVILEGES ON \`pos_db_migration\`.* TO 'pos_user'@'%';
+  FLUSH PRIVILEGES;"
 
-# 3. Provision target + run full parity cycle:
-NODE_ENV=migration npm run migrate -- reset
-NODE_ENV=migration npm run migrate -- import
-NODE_ENV=migration npm run migrate -- verify
-NODE_ENV=migration npm run migrate -- report
+# 3. Export the config. NOTE: nothing loads `.env` — the CLI reads `process.env`
+#    directly (`src/core/targetDb.ts`, `src/commands/reset.ts`). `.env.example`
+#    documents the variables; it is not read at runtime. Export them, or source
+#    the file yourself:
+export NODE_ENV=migration DB_HOST=127.0.0.1 DB_PORT=3308 DB_USER=pos_user \
+       DB_PASSWORD='…' TARGET_DB_NAME=pos_db_migration LEGACY_DB_NAME=pos_legacy
+
+# 4. Provision target + run full parity cycle. Tee the import: the clampNum
+#    warnings are console-only and never reach report.json (see below).
+npm run migrate -- reset
+npm run migrate -- import 2>&1 | tee /tmp/import.log
+npm run migrate -- verify
+npm run migrate -- report
 ```
 
 Open `reports/<latest>/report.html` to review mismatches. Iterate rule
 transforms in `src/rules/` until `verify` exits `0`.
 
-**Validated:** a full run against `bd_ex.sql` (production: 2 companies, 267
-customers, 30,276 products, 15 users, 255,955 orders, 1,185,238 order items)
-imports with **0 errors** and `verify` reports **0 mismatches / 0 missing** —
-lossless parity across ~1.47M rows.
+**Validated (2026-08-10, on the committed rules):** a full run against
+`bd_ex.sql` (production: 2 companies, 267 customers, 30,276 products, 15 users,
+255,955 orders, 1,185,238 order items, 0 payments) imports with **0 row errors**
+and `verify` reports **0 mismatches / 0 missing / 0 errors** across all 7 rules
+— parity across 1,471,753 rows. Measured on a dev box: import 11m43s,
+verify 1m33s.
+
+> The earlier green run (2026-06-30) was superseded: it predated `64622a1d`,
+> which changed `order-items.rule.ts` and `products.rule.ts`, so it did not
+> validate the rules as committed. Re-validate after **any** change under
+> `src/rules/` — a report is only evidence for the code that produced it.
+> The int32 lower-bound fix in that commit affects 0 rows in this dump
+> (`SELECT COUNT(*) FROM encabezados_mov WHERE Cant = -2147483648` → 0).
+
+**Parity green does not mean lossless.** `verify` re-applies the same clamps the
+import does, so a clamped field compares `0 == 0` and can never surface as a
+mismatch. The `clampNum` warnings are the only channel for that loss, they go to
+**stdout only** (never to `report.json`), and the run above produced 8 — see the
+tax-rate item under follow-ups.
 
 ---
 
@@ -174,11 +215,23 @@ be aware of:
 
 ## Known limitations & follow-ups
 
+- **Two products lose their tax rate.** `inventarios` 12935 (`Iva=2140`) and
+  28471 (`Iva=1900`) exceed `DECIMAL(5,2)` and clamp to **0% tax**. The column
+  is a plain percentage everywhere else (24,087 rows at `19`; no other value
+  above 19), so these are mis-keyed `19.00`/`21.40`, not a ×100 convention —
+  and both are ordinary retail items. They migrate tax-exempt, and `verify`
+  cannot flag it (it re-applies the clamp). **Needs an operator decision before
+  cutover:** fix the two rows in the source, or special-case them in
+  `products.rule.ts`. Re-run the cycle either way.
 - **Scale / speed.** `import` does per-row `INSERT … ON DUPLICATE KEY UPDATE`
-  and loads each table fully into memory first; the 1.18M-row `order_items`
-  import takes ~14 min on a dev box (peak heap well under the 6 GB ceiling).
-  Batched multi-row inserts (with per-row fallback for error isolation) are the
-  top cutover-readiness follow-up.
+  and loads each table fully into memory first; the full 1.47M-row import takes
+  ~12 min on a dev box (11m43s measured 2026-08-10; peak heap well under the
+  6 GB ceiling). Batched multi-row inserts (with per-row fallback for error
+  isolation) are the top cutover-readiness follow-up.
+- **`report.json`'s `startedAt` is actually a finish time.** `src/cli.ts` builds
+  it with `new Date().toISOString()` evaluated *after* the phase `await`
+  resolves, and the report directory is stamped a moment later. Do not read run
+  duration from consecutive report directories — they are end timestamps.
 - **Dropped legacy fields aren't diffed.** `verify` only compares mapped fields,
   so unmapped columns (e.g. `encabezados_mov.Dcto`) are invisible to parity by
   construction. Intentional (line totals are tolerance-checked net of discount);
