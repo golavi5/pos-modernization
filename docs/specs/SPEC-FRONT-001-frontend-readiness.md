@@ -1,6 +1,23 @@
 # M3 — Frontend Readiness: shell reachability and i18n
 
-**Status**: APPROVED — 2026-08-09 (PR #39). All five plan tasks landed: sidebar labels reveal on keyboard focus and via a persisted pin (`stores/uiStore.ts`); header breadcrumb reads `NAV_ITEMS` through `findNavLabelKey` (compiled smoke 6/6 PASS, executed); `Header.ROUTE_LABELS` deleted; product list + new pages translated (parity smoke 392 keys in sync, executed). Gap: the 5 Playwright specs in `tests/e2e/sidebar-reachability.spec.ts` are written but NOT executed — no live stack was available; run them (`docker compose up -d`, `BASE_URL=http://localhost:3001`) to verify the sidebar/pin/locale acceptance items and promote to DONE. (Header was DRAFT through implementation.)
+**Status**: DONE — 2026-08-10 (code shipped in PR #39; e2e verification below).
+All five plan tasks landed: sidebar labels reveal on keyboard focus and via a
+persisted pin (`stores/uiStore.ts`); header breadcrumb reads `NAV_ITEMS`
+through `findNavLabelKey` (compiled smoke 6/6 PASS, executed); `Header.ROUTE_LABELS`
+deleted; product list + new pages translated (parity smoke 392 keys in sync,
+executed). The 5 Playwright specs in `tests/e2e/sidebar-reachability.spec.ts`,
+previously written but not executed, are now executed: **5/5 pass (chromium),
+repeated 4 consecutive times, 0 flakes**, against `main` post-`SPEC-FRONT-003`
+(PR #44) — this suite's own runs first surfaced the panel-layout
+auth-hydration-race that PR fixes, and its `playwright.config.ts` locale pin
+is what makes this suite deterministic. `tests/e2e/helpers/auth.helper.ts`'s
+default password was also fixed here (was 11 chars, invalid against the
+backend's 12-char bootstrap minimum), so the suite now runs from a clean
+checkout without per-test credential edits. Honest tail: the pin's "degrades
+to unpinned when `localStorage` is unavailable" sub-claim (§4 item 2) remains
+implementation-only — none of the 5 written specs exercise that path; not
+blocking, worth a follow-up e2e spec. (Header was DRAFT through
+implementation.)
 
 One Plane issue (`POS-FRONT-001`) tracking the frontend module's known open work.
 
@@ -70,18 +87,22 @@ done (see §2).
 > Per the status convention in `CLAUDE.md`, the `**Status**:` line above is the
 > ledger. These are working notes, not the record of completion.
 
-- [ ] Tabbing into the sidebar reveals nav labels with no pointer involved.
-      *(implemented + grep-verified; Playwright spec written but not executed — no stack)*
-- [ ] The pin toggle expands and collapses, survives a reload, and degrades to
+- [x] Tabbing into the sidebar reveals nav labels with no pointer involved.
+      *(executed 2026-08-10: `sidebar-reachability.spec.ts`, chromium, pass)*
+- [x] The pin toggle expands and collapses, survives a reload, and degrades to
       unpinned when `localStorage` is unavailable rather than throwing.
-      *(implemented; Playwright specs written but not executed — no stack)*
+      *(expand/collapse + survives-a-reload executed 2026-08-10:
+      `sidebar-reachability.spec.ts`, chromium, pass. The localStorage-unavailable
+      degradation is NOT covered by these specs — still implementation-only,
+      unverified by e2e.)*
 - [x] The pin control is a real button with `aria-pressed`, labelled from the
       existing `expandSidebar` / `collapseSidebar` keys.
 - [x] Exactly one route→label table remains in the codebase; Header, Sidebar and
       the palette all read from `lib/navigation/nav-items.ts`, and no route label
       is a hardcoded string. *(compiled smoke: 6/6 PASS)*
-- [ ] Switching locale changes the sidebar nav labels and the header breadcrumb.
-      *(implemented; Playwright spec written but not executed — no stack)*
+- [x] Switching locale changes the sidebar nav labels and the header breadcrumb.
+      *(executed 2026-08-10: `sidebar-reachability.spec.ts`, chromium, pass —
+      this is the spec whose failure first surfaced the SPEC-FRONT-003 bug)*
 - [x] The two product pages named in §3, item 2 render no hardcoded Spanish; any new keys
       exist in both `es.json` and `en.json`. *(parity smoke: 392 keys in sync)*
 - [x] `npm run build` is green (it typechecks; `next lint` remains unrunnable

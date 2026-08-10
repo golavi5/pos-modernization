@@ -3,7 +3,11 @@ import { Page } from '@playwright/test';
 export class AuthHelper {
   constructor(private page: Page) {}
 
-  async login(email: string = 'admin@test.com', password: string = 'password123') {
+  // Password must be >=12 chars — the backend's bootstrap admin validation
+  // (BootstrapService.MIN_PASSWORD_LENGTH) rejects anything shorter, so a
+  // local/CI environment's BOOTSTRAP_ADMIN_EMAIL/PASSWORD must match these
+  // defaults for the e2e suite to authenticate out of the box.
+  async login(email: string = 'admin@test.com', password: string = 'Fddm1ZDKTv3RbDpU') {
     await this.page.goto('/login');
     await this.page.fill('input[type="email"]', email);
     await this.page.fill('input[type="password"]', password);
