@@ -31,12 +31,18 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  // False until the persist middleware has restored state from localStorage.
+  // Consumers that redirect based on `isAuthenticated` must wait for this —
+  // otherwise they act on the pre-hydration default (false) first. See
+  // app/(panel)/layout.tsx.
+  hasHydrated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshTokenMethod: () => Promise<void>;
   setUser: (user: User | null) => void;
   setAccessToken: (token: string | null) => void;
   setRefreshToken: (token: string | null) => void;
+  setHasHydrated: (value: boolean) => void;
   hydrate: () => void;
 }
 
@@ -49,6 +55,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      hasHydrated: false,
 
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
@@ -116,6 +123,10 @@ export const useAuthStore = create<AuthState>()(
         set({ refreshTokenValue: token });
       },
 
+      setHasHydrated: (value: boolean) => {
+        set({ hasHydrated: value });
+      },
+
       hydrate: () => {
         // This is called automatically by Zustand persist middleware
       },
@@ -128,6 +139,9 @@ export const useAuthStore = create<AuthState>()(
         refreshTokenValue: state.refreshTokenValue,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

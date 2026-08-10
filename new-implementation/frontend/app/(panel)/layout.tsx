@@ -11,25 +11,29 @@ export default function AuthenticatedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, hasHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Only apply the role check once `user` is actually hydrated — otherwise the
-  // Zustand-persist rehydration tick (user briefly null) would bounce an
-  // allowed user off a restricted page on hard refresh.
-  const roleChecked = isAuthenticated && !!user;
-  const forbidden = roleChecked && !canAccessRoute(pathname, user?.roles);
+  const forbidden = isAuthenticated && !canAccessRoute(pathname, user?.roles);
 
   useEffect(() => {
+    // Wait for the persist middleware to restore state from localStorage —
+    // until then `isAuthenticated` is its pre-hydration default (false), and
+    // redirecting on that would bounce an actually-authenticated user to
+    // /login, which middleware then bounces again to /dashboard (a real
+    // accessToken cookie is present), stranding them off their intended route
+    // on every hard reload / full navigation.
+    if (!hasHydrated) return;
+
     if (!isAuthenticated) {
       router.push('/login');
     } else if (forbidden) {
       router.replace('/dashboard');
     }
-  }, [isAuthenticated, forbidden, router]);
+  }, [hasHydrated, isAuthenticated, forbidden, router]);
 
-  if (!isAuthenticated || forbidden) {
+  if (!hasHydrated || !isAuthenticated || forbidden) {
     return null;
   }
 

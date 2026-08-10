@@ -27,6 +27,13 @@ export default defineConfig({
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
+    /* Pin the browser locale so specs asserting Spanish UI text (the app's
+     * documented default) are deterministic. Without this, headless
+     * Chromium's default `en-US` Accept-Language wins over the app's own
+     * `es` default (middleware.ts only falls back to `es` when no cookie AND
+     * no matching Accept-Language header) — so the same spec passes or fails
+     * depending on the host machine, unrelated to the code under test. */
+    locale: 'es-ES',
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
