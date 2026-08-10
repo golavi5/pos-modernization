@@ -1,6 +1,6 @@
 # M2 — Lint Gating: give both apps an ESLint config and a CI gate
 
-**Status**: APPROVED — 2026-08-10 (PR #51). Both apps ship an ESLint config and a non-mutating `lint:ci`; the frontend is at 0 errors / 0 warnings over its full file list, the backend at 0 errors with `no-explicit-any` capped at 117 of 146 files by `scripts/any-budget.cjs`. All three of that script's silent-zero paths were proven to exit 1 by breaking them (cap exceeded on a /tmp copy, ESLint crash, rule set to "off"). The `Lint — backend + frontend` job is observed green on a real runner: https://github.com/golavi5/pos-modernization/actions/runs/31436451797/job/93611536553 (53s). Nothing was reformatted — no whitespace-only hunks — and `git status` stayed clean after running exactly what CI runs, proving no `--fix` reached the CI path. Backend 246/246, both builds green. **Open, and not closable from code:** the check is ADVISORY. `main` has branch protection but its `required_status_checks.contexts` does not list this job — it could not until the job had reported green once, which it now has. Adding `Lint — backend + frontend` to that list is an admin repo setting and is the only step left; until then a red lint does not stop a merge. Typing away the 117 `any`s is deliberately out of scope — the cap exists to shrink it under pressure.
+**Status**: DONE — 2026-08-10 (work in PR #51; required-check setting recorded here). Both apps ship an ESLint config and a non-mutating `lint:ci`; the frontend is at 0 errors / 0 warnings over its full file list, the backend at 0 errors with `no-explicit-any` capped at 117 of 146 files by `scripts/any-budget.cjs`. All three of that script's silent-zero paths were proven to exit 1 by breaking them (cap exceeded on a /tmp copy, ESLint crash, rule set to "off"). The job was observed green on a real runner before being required: https://github.com/golavi5/pos-modernization/actions/runs/31436675170/job/93612226539 (53s). It is now a **gate, not advisory** — `gh api …/branches/main/protection` → `required_status_checks.contexts` = "Backend — test + build", "Frontend — build", "Frontend — i18n checks", "Lint — backend + frontend" (added 2026-08-10, after the job had reported green four times; adding it earlier would have wedged every PR). Nothing was reformatted — no whitespace-only hunks — and `git status` stayed clean after running exactly what CI runs, proving no `--fix` reached the CI path. Backend 246/246, both builds green. **Open by design:** the 117 `any`s are still `any`. The cap exists to shrink that under pressure, not to declare it solved; lowering it belongs to whichever PR earns it.
 
 One Plane issue (`POS-BACK-002`) tracking the lint gate deferred by `SPEC-CUT-001` §4 S-01.
 
@@ -93,12 +93,12 @@ rationale, nor assigned elsewhere.
       `Lint — backend + frontend`, and the job is observed green on a real
       runner (cite the run URL — a workflow that parses is not a workflow that
       ran; see `SPEC-CUT-001` §4 S-01 for why this repo insists).
-- [ ] **Requires a repo setting after this ships:** `main` has branch
-      protection as of 2026-08-10, but this job's check name is not in the
-      required list — it cannot be, until the job exists and has reported green
-      once. Add `Lint — backend + frontend` to the required checks *after*
-      merging, then say so in the status line. Until that is done the lint job
-      reports without blocking; claim advisory, not a gate.
+- [x] **Repo setting applied 2026-08-10, after the job proved itself.**
+      `Lint — backend + frontend` is in `main`'s
+      `required_status_checks.contexts`, so a red lint now stops a merge. It was
+      added only once the job had reported green on real runners — a required
+      check that has never reported wedges every PR, which is why the ordering
+      was an acceptance item rather than a footnote.
 - [x] `npm run build` and the backend test suite still pass (246 tests at the
       time of writing).
 - [x] No file is reformatted: the diff contains no whitespace-only changes.
