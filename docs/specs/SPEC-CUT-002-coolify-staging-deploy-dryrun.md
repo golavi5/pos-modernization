@@ -12,8 +12,8 @@
 
 Execute the full cutover dry-run on a **real Coolify staging instance** and
 record a Go / No-Go, closing the infrastructure-level exit criteria that a local
-run provably cannot. `SPEC-CUT-001` is DONE at the **app level** — its blockers
-(B-01…B-10) were verified on a local prod-parity stack (see
+run provably cannot. `SPEC-CUT-001` is **APPROVED** — complete at the **app
+level**, its blockers (B-01…B-10) verified on a local prod-parity stack (see
 `../../new-implementation/STAGING-DRY-RUN-RESULTS.md`). This spec covers the
 gates that only exist on Coolify + real DNS.
 
@@ -71,4 +71,5 @@ App-level blockers (closed in `SPEC-CUT-001`); RBAC role-provisioning
 - `../../new-implementation/STAGING-DRY-RUN.md` — executable checklist.
 - `../../new-implementation/STAGING-DRY-RUN-RESULTS.md` — local pre-flight record.
 - `../../new-implementation/DEPLOYMENT-COOLIFY.md` — Coolify deploy procedure.
-- `SPEC-CUT-001-cutover-deploy-readiness.md` — app-level readiness (DONE).
+- `SPEC-CUT-001-cutover-deploy-readiness.md` — app-level readiness (APPROVED;
+  promoted to DONE when this spec records its Go/No-Go).
