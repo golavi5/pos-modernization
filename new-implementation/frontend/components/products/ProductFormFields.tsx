@@ -170,6 +170,7 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
         />
         {formData.image_url && (
           <div className="mt-2">
+            {/* eslint-disable-next-line @next/next/no-img-element -- live preview of a URL the user is still typing; the onError below hides a broken src, which next/image does not reproduce */}
             <img
               src={formData.image_url}
               alt={tCommon('preview')}

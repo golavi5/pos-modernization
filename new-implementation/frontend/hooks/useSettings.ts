@@ -19,14 +19,6 @@ export function useSettings() {
   });
 }
 
-function makeMutation<T>(fn: (dto: T) => Promise<any>) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
-  });
-}
-
 export function useUpdateCompany() {
   const qc = useQueryClient();
   return useMutation({

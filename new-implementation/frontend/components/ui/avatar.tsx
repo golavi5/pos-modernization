@@ -16,7 +16,9 @@ const AvatarImage = React.forwardRef<
   HTMLImageElement,
   React.ImgHTMLAttributes<HTMLImageElement>
 >(({ className, ...props }, ref) => (
+  // eslint-disable-next-line @next/next/no-img-element -- generic <img> wrapper: the caller supplies an arbitrary remote src with no known dimensions, and next/image needs width/height or a sized fill parent
   <img
+    alt=""
     ref={ref}
     className={`aspect-square h-full w-full object-cover ${className || ''}`}
     {...props}

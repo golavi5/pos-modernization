@@ -17,6 +17,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <Card>
       <CardContent className="p-4">
         {product.image_url && (
+          // eslint-disable-next-line @next/next/no-img-element -- user-uploaded remote URL sized w-full h-48; next/image would need fill + a relative parent, and routing arbitrary hosts through the optimizer is a runtime change, not a lint fix
           <img
             src={product.image_url}
             alt={product.name}

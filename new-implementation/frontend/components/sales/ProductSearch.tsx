@@ -94,6 +94,7 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
             >
               <div className="w-full h-14 bg-muted rounded-lg mb-2 flex items-center justify-center overflow-hidden">
                 {product.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- POS grid tile, fluid h-full w-full inside a fixed-height parent; next/image needs fill here and this is the cashier hot path
                   <img
                     src={product.image_url}
                     className="h-full w-full object-cover rounded-lg"
