@@ -1,8 +1,10 @@
 // Usage: node scripts/smoke/i18n-resolved-strings.mjs <git-rev>
 //
-// For every t('key') call site, resolves the string it renders from that
-// revision's catalog and prints {file: [strings]} as JSON. Diff two revisions
-// to see whether a catalog refactor changed any user-visible text.
+// For every t('key') call site — including the t.rich('key', ...),
+// t.markup('key', ...) and t.raw('key') variants — resolves the string it
+// renders from that revision's catalog and prints {file: [strings]} as JSON.
+// Diff two revisions to see whether a catalog refactor changed any
+// user-visible text.
 //
 // This is the check `global.ts` cannot do. Typing every t() against the catalog
 // proves a key EXISTS; it cannot prove a key move left the rendered text alone.
@@ -17,6 +19,10 @@
 import { execFileSync } from 'node:child_process';
 
 const rev = process.argv[2];
+if (!rev) {
+  console.error('Usage: node scripts/smoke/i18n-resolved-strings.mjs <git-rev>');
+  process.exit(1);
+}
 const run = (args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 
 const cat = JSON.parse(run(['show', `${rev}:new-implementation/frontend/messages/es.json`]));
@@ -33,7 +39,7 @@ for (const f of files) {
   // namespace per variable: const t = useTranslations('ns')
   const ns = Object.create(null);
   for (const m of src.matchAll(/const\s+(\w+)\s*=\s*useTranslations\(\s*'([^']+)'\s*\)/g)) ns[m[1]] = m[2];
-  for (const m of src.matchAll(/\b(\w+)\(\s*'([^']+)'\s*[),]/g)) {
+  for (const m of src.matchAll(/\b(\w+)(?:\.(?:rich|markup|raw))?\(\s*'([^']+)'\s*[),]/g)) {
     const space = ns[m[1]];
     if (!space) continue;
     const key = `${space}.${m[2]}`;
@@ -43,4 +49,4 @@ for (const f of files) {
     out.get(file).push(val === undefined ? `<<MISSING:${key}>>` : String(val));
   }
 }
-console.log(JSON.stringify(Object.fromEntries([...out].map(([f,v])=>[f,v.sort()]).sort()), null, 0));
+console.log(JSON.stringify(Object.fromEntries([...out].map(([f,v])=>[f,v.sort()]).sort((a,b)=>(a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))), null, 0));
