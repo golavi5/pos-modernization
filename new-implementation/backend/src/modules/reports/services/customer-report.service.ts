@@ -74,7 +74,7 @@ export class CustomerReportService {
    */
   async getCustomerSegments(
     companyId: string,
-    query: ReportQueryDto,
+    _query: ReportQueryDto,
   ): Promise<CustomerSegmentDto[]> {
     // Get all customers with their purchase data
     const customers = await this.customerRepository

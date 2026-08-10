@@ -9,7 +9,6 @@ import { Repository } from 'typeorm';
 import { WarehouseLocation } from '../entities/warehouse-location.entity';
 import { StockMovement, MovementType } from '../entities/stock-movement.entity';
 import { AdjustStockDto } from '../dto/adjust-stock.dto';
-import { StockQueryDto } from '../dto/stock-query.dto';
 import { StockCalculatorService } from './stock-calculator.service';
 import { User } from '../../auth/entities/user.entity';
 

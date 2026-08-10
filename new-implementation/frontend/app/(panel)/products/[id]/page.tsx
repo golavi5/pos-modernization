@@ -28,6 +28,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         <Card>
           <CardContent className="p-6 space-y-4">
             {product.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element -- user-uploaded remote URL sized w-full h-64; same fill-parent restructure as the card, deferred out of a lint PR
               <img
                 src={product.image_url}
                 alt={product.name}

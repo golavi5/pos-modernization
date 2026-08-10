@@ -11,7 +11,8 @@ import { UpdateLoyaltyPointsDto } from '../dto/loyalty.dto';
 
 describe('CustomersService', () => {
   let service: CustomersService;
-  let repository: Repository<Customer>;
+  // Resolved but unread: the module.get below asserts the provider is registered.
+  let _repository: Repository<Customer>;
 
   const mockCompanyId = 'company-123';
   const mockCustomer: Customer = {
@@ -58,7 +59,7 @@ describe('CustomersService', () => {
     }).compile();
 
     service = module.get<CustomersService>(CustomersService);
-    repository = module.get<Repository<Customer>>(getRepositoryToken(Customer));
+    _repository = module.get<Repository<Customer>>(getRepositoryToken(Customer));
   });
 
   afterEach(() => {

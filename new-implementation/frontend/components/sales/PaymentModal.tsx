@@ -63,7 +63,7 @@ export function PaymentModal({
     } catch (err) {
       setConfirmError(err instanceof Error ? err.message : t('payment.error'));
     }
-  }, [canConfirm, isLoading, method, onConfirm]);
+  }, [canConfirm, isLoading, method, onConfirm, t]);
 
   // Enter key → confirm
   useEffect(() => {

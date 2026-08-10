@@ -11,7 +11,8 @@ describe('StockService', () => {
   let service: StockService;
   let locationRepository: Repository<WarehouseLocation>;
   let movementRepository: Repository<StockMovement>;
-  let stockCalculator: StockCalculatorService;
+  // Resolved but unread: the module.get below asserts the provider is registered.
+  let _stockCalculator: StockCalculatorService;
 
   const mockUser = {
     id: 'user-123',
@@ -51,7 +52,7 @@ describe('StockService', () => {
     movementRepository = module.get<Repository<StockMovement>>(
       getRepositoryToken(StockMovement),
     );
-    stockCalculator = module.get<StockCalculatorService>(StockCalculatorService);
+    _stockCalculator = module.get<StockCalculatorService>(StockCalculatorService);
   });
 
   describe('getCurrentStock', () => {

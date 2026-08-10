@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:ci": "eslint --ext .ts,.tsx app components hooks lib stores types tests middleware.ts i18n-request.ts --max-warnings 0",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
@@ -40,6 +41,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.16",
+    "eslint": "8.57.1",
     "eslint-config-next": "^14.0.0",
     "postcss": "^8.4.31"
   }

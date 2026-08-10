@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SalesService } from '../services/sales.service';
 import { OrderCalculationService } from '../services/order-calculation.service';
 import { ProductsService } from '../../products/products.service';
@@ -15,7 +15,8 @@ describe('SalesService', () => {
   let service: SalesService;
   let orderRepository: Repository<Order>;
   let orderItemRepository: Repository<OrderItem>;
-  let calculationService: OrderCalculationService;
+  // Resolved but unread: the module.get below asserts the provider is registered.
+  let _calculationService: OrderCalculationService;
   let productsService: ProductsService;
 
   const mockUser = {
@@ -60,7 +61,7 @@ describe('SalesService', () => {
     service = module.get<SalesService>(SalesService);
     orderRepository = module.get<Repository<Order>>(getRepositoryToken(Order));
     orderItemRepository = module.get<Repository<OrderItem>>(getRepositoryToken(OrderItem));
-    calculationService = module.get<OrderCalculationService>(OrderCalculationService);
+    _calculationService = module.get<OrderCalculationService>(OrderCalculationService);
     productsService = module.get<ProductsService>(ProductsService);
   });
 
@@ -384,8 +385,6 @@ describe('SalesService', () => {
     });
 
     it('should not allow access to orders from different company', async () => {
-      const otherCompanyOrder = { id: 1, company_id: 2 } as unknown as Order;
-
       jest.spyOn(orderRepository, 'findOne').mockResolvedValue(null);
 
       await expect(service.getOrderById(1 as any, mockUser)).rejects.toThrow(NotFoundException);

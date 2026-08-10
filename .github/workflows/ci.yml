@@ -7,9 +7,12 @@ on:
     branches: [main, develop]
 
 # Gates PRs on backend unit tests + build and frontend build (Next build runs the
-# TS typecheck). Node 20 matches the Dockerfiles. Lint is not gated yet — neither
-# app ships an ESLint config (`next lint`/`eslint` have nothing to run); adding
-# configs is tracked separately (SPEC-CUT-001 S-01).
+# TS typecheck). Node 20 matches the Dockerfiles. Both apps now ship an ESLint
+# config, and the `lint` job runs each app's `lint:ci` plus the backend's
+# no-explicit-any budget. That job is ADVISORY: main's branch protection (added
+# 2026-08-10) does not list "Lint — backend + frontend" among its required
+# checks, and cannot until the job has reported green at least once. See
+# SPEC-BACK-002 §4 for the follow-up that closes it.
 #
 # NOTE: this file must live at the REPO ROOT (.github/workflows/). The previous
 # workflow sat under new-implementation/.github/ and therefore never ran.
@@ -63,6 +66,30 @@ jobs:
           node-version: '20'
       - run: node scripts/smoke/i18n-parity.cjs
       - run: node scripts/smoke/i18n-lint.cjs
+
+  lint:
+    name: Lint — backend + frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            new-implementation/backend/package-lock.json
+            new-implementation/frontend/package-lock.json
+      - name: Backend
+        working-directory: ./new-implementation/backend
+        run: |
+          npm ci
+          npm run lint:ci
+          npm run lint:budget
+      - name: Frontend
+        working-directory: ./new-implementation/frontend
+        run: |
+          npm ci
+          npm run lint:ci
 
   e2e:
     name: E2E — Playwright (suspended)

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThan, LessThan, Like, ILike } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Customer } from './customer.entity';
 import { Order } from '../sales/entities/order.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';

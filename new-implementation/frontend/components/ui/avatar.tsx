@@ -16,7 +16,12 @@ const AvatarImage = React.forwardRef<
   HTMLImageElement,
   React.ImgHTMLAttributes<HTMLImageElement>
 >(({ className, ...props }, ref) => (
+  // No angle-bracket tag in the comment below, on purpose: the i18n ratchet
+  // anchors on JSX tags, so a literal tag inside a comment makes the prose after
+  // it read as renderable text and fails that check.
+  // eslint-disable-next-line @next/next/no-img-element -- generic image wrapper: the caller supplies an arbitrary remote src with no known dimensions, and next/image needs width/height or a sized fill parent
   <img
+    alt=""
     ref={ref}
     className={`aspect-square h-full w-full object-cover ${className || ''}`}
     {...props}

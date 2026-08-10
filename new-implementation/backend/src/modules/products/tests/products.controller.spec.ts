@@ -3,7 +3,6 @@ import { ProductsController } from '../products.controller';
 import { ProductsService } from '../products.service';
 import { Product } from '../entities/product.entity';
 import { User } from '../../auth/entities/user.entity';
-import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('ProductsController', () => {
   let controller: ProductsController;

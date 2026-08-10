@@ -1,6 +1,6 @@
 # M2 — Lint Gating: give both apps an ESLint config and a CI gate
 
-**Status**: DRAFT — not started. Re-measured 2026-08-10 against `main` at 25317b35 (the first measurement, 2026-08-09, predated the i18n sweep in PR #42 and scanned only part of the frontend): under `next/core-web-vitals` the frontend has **2 errors and 8 warnings** across 128 files; under `@typescript-eslint/recommended` the backend has **156 problems across 44 of 146 files** — 117 `no-explicit-any` and 39 `no-unused-vars`. Re-verified 2026-08-10 against `main` at 57c63df5 (post PR #44): unchanged at 2 errors and 8 warnings, now over 129 files — #44 added one e2e spec to the linted `tests/` directory.
+**Status**: APPROVED — 2026-08-10 (PR #51). Both apps ship an ESLint config and a non-mutating `lint:ci`; the frontend is at 0 errors / 0 warnings over its full file list, the backend at 0 errors with `no-explicit-any` capped at 117 of 146 files by `scripts/any-budget.cjs`. All three of that script's silent-zero paths were proven to exit 1 by breaking them (cap exceeded on a /tmp copy, ESLint crash, rule set to "off"). The `Lint — backend + frontend` job is observed green on a real runner: https://github.com/golavi5/pos-modernization/actions/runs/31436451797/job/93611536553 (53s). Nothing was reformatted — no whitespace-only hunks — and `git status` stayed clean after running exactly what CI runs, proving no `--fix` reached the CI path. Backend 246/246, both builds green. **Open, and not closable from code:** the check is ADVISORY. `main` has branch protection but its `required_status_checks.contexts` does not list this job — it could not until the job had reported green once, which it now has. Adding `Lint — backend + frontend` to that list is an admin repo setting and is the only step left; until then a red lint does not stop a merge. Typing away the 117 `any`s is deliberately out of scope — the cap exists to shrink it under pressure.
 
 One Plane issue (`POS-BACK-002`) tracking the lint gate deferred by `SPEC-CUT-001` §4 S-01.
 
@@ -80,16 +80,16 @@ rationale, nor assigned elsewhere.
 > Per the status convention in `CLAUDE.md`, the `**Status**:` line is the ledger.
 > These are working notes.
 
-- [ ] `npm run lint:ci` passes in both apps and mutates no files (`git diff`
+- [x] `npm run lint:ci` passes in both apps and mutates no files (`git diff`
       empty afterwards).
-- [ ] The frontend reports 0 errors **and** 0 warnings over the full file list
+- [x] The frontend reports 0 errors **and** 0 warnings over the full file list
       (`app components hooks lib stores types tests middleware.ts
       i18n-request.ts`), not a subset of it.
-- [ ] The backend reports 0 errors; `no-explicit-any` warnings number 117 or
+- [x] The backend reports 0 errors; `no-explicit-any` warnings number 117 or
       fewer.
-- [ ] `node scripts/any-budget.cjs` passes at the recorded cap and fails when
+- [x] `node scripts/any-budget.cjs` passes at the recorded cap and fails when
       the cap is lowered by hand — proving it is wired to reality.
-- [ ] CI runs lint for both apps on every PR, as a check named
+- [x] CI runs lint for both apps on every PR, as a check named
       `Lint — backend + frontend`, and the job is observed green on a real
       runner (cite the run URL — a workflow that parses is not a workflow that
       ran; see `SPEC-CUT-001` §4 S-01 for why this repo insists).
@@ -99,9 +99,9 @@ rationale, nor assigned elsewhere.
       once. Add `Lint — backend + frontend` to the required checks *after*
       merging, then say so in the status line. Until that is done the lint job
       reports without blocking; claim advisory, not a gate.
-- [ ] `npm run build` and the backend test suite still pass (246 tests at the
+- [x] `npm run build` and the backend test suite still pass (246 tests at the
       time of writing).
-- [ ] No file is reformatted: the diff contains no whitespace-only changes.
+- [x] No file is reformatted: the diff contains no whitespace-only changes.
 
 ## 5. Out of scope
 
