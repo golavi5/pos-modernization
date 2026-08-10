@@ -9,10 +9,10 @@ on:
 # Gates PRs on backend unit tests + build and frontend build (Next build runs the
 # TS typecheck). Node 20 matches the Dockerfiles. Both apps now ship an ESLint
 # config, and the `lint` job runs each app's `lint:ci` plus the backend's
-# no-explicit-any budget. That job is ADVISORY: main's branch protection (added
-# 2026-08-10) does not list "Lint — backend + frontend" among its required
-# checks, and cannot until the job has reported green at least once. See
-# SPEC-BACK-002 §4 for the follow-up that closes it.
+# no-explicit-any budget. That job GATES: "Lint — backend + frontend" is in
+# main's required_status_checks.contexts as of 2026-08-10, added only after it
+# had reported green on real runners — a required check that has never reported
+# wedges every PR. See SPEC-BACK-002 §4.
 #
 # NOTE: this file must live at the REPO ROOT (.github/workflows/). The previous
 # workflow sat under new-implementation/.github/ and therefore never ran.
