@@ -1,6 +1,6 @@
 # M2 — Lint Gating: give both apps an ESLint config and a CI gate
 
-**Status**: DRAFT — not started. Re-measured 2026-08-10 against `main` at 25317b35 (the first measurement, 2026-08-09, predated the i18n sweep in PR #42 and scanned only part of the frontend): under `next/core-web-vitals` the frontend has **2 errors and 8 warnings** across 128 files; under `@typescript-eslint/recommended` the backend has **156 problems across 44 of 146 files** — 117 `no-explicit-any` and 39 `no-unused-vars`.
+**Status**: DRAFT — not started. Re-measured 2026-08-10 against `main` at 25317b35 (the first measurement, 2026-08-09, predated the i18n sweep in PR #42 and scanned only part of the frontend): under `next/core-web-vitals` the frontend has **2 errors and 8 warnings** across 128 files; under `@typescript-eslint/recommended` the backend has **156 problems across 44 of 146 files** — 117 `no-explicit-any` and 39 `no-unused-vars`. Re-verified 2026-08-10 against `main` at 57c63df5 (post PR #44): unchanged at 2 errors and 8 warnings, now over 129 files — #44 added one e2e spec to the linted `tests/` directory.
 
 One Plane issue (`POS-BACK-002`) tracking the lint gate deferred by `SPEC-CUT-001` §4 S-01.
 
