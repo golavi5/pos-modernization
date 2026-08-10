@@ -181,7 +181,12 @@ MySQL Docker port is `3308` on the host (maps to 3306 inside).
 
 - `docs/specs/SPEC-001-pos-modernization.md` — master spec (Kairos Plane sync). Active source of truth for scope decisions.
 - `docs/superpowers/plans/` — implementation plans from the brainstorming/planning workflow.
-- `new-implementation/DEPLOYMENT-COOLIFY.md` — production deployment notes (Coolify, not raw docker compose).
+- `new-implementation/DEPLOYMENT-COOLIFY.md` — production deployment notes. The
+  Coolify deploy is a **Docker Compose stack** built from
+  `new-implementation/docker-compose.coolify.yml` — a separate file from the
+  dev `docker-compose.yml`, which must never be deployed (it publishes MySQL to
+  the host and bakes `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000` into the
+  frontend bundle).
 - `new-implementation/frontend/i18n-request.ts` — next-intl 3.x request config (locale resolution lives here, not in `next.config.js`).
 
 ## Plane / Kairos Index Maintenance (MANDATORY — auto-discovery mode)

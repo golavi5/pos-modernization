@@ -1,0 +1,127 @@
+# ── Despliegue en Coolify (stack completo, un solo recurso) ───────────────────
+#
+# Este archivo es para PRODUCCIÓN en Coolify. Para desarrollo local usá
+# `docker-compose.yml`, que es otra cosa: publica puertos en el host, lee
+# `backend/.env` y hornea `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000`.
+# Desplegar aquel archivo tal cual rompe el frontend (el navegador llamaría a
+# 127.0.0.1) y deja MySQL expuesto en el host.
+#
+# Diferencias deliberadas con el compose de desarrollo:
+#   · MySQL NO publica puertos     → sólo alcanzable por la red interna del stack
+#   · nadie publica puertos        → el proxy de Coolify enruta por la red
+#   · sin `container_name`         → Coolify nombra los contenedores
+#   · sin `env_file`               → las variables las inyecta Coolify
+#   · `${VAR:?}` en los secretos   → el deploy falla si falta, en vez de arrancar mal
+#
+# Coolify auto-detecta cada `${VARIABLE}` de este archivo y la ofrece en la
+# pestaña Environment Variables del recurso. Ver DEPLOYMENT-COOLIFY.md.
+
+services:
+  # ── MySQL ──────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?falta MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-pos_db}
+      MYSQL_USER: ${DB_USERNAME:-pos_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?falta DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    # Sin `ports:` a propósito. Publicar aquí saltaría el proxy y dejaría la base
+    # accesible desde fuera del VPS — es el gate "MySQL port-not-exposed" de
+    # SPEC-CUT-002 §2. El backend la alcanza por el nombre de servicio `mysql`.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Backend (NestJS) ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Dominio del backend. Coolify lo asigna a este servicio en el puerto 3000.
+      - SERVICE_FQDN_BACKEND_3000
+      - NODE_ENV=production
+      - PORT=3000
+      # La base vive en el mismo stack: se resuelve por nombre de servicio.
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=${DB_USERNAME:-pos_user}
+      - DB_PASSWORD=${DB_PASSWORD:?falta DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-pos_db}
+      # El esquema lo crean las migraciones TypeORM al arrancar.
+      - DB_RUN_MIGRATIONS=true
+      - JWT_SECRET=${JWT_SECRET:?falta JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:?falta JWT_REFRESH_SECRET}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
+      # Origen del frontend. Sin esto el backend NO arranca en producción.
+      - CORS_ORIGINS=${CORS_ORIGINS:?falta CORS_ORIGINS}
+      # Primer admin: sin estas dos, la base queda sin usuarios y nadie entra.
+      # No rompen el arranque si faltan — de ahí el `:?`, que sí lo hace.
+      - BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:?falta BOOTSTRAP_ADMIN_EMAIL}
+      - BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD:?falta BOOTSTRAP_ADMIN_PASSWORD}
+      - BOOTSTRAP_ADMIN_NAME=${BOOTSTRAP_ADMIN_NAME:-Administrator}
+      - BOOTSTRAP_COMPANY_NAME=${BOOTSTRAP_COMPANY_NAME:-Mi Empresa}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - RATE_LIMIT_TTL=${RATE_LIMIT_TTL:-60}
+      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+    healthcheck:
+      # Liveness: no toca la base, para que un parpadeo de MySQL no reinicie el
+      # backend. La readiness (`/health/ready`) es para monitoreo, no para esto.
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Frontend (Next.js) ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        # CRÍTICO: Next.js hornea los NEXT_PUBLIC_* en el bundle EN EL BUILD.
+        # Tiene que ser la URL pública del backend (https://api.tu-dominio.com),
+        # porque quien hace la llamada es el navegador del usuario, no el
+        # contenedor: `http://backend:3000` aquí NO funciona.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?falta NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # Dominio del frontend. El contenedor escucha en 3000 (EXPOSE 3000 +
+      # ENV PORT=3000 en frontend/Dockerfile).
+      - SERVICE_FQDN_FRONTEND_3000
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mysql_data:
+    driver: local
