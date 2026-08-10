@@ -102,6 +102,12 @@ more cases had to be closed before this one was safe to ship:
      repair — `storage.getItem` now swallows a parse failure and returns
      `null`, which keeps hydration on the success path: unreadable persisted
      state is treated as *absent*, and the user is simply logged out.
+
+  The flag write stays **synchronous on the success path** — persist re-reads
+  `get()` immediately after the callback, so that write survives and the very
+  first render already sees `hasHydrated: true`. Only the error path defers.
+  A corrupt blob also self-heals: the write triggers persist's `setItem`,
+  replacing the bad value with clean logged-out state.
 - **Storage unreachable** (localStorage blocked by browser policy, private
   mode, kiosk profile): `createJSONStorage` swallows the throw and returns
   `undefined`, and persist returns before `hydrate()` — the callback is never
@@ -145,15 +151,22 @@ more cases had to be closed before this one was safe to ship:
   each would have hung the panel on `return null` forever (worse than the
   wrong-page bug being fixed); both are now handled in `stores/authStore.ts`
   — see §3.
-- **New regression test** — `tests/e2e/panel-hydration-failure.spec.ts`:
-  seeds a stale `accessToken` cookie plus a corrupt `auth-store` value, then
-  loads `/sales` and asserts the panel lands on `/login` with the cookie
-  cleared. Deliberately credential-free (no login, no backend, no bootstrap
-  admin), so unlike the suite above it **is** reproducible from a clean
-  checkout. Verified in both directions against the branch on 2026-08-10:
-  passes with the fix, and fails on `waitForURL('**/login')` with the two
-  source files reverted — i.e. it observes the blank-panel hang, not just
-  the happy path.
+- **New tests** — `tests/e2e/panel-hydration-failure.spec.ts`, both
+  deliberately credential-free (cookie and `auth-store` are seeded directly,
+  no login, no backend, no bootstrap admin), so unlike the suite above they
+  **are** reproducible from a clean checkout. Run against `next dev` on 2026-08-10:
+  1. *corrupt `auth-store` lands on /login* — seeds a stale `accessToken`
+     cookie plus an unparseable store value, asserts the panel reaches
+     `/login` **and** that the cookie was cleared. Verified in both
+     directions: green with the fix, red on `waitForURL('**/login')` against
+     pre-fix sources — it observes the blank-panel hang itself.
+  2. *hard load into a deep panel route stays there* — seeds a valid session
+     and cold-loads `/sales`, asserting no redirect and that panel chrome
+     actually paints. Honest limitation: this one passes against pre-fix
+     sources too, because a cold seeded load hydrates before the first
+     render, so it does **not** reproduce the §2 race. It is a guard on the
+     healthy path (the flag never arriving, the panel never painting), not
+     evidence for the original bug.
 - **Hydration-path matrix**, exercised directly against the installed zustand
   4.5.7 with the store's exact persist config (blocked storage / corrupt JSON
   / empty storage / healthy control). PR #44's callback form leaves

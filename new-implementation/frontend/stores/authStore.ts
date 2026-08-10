@@ -180,16 +180,25 @@ export const useAuthStore = create<AuthState>()(
         refreshTokenValue: state.refreshTokenValue,
         isAuthenticated: state.isAuthenticated,
       }),
-      // Deliberately ignores the callback's own `state` argument: zustand
-      // passes `undefined` there whenever rehydration throws, so `state?.`
-      // would silently no-op on exactly the path that most needs the flag set.
-      // The pre-hydration state handed to the outer function is always defined
+      // Never reads the callback's own `state` argument: zustand passes
+      // `undefined` there whenever rehydration throws, so `state?.` would
+      // silently no-op on exactly the path that most needs the flag set. The
+      // pre-hydration state handed to the outer function is always defined
       // (`get() ?? configResult`) and its actions close over the store's `set`.
-      // Deferred to a microtask because on the throwing path this callback runs
-      // *before* `create()` has installed the store's state — see the note on
-      // `authStorage` — and a synchronous `set` there would be thrown away.
-      onRehydrateStorage: (preHydrationState) => () => {
-        queueMicrotask(() => preHydrationState.setHasHydrated(true));
+      //
+      // Timing differs per path and both matter:
+      // - success: set synchronously, so the flag is already true on the first
+      //   render (persist re-reads `get()` right after this callback and
+      //   returns that, so the write survives). Deferring here would gate the
+      //   first render on `hasHydrated === false` for no reason.
+      // - failure: a synchronous write would be thrown away — see the note on
+      //   `authStorage` — so defer past `create()` and set it on the real store.
+      onRehydrateStorage: (preHydrationState) => (_state, error) => {
+        if (error) {
+          queueMicrotask(() => preHydrationState.setHasHydrated(true));
+        } else {
+          preHydrationState.setHasHydrated(true);
+        }
       },
     }
   )
