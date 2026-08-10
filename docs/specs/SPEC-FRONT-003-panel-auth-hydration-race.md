@@ -1,15 +1,19 @@
 # M3 — Panel layout auth-hydration race: hard reloads bounce to /dashboard
 
-**Status**: APPROVED — 2026-08-10 (PR #44). Fix built in
-`app/(panel)/layout.tsx` + `stores/authStore.ts`. Verified locally:
-reproduced with request/redirect tracing (see §2), fix confirmed via the same
-repro plus 4 consecutive clean runs of
-`tests/e2e/sidebar-reachability.spec.ts` (5/5, chromium, locale pinned) and a
-logged-out direct-access regression check — **the e2e runs are not
-reproducible from a clean checkout**, see the caveat in §4. Not yet merged —
-PR #44 open; review findings on the hydration-failure paths and the M3 module
-glob folded in on 2026-08-10. Do not treat as DONE until the PR merges with
-`Closes POS-FRONT-003`.
+**Status**: DONE — 2026-08-10 (PR #44, merged `57c63df5`). Fix landed in
+`app/(panel)/layout.tsx` + `stores/authStore.ts`, including the review-driven
+hardening of the hydration gate's failure paths (§3) and the dedicated
+credential-free regression tests added for them,
+`tests/e2e/panel-hydration-failure.spec.ts` (§4) — those two are what
+verify this spec itself and are reproducible from a clean checkout.
+Additional evidence gathered pre-merge: reproduced the original race with
+request/redirect tracing (§2), 4 consecutive clean runs of
+`tests/e2e/sidebar-reachability.spec.ts` (5/5, chromium, locale pinned), a
+logged-out direct-access check, and a hydration-path matrix against the
+installed zustand 4.5.7 (§4). `npx tsc --noEmit` and the production Docker
+build both clean. Open, not-blocking caveat: the `sidebar-reachability.spec.ts`
+run above is **not** reproducible from a clean checkout — that suite's
+`AuthHelper` credential gap belongs to `SPEC-FRONT-001` (§6), not this spec.
 
 One Plane issue (`POS-FRONT-003`) tracking this fix.
 
