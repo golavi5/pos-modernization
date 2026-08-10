@@ -67,11 +67,13 @@ rationale, nor assigned elsewhere.
    spec.
 5. **A non-mutating `lint:ci` script** in both apps, and a CI job that calls it
    on every PR — never the `--fix` variant. Branch protection now exists on
-   `main` (added 2026-08-10; requires "Backend — test + build", "Frontend —
-   build", "Frontend — i18n checks"), so this job blocks once its check name is
-   **added to that required list** — a repo setting, not a code change. Do not
-   add the name before the job exists and is green: a required check that never
-   reports wedges every PR. See §4.
+   `main` (added 2026-08-10; `gh api …/branches/main/protection` →
+   `required_status_checks.contexts` = "Backend — test + build", "Frontend —
+   build", "Frontend — i18n checks"; `enforce_admins` off, no required
+   reviews), so this job blocks once its check name is **added to that
+   required list** — a repo setting, not a code change. Do not add the name
+   before the job exists and is green: a required check that never reports
+   wedges every PR. See §4.
 
 ## 4. Acceptance
 
