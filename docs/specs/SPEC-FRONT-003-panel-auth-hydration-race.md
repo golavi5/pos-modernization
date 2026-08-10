@@ -1,11 +1,14 @@
 # M3 — Panel layout auth-hydration race: hard reloads bounce to /dashboard
 
-**Status**: APPROVED — 2026-08-10. Fix built in `app/(panel)/layout.tsx` +
-`stores/authStore.ts`. Verified locally: reproduced with request/redirect
-tracing (see §2), fix confirmed via the same repro plus 4 consecutive clean
-runs of `tests/e2e/sidebar-reachability.spec.ts` (5/5, chromium, locale
-pinned) and a logged-out direct-access regression check. Not yet merged — PR
-open, unreviewed. Do not treat as DONE until the PR merges with
+**Status**: APPROVED — 2026-08-10 (PR #44). Fix built in
+`app/(panel)/layout.tsx` + `stores/authStore.ts`. Verified locally:
+reproduced with request/redirect tracing (see §2), fix confirmed via the same
+repro plus 4 consecutive clean runs of
+`tests/e2e/sidebar-reachability.spec.ts` (5/5, chromium, locale pinned) and a
+logged-out direct-access regression check — **the e2e runs are not
+reproducible from a clean checkout**, see the caveat in §4. Not yet merged —
+PR #44 open; review findings on the hydration-failure paths and the M3 module
+glob folded in on 2026-08-10. Do not treat as DONE until the PR merges with
 `Closes POS-FRONT-003`.
 
 One Plane issue (`POS-FRONT-003`) tracking this fix.
@@ -80,6 +83,39 @@ nothing useful: `isAuthenticated` and `user` hydrate atomically in the same
   Removed the old `roleChecked = isAuthenticated && !!user` indirection — it
   was dead weight once hydration is gated correctly upstream.
 
+A gate is only as good as its failure paths. Against zustand 4.5.7, three
+more cases had to be closed before this one was safe to ship:
+
+- **Rehydration throws** (corrupt/truncated `auth-store` value fails
+  `JSON.parse`): persist calls `postRehydrationCallback(undefined, e)`, so the
+  original `state?.setHasHydrated(true)` no-opped on precisely the path that
+  needed it. Two layers were required, because fixing only the obvious half
+  still leaves the flag `false`:
+  1. The callback now ignores its own argument and closes over the
+     pre-hydration state handed to `onRehydrateStorage`'s outer function,
+     which is always defined (`middleware.js:521` — `get() ?? configResult`).
+  2. That alone is *silently discarded*. With nothing restored, persist
+     returns `configResult` (`middleware.js:590` —
+     `return stateFromStorage || configResult`) and `createStore` installs it
+     as the state, overwriting any `set` the callback made during
+     `create()`. So the flag write is deferred to a microtask, and — the real
+     repair — `storage.getItem` now swallows a parse failure and returns
+     `null`, which keeps hydration on the success path: unreadable persisted
+     state is treated as *absent*, and the user is simply logged out.
+- **Storage unreachable** (localStorage blocked by browser policy, private
+  mode, kiosk profile): `createJSONStorage` swallows the throw and returns
+  `undefined`, and persist returns before `hydrate()` — the callback is never
+  created, let alone called. The storage object is now built eagerly and
+  `hasHydrated` initialises to `true` when it came back `undefined`: nothing
+  can be restored, so there is nothing to wait for.
+- **Cookie outliving the store:** with those two closed, a hydrated-but-
+  logged-out panel reaches `router.push('/login')` while a live `accessToken`
+  cookie is still set — and `middleware.ts` 307s that straight back into the
+  panel, flapping the URL indefinitely. That branch now calls
+  `clearAuthCookie()` first. The cookie is stale by definition at that point,
+  and this also covers `refreshTokenMethod`'s catch, which resets
+  `isAuthenticated` without touching the cookie.
+
 ## 4. Verification
 
 - Repro test (above) re-run post-fix: `href` after `goto('/sales')` stays
@@ -89,11 +125,40 @@ nothing useful: `isAuthenticated` and `user` hydrate atomically in the same
   bundled here because it's what makes this suite deterministic enough to
   use as regression evidence): **5/5 pass, repeated 4 consecutive times, 0
   flakes.**
+
+  **Caveat — this run is not reproducible from the committed tree.** The
+  suite calls `new AuthHelper(page).login()` with no arguments, and the
+  helper's committed defaults (`admin@test.com` / `password123`) cannot
+  authenticate: the password is 11 chars, below the backend's 12-char
+  bootstrap minimum (§6). The runs above used locally-edited credentials
+  matching this machine's `BOOTSTRAP_ADMIN_*`. Anyone re-running this suite
+  must do the same until the test-infra gap in §6 is closed; a plain
+  `npm run test:e2e` against a clean checkout fails in `beforeEach`, not in
+  the code under test.
 - Logged-out regression check: a fresh browser context (no cookies, no
   localStorage) hitting `/sales` directly still lands cleanly on `/login`
   with the login form rendered — confirms `onRehydrateStorage` fires even
-  against empty storage, so this fix doesn't trade a wrong-page bug for a
-  blank-page hang.
+  against empty storage.
+
+  Empty storage is only the *benign* non-restoring case, and the first cut of
+  this fix handled no other. Two further paths never complete hydration, and
+  each would have hung the panel on `return null` forever (worse than the
+  wrong-page bug being fixed); both are now handled in `stores/authStore.ts`
+  — see §3.
+- **New regression test** — `tests/e2e/panel-hydration-failure.spec.ts`:
+  seeds a stale `accessToken` cookie plus a corrupt `auth-store` value, then
+  loads `/sales` and asserts the panel lands on `/login` with the cookie
+  cleared. Deliberately credential-free (no login, no backend, no bootstrap
+  admin), so unlike the suite above it **is** reproducible from a clean
+  checkout. Verified in both directions against the branch on 2026-08-10:
+  passes with the fix, and fails on `waitForURL('**/login')` with the two
+  source files reverted — i.e. it observes the blank-panel hang, not just
+  the happy path.
+- **Hydration-path matrix**, exercised directly against the installed zustand
+  4.5.7 with the store's exact persist config (blocked storage / corrupt JSON
+  / empty storage / healthy control). PR #44's callback form leaves
+  `hasHydrated` false on the first two; the shipped form reaches `true` on
+  all four, and the healthy control still restores `isAuthenticated: true`.
 - `npx tsc --noEmit`: clean.
 - Production Docker build (`next build`, which runs lint + typecheck):
   succeeds.
@@ -104,6 +169,14 @@ nothing useful: `isAuthenticated` and `user` hydrate atomically in the same
 - `new-implementation/frontend/stores/authStore.ts`
 - `new-implementation/frontend/playwright.config.ts` (locale pin — test
   determinism, not itself a behavior fix, bundled for the reason in §4)
+- `new-implementation/frontend/tests/e2e/panel-hydration-failure.spec.ts`
+  (new — regression cover for the hydration failure paths in §3)
+- `docs/specs/_modules.yml` — added `SPEC-FRONT-*.md` to M3. The existing
+  FRONT globs are all lowercase (`SPEC-*-front-*.md`) and minimatch is
+  case-sensitive, so this file matched nothing and fell through to the
+  `default: M2`; without it Kairos would have filed and closed a Next.js fix
+  under the backend module. `SPEC-FRONT-001/002` only matched because their
+  slugs happen to contain the literal word "frontend".
 
 ## 6. Out of scope
 

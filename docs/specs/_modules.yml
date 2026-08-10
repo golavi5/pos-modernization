@@ -30,6 +30,9 @@ mappings:
     - "SPEC-*-back-*.md"
 
   M3:                                       # FRONT: Next.js UI
+    - "SPEC-FRONT-*.md"                     # prefix form: globs are case-sensitive,
+                                            # so `SPEC-*-front-*.md` below never
+                                            # matches the FRONT id itself
     - "SPEC-*-frontend*.md"
     - "SPEC-*-ui*.md"
     - "SPEC-*-nextjs*.md"
