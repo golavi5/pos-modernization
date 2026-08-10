@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give both apps an ESLint config and a blocking CI gate, without reformatting anything or blocking on the backend's typing debt.
+**Goal:** Give both apps an ESLint config and a CI lint job that runs on every PR, without reformatting anything or blocking on the backend's typing debt.
 
-**Architecture:** Errors gate; `@typescript-eslint/no-explicit-any` is a warning under a budget script capped at its current 117, which may only fall. The frontend is already at zero errors so its gate is green immediately. Prettier is deliberately kept out of the lint path — `eslint-config-prettier` disables conflicting rules and nothing runs the formatter.
+**Architecture:** Errors gate; `@typescript-eslint/no-explicit-any` is a warning under a budget script capped at its current 117, which may only fall. Both apps start with real errors to clear — 2 in the frontend, 39 in the backend. Prettier is deliberately kept out of the lint path — `eslint-config-prettier` disables conflicting rules and nothing runs the formatter.
+
+**Counts are as of `main` @ 25317b35, re-measured 2026-08-10.** They will drift as `main` moves. Every task re-runs the lint and works from *its* output; the file:line lists below are a sanity check on that output, never a substitute for it. If your numbers differ from the plan's, the plan is stale — say so in the PR and carry on from what you measured.
 
 **Tech Stack:** ESLint 8.57 (`.eslintrc` format, not flat config), `eslint-config-next`, `@typescript-eslint` 6, GitHub Actions.
 
@@ -19,14 +21,14 @@
 
 ---
 
-### Task 1: Frontend config and its 7 warnings
-
-The frontend is already at 0 errors, so this task is about getting it to 0 warnings too and locking that in.
+### Task 1: Frontend config, its 2 errors and its 8 warnings
 
 **Files:**
 - Create: `new-implementation/frontend/.eslintrc.json`
+- Modify: `new-implementation/frontend/next.config.js` (opt `next build` out of linting)
 - Modify: `new-implementation/frontend/package.json` (add `lint:ci`)
-- Modify: `components/ui/avatar.tsx:19`, `components/products/ProductCard.tsx:17`, `components/products/ProductFormFields.tsx:169`, `components/products/ProductsTable.tsx:81`, `components/sales/ProductSearch.tsx:94`, `app/(panel)/products/[id]/page.tsx:31`
+- Modify (errors): `hooks/useSettings.ts:23-24`
+- Modify (warnings): `components/ui/avatar.tsx:19`, `components/products/ProductCard.tsx:20`, `components/products/ProductFormFields.tsx:173`, `components/products/ProductsTable.tsx:88`, `components/sales/ProductSearch.tsx:97`, `app/(panel)/products/[id]/page.tsx:31`, `components/sales/PaymentModal.tsx:66`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -43,7 +45,27 @@ Create `new-implementation/frontend/.eslintrc.json`:
 }
 ```
 
-- [ ] **Step 2: Depend on ESLint explicitly**
+- [ ] **Step 2: Keep lint out of `next build`**
+
+Creating that file has a side effect the rest of this plan would otherwise not
+mention. Next 14 skips ESLint during `next build` **only while no config
+exists**; from Step 1 onward, `next build` lints too. Two places already run
+`npm run build`: the CI `frontend` job and `new-implementation/frontend/Dockerfile:19`
+(devDeps are present — line 6 is a plain `npm ci`). Left alone, a lint error
+would break the production image, and every build would pay a second full
+ESLint pass on top of `lint:ci`.
+
+Lint belongs in the lint job. In `new-implementation/frontend/next.config.js`,
+inside `nextConfig`:
+
+```js
+  // Lint runs in its own CI job (`npm run lint:ci`), not inside the build.
+  // Without this, creating .eslintrc.json would make `next build` — and so the
+  // Docker production image — fail on any lint error.
+  eslint: { ignoreDuringBuilds: true },
+```
+
+- [ ] **Step 3: Depend on ESLint explicitly**
 
 `eslint` is **not** in the frontend's `devDependencies` — the binary exists only
 because it is hoisted out of `eslint-config-next`'s tree. It resolves today, but
@@ -57,24 +79,66 @@ npm install --save-dev --save-exact eslint@8.57.1
 Use 8.57.x specifically: ESLint 9 defaults to flat config, which
 `eslint-config-next@14` does not support and which this spec puts out of scope.
 
-- [ ] **Step 3: Add a non-mutating script**
+- [ ] **Step 4: Add a non-mutating script**
 
 In `new-implementation/frontend/package.json`, alongside the existing `"lint": "next lint"`:
 
 ```json
-    "lint:ci": "eslint --ext .ts,.tsx app components lib stores types --max-warnings 0",
+    "lint:ci": "eslint --ext .ts,.tsx app components hooks lib stores types tests middleware.ts i18n-request.ts --max-warnings 0",
 ```
+
+**This file list is the review-critical part of the task.** An earlier draft
+scanned `app components lib stores types` and reported the frontend as clean;
+both of the app's real ESLint errors live in `hooks/`, which that list omits,
+along with `middleware.ts` (the auth guard), `i18n-request.ts` and `tests/`.
+A gate is only as honest as the paths it walks.
+
+Two things not to "tidy":
+- **Do not collapse this to `eslint --ext .ts,.tsx .`.** Untracked directories
+  (`dist/`, `src.backup/`) exist in working trees but not on a fresh CI
+  checkout, so `.` would lint different files locally than in CI — the same
+  class of bug as the one above. If you want `.`, it needs a committed
+  `.eslintignore` and a fresh measurement first.
+- **Do not drop `tests/`** because it is currently clean. Clean is why it costs
+  nothing to keep, and keeping it is what stops the blind spot from growing
+  back.
 
 `next lint` is left alone — it now works, because a config exists.
 
-- [ ] **Step 4: Run it to see the failures**
+- [ ] **Step 5: Run it to see the failures**
 
 ```bash
 npm run lint:ci; echo "exit=$?"
 ```
-Expected: `exit=1` with exactly 7 warnings — six `@next/next/no-img-element` and one `jsx-a11y/alt-text`, at the six files listed above. `--max-warnings 0` is what turns them into a failure.
+Expected: `exit=1`, **2 errors and 8 warnings** over 128 files —
+- 2 × `react-hooks/rules-of-hooks` at `hooks/useSettings.ts:23` and `:24`;
+- 6 × `@next/next/no-img-element` and 1 × `jsx-a11y/alt-text` at the files listed above;
+- 1 × `react-hooks/exhaustive-deps` at `components/sales/PaymentModal.tsx:66`.
 
-- [ ] **Step 5: Fix the real accessibility defect**
+`--max-warnings 0` is what turns the warnings into a failure; the two errors
+fail on their own.
+
+- [ ] **Step 6: Delete the dead `makeMutation` helper**
+
+Both errors are one function. `hooks/useSettings.ts:22` declares:
+
+```ts
+function makeMutation<T>(fn: (dto: T) => Promise<any>) {
+  const qc = useQueryClient();
+  return useMutation({ … });
+}
+```
+
+It calls hooks from a plain function, which is the rules-of-hooks violation —
+and `grep -n makeMutation hooks/useSettings.ts` shows the declaration and
+nothing else. **It has no call sites. Delete it.**
+
+Do not "fix" it by renaming to `useMakeMutation`: that silences the rule by
+creating a custom hook nobody calls. The six real `useUpdate*` hooks below it
+already inline the same three lines each; consolidating them is a refactor with
+its own diff, not a lint fix.
+
+- [ ] **Step 7: Fix the real accessibility defect**
 
 `components/ui/avatar.tsx:19` renders an `<img>` with no `alt`. It is an avatar fallback, so the image is decorative and an empty alt is correct:
 
@@ -84,7 +148,24 @@ Expected: `exit=1` with exactly 7 warnings — six `@next/next/no-img-element` a
 
 Keep whatever props the element already spreads; only add `alt=""`.
 
-- [ ] **Step 6: Decide each `<img>` individually**
+- [ ] **Step 8: Fix the missing `useCallback` dependency**
+
+`components/sales/PaymentModal.tsx:66` — `handleConfirm`'s dependency array is
+`[canConfirm, isLoading, method, onConfirm]` but the callback also reads `t`,
+the translator from `useTranslations('sales')`, in its catch block. (This
+warning arrived with the i18n sweep in PR #42; the first inventory for this
+plan predates it.)
+
+Add `t` to the array. `next-intl`'s `t` is stable per locale, so this does not
+change how often the callback is recreated in practice — it makes the
+dependency honest, and keeps the callback from closing over a stale translator
+after a locale change.
+
+Do **not** silence this one with `// eslint-disable-next-line`: an
+exhaustive-deps disable on a payment confirmation handler is exactly the kind
+of thing this gate exists to stop.
+
+- [ ] **Step 9: Decide each `<img>` individually**
 
 Six `<img>` elements are flagged. **Do not blanket-swap them to `next/image`** — that component requires `width`/`height` or a `fill` parent, so a careless swap changes layout, and this is a lint PR.
 
@@ -99,7 +180,7 @@ For each of the six, pick one:
 
 A bare disable with no reason is not acceptable — the next reader must know whether it was considered or dodged.
 
-- [ ] **Step 7: Verify clean and non-mutating**
+- [ ] **Step 10: Verify clean and non-mutating**
 
 ```bash
 npm run lint:ci; echo "exit=$?"     # expect exit=0, no output
@@ -107,11 +188,15 @@ npm run build                        # expect ✓ Compiled successfully
 git diff --stat                      # expect only the files you edited
 ```
 
-- [ ] **Step 8: Commit**
+`npm run build` here proves the app still compiles — it no longer proves
+anything about lint, because Step 2 took ESLint out of the build on purpose.
+`lint:ci` is the only lint signal, in this task and in CI.
+
+- [ ] **Step 11: Commit**
 
 ```bash
-git add .eslintrc.json package.json package-lock.json components app
-git commit -m "lint(front): add ESLint config and clear its 7 warnings"
+git add .eslintrc.json next.config.js package.json package-lock.json components hooks app
+git commit -m "lint(front): add ESLint config and clear its 2 errors and 8 warnings"
 ```
 
 ---
@@ -246,14 +331,41 @@ const path = require('path');
 
 const CAP = 117;
 const RULE = '@typescript-eslint/no-explicit-any';
+const GLOB = '{src,apps,libs,test}/**/*.ts';
+
+// Paths resolve from the working directory, which `npm run lint:budget` sets to
+// the backend package root. Deliberately not __dirname: Task 3 Step 4 proves the
+// failure path by running a modified copy of this file from outside the repo.
+const ESLINT = path.join('node_modules', '.bin', 'eslint');
+
+const run = (args) =>
+  execFileSync(ESLINT, args, {
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+  });
+
+// Guard 1 — the rule must actually be enabled. If it is "off", ESLint exits 0
+// with well-formed JSON and no matching messages, and a naive count reads zero
+// as success. Ask the config directly before trusting any count.
+try {
+  const cfg = JSON.parse(run(['--print-config', 'src/main.ts']));
+  const sev = cfg.rules && cfg.rules[RULE];
+  const level = Array.isArray(sev) ? sev[0] : sev;
+  if (level === undefined || level === 'off' || level === 0) {
+    console.error(
+      `${RULE} is not enabled in the ESLint config (got ${JSON.stringify(sev)}).\n` +
+        'The budget cannot count a rule that does not run. Set it to "warn".',
+    );
+    process.exit(1);
+  }
+} catch (err) {
+  console.error('could not read the eslint config:\n' + (err.stderr || err.message));
+  process.exit(1);
+}
 
 let raw;
 try {
-  raw = execFileSync(
-    path.join('node_modules', '.bin', 'eslint'),
-    ['{src,apps,libs,test}/**/*.ts', '--format', 'json'],
-    { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 },
-  );
+  raw = run([GLOB, '--format', 'json']);
 } catch (err) {
   // ESLint exits non-zero when it reports errors — that is normal here and its
   // stdout is still valid JSON. A genuine crash produces no stdout, and must
@@ -266,6 +378,14 @@ try {
 }
 
 const results = JSON.parse(raw);
+
+// Guard 2 — a run that linted nothing is not a run of zero violations. A
+// narrowed glob or a widened ignorePatterns would otherwise pass silently.
+if (results.length === 0) {
+  console.error(`eslint linted 0 files for ${GLOB} — the glob or ignorePatterns changed.`);
+  process.exit(1);
+}
+
 const perFile = [];
 let total = 0;
 for (const file of results) {
@@ -287,10 +407,19 @@ if (total > CAP) {
 
 console.log(
   total < CAP
-    ? `PASS  ${RULE}: ${total} (cap ${CAP}) — lower CAP to ${total} in scripts/any-budget.cjs`
-    : `PASS  ${RULE}: ${total} (at cap ${CAP})`,
+    ? `PASS  ${RULE}: ${total} of ${results.length} files (cap ${CAP}, ${CAP - total} of headroom to give back)`
+    : `PASS  ${RULE}: ${total} of ${results.length} files (at cap ${CAP})`,
 );
 ```
+
+Two notes on that output, both deliberate:
+
+- It prints the **file count**, so a run that quietly narrowed its scope reads
+  as suspicious rather than as an improvement.
+- It says "headroom to give back", not "lower CAP to N". Telling a reader to
+  ratify whatever number came out is how a temporary zero becomes a permanent
+  one — a `CAP` of 0 can never fail again. Lowering the cap should follow work
+  that actually removed `any`s, in that work's own PR.
 
 - [ ] **Step 2: Add the script entry**
 
@@ -303,20 +432,33 @@ console.log(
 ```bash
 npm run lint:budget; echo "exit=$?"
 ```
-Expected: `PASS  @typescript-eslint/no-explicit-any: 117 (at cap 117)` and `exit=0`.
+Expected: `PASS  @typescript-eslint/no-explicit-any: 117 of 146 files (at cap 117)` and `exit=0`.
 
-If the count is not 117, do not adjust the cap to match blindly — first check whether Task 2 changed an `any` by accident.
+Check **both** numbers. If the count is not 117, do not adjust the cap to match
+blindly — first check whether Task 2 changed an `any` by accident. If the file
+count is not ~146, the glob or `ignorePatterns` is excluding source, and the
+count is measuring less than you think.
 
-- [ ] **Step 4: Prove it actually fails**
+- [ ] **Step 4: Prove it actually fails — on a copy, never in place**
 
 ```bash
-sed -i 's/const CAP = 117;/const CAP = 116;/' scripts/any-budget.cjs
-npm run lint:budget; echo "exit=$?"
-sed -i 's/const CAP = 116;/const CAP = 117;/' scripts/any-budget.cjs
+sed 's/const CAP = 117;/const CAP = 116;/' scripts/any-budget.cjs > /tmp/budget-116.cjs
+node /tmp/budget-116.cjs; echo "exit=$?"
+rm /tmp/budget-116.cjs
 ```
 Expected: `FAIL … 117 (cap 116, +1)`, a per-file table, and `exit=1`.
 
 A budget that only ever prints PASS proves nothing. This step is the test.
+
+**Do not do this with `sed -i` and a restore.** The middle command is *supposed*
+to exit non-zero, so under `set -e`, an `&&` chain, or any worker that stops on
+a failing command to report it, the restore never runs — and Step 6 then commits
+`const CAP = 116;`. A ratchet one below its own count is a red required check on
+`main` that blocks every later PR until someone reads the script. (Step 7 then
+commits it — the tamper is two steps upstream of a `git add`.)
+
+The copy lives in `/tmp` but resolves its paths from the working directory, so
+run it from `new-implementation/backend` like every other command in this task.
 
 - [ ] **Step 5: Prove the crash path fails loudly**
 
@@ -325,9 +467,23 @@ mv .eslintrc.json .eslintrc.json.bak
 npm run lint:budget; echo "exit=$?"
 mv .eslintrc.json.bak .eslintrc.json
 ```
-Expected: `eslint failed to run:` with ESLint's own message, and `exit=1` — **not** a count of zero. Confirm `npm run lint:budget` passes again afterwards.
+Expected: a config error and `exit=1` — **not** a count of zero. Confirm `npm run lint:budget` passes again afterwards.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Prove a disabled rule fails too**
+
+The crash path is the *easy* silent-zero. The dangerous one is a successful
+ESLint run over a rule that is switched off: valid JSON, no matching messages,
+`total = 0`, `0 > 117` is false, PASS.
+
+```bash
+cp .eslintrc.json .eslintrc.json.bak
+node -e "const f='.eslintrc.json',j=require('./'+f);j.rules['@typescript-eslint/no-explicit-any']='off';require('fs').writeFileSync(f,JSON.stringify(j,null,2))"
+npm run lint:budget; echo "exit=$?"
+mv .eslintrc.json.bak .eslintrc.json
+```
+Expected: `@typescript-eslint/no-explicit-any is not enabled in the ESLint config` and `exit=1`. Confirm `npm run lint:budget` passes again afterwards, and that `git status --porcelain` is empty.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add scripts/any-budget.cjs package.json
@@ -343,11 +499,13 @@ git commit -m "lint(back): cap the no-explicit-any count at 117"
 
 **Interfaces:**
 - Consumes: `lint:ci` from Tasks 1 and 2, `lint:budget` from Task 3.
-- Produces: a blocking `lint` job.
+- Produces: a `lint` job that runs on every PR. It does **not** produce a merge
+  block — see Step 4.
 
 - [ ] **Step 1: Add the job**
 
-In `.github/workflows/ci.yml`, alongside `backend` and `frontend`:
+In `.github/workflows/ci.yml`, alongside `backend`, `frontend` and `i18n` (that
+third job arrived with PR #42):
 
 ```yaml
   lint:
@@ -359,7 +517,9 @@ In `.github/workflows/ci.yml`, alongside `backend` and `frontend`:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: new-implementation/backend/package-lock.json
+          cache-dependency-path: |
+            new-implementation/backend/package-lock.json
+            new-implementation/frontend/package-lock.json
       - name: Backend
         working-directory: ./new-implementation/backend
         run: |
@@ -373,16 +533,55 @@ In `.github/workflows/ci.yml`, alongside `backend` and `frontend`:
           npm run lint:ci
 ```
 
-Both apps run in one job so the workflow gains a single required check rather than two.
+Both apps run in one job so the workflow gains one check rather than two.
 
-- [ ] **Step 2: Verify the workflow parses**
+`cache-dependency-path` lists **both** lockfiles. With only the backend's, the
+cache key ignores frontend dependency changes — so the frontend `npm ci` in this
+job restores a cache keyed to a tree it does not match, and stops invalidating
+when frontend deps move.
+
+- [ ] **Step 2: Correct the file's header comment**
+
+`.github/workflows/ci.yml` opens with:
+
+```
+# … Lint is not gated yet — neither app ships an ESLint config
+# (`next lint`/`eslint` have nothing to run); adding configs is tracked
+# separately (SPEC-CUT-001 S-01).
+```
+
+Every clause of that is false once Step 1 lands. Replace it with what is then
+true: both apps ship an ESLint config, the `lint` job runs `lint:ci` for each
+plus the backend `any` budget, and it is advisory until `main` gets branch
+protection. A stale comment sitting next to the thing it denies is the ledger
+rot this repo's conventions exist to prevent.
+
+- [ ] **Step 3: Verify the workflow parses**
 
 ```bash
 python3 -c "import yaml,sys; d=yaml.safe_load(open('.github/workflows/ci.yml')); print(sorted(d['jobs'].keys()))"
 ```
 Expected: the job list now includes `lint`.
 
-- [ ] **Step 3: Verify nothing mutates**
+This proves the YAML parses. It does not prove the job runs, and it certainly
+does not prove the job blocks anything — see Steps 4 and 5.
+
+- [ ] **Step 4: Record what "gating" actually requires — do not claim it**
+
+`main` has **no branch protection**: `gh api repos/:owner/:repo/branches/main/protection`
+returns 404 and `gh api repos/:owner/:repo/rulesets` returns `[]`. A job in
+`ci.yml` runs on every PR; it blocks a merge only when its check name is in the
+required-status-checks list. Nothing in this plan can add that — it is an admin
+repo setting, and a worker executing this plan most likely lacks the rights.
+
+So: **do not add a `gh api -X PUT …/protection` step you cannot verify, and do
+not describe the result as a gate.** Instead, note in the PR body that
+`Lint — backend + frontend` is ready to be added as a required check, and leave
+the acceptance item in `SPEC-BACK-002` §4 open with that as its reason. The
+FRONT-002 spec carries the same open item for the same setting; this is a
+repo-wide follow-up, not a per-spec one.
+
+- [ ] **Step 5: Verify nothing mutates**
 
 From the repo root, run what CI runs and confirm a clean tree:
 
@@ -394,11 +593,11 @@ git status --porcelain          # expect empty
 
 An empty `git status` here is the proof that no `--fix` snuck into the CI path.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add .github/workflows/ci.yml
-git commit -m "ci: gate both apps on lint and the any budget"
+git commit -m "ci: run lint and the any budget for both apps on every PR"
 ```
 
 ---
@@ -407,28 +606,55 @@ git commit -m "ci: gate both apps on lint and the any budget"
 
 **Files:**
 - Modify: `docs/specs/SPEC-BACK-002-lint-gating.md`
+- Modify: `docs/specs/SPEC-CUT-001-cutover-deploy-readiness.md`
 
 **Interfaces:** none.
 
 - [ ] **Step 1: Tick the acceptance list**
 
-Mark each `- [ ]` in §4 the work satisfies. The last item — "no file is reformatted" — is checked by reading the PR diff for whitespace-only hunks, not by a command.
+Mark each `- [ ]` in §4 the work satisfies. The last item — "no file is reformatted" — is checked by reading the PR diff for whitespace-only hunks, not by a command. The branch-protection item stays **unticked**: nothing in this plan can satisfy it.
 
 - [ ] **Step 2: Update the status line**
 
-Per the convention in `CLAUDE.md`, the status line is the ledger and carries its evidence:
+Per the convention in `CLAUDE.md`, the status line is the ledger and carries its evidence. Fill the bracketed values from what you actually observed — do not copy the template's numbers:
 
 ```markdown
-**Status**: DONE — 2026-08-09 (PR #NN). Both apps linted and gating in CI; frontend at 0 errors / 0 warnings; backend at 0 errors with no-explicit-any capped at 117 and falling. Nothing reformatted.
+**Status**: APPROVED — <date> (PR #NN). Both apps linted; `lint` runs on every PR (<link to the first green run>); frontend at 0 errors / 0 warnings over its full file list; backend at 0 errors with no-explicit-any capped at <N>. Nothing reformatted. Open: `main` has no branch protection, so the check is advisory — add `Lint — backend + frontend` to required checks to make it gate.
 ```
 
-If the `any` count ended below 117, say the real number. Never `IMPLEMENTED` — Kairos maps it to Done.
+`APPROVED`, not `DONE`, and here is the rule that decides it: this repo defines
+`DONE` as shipped **and** verified, with a verification record for anything
+exercised against real infrastructure. A CI job is real infrastructure. Until
+you can cite a green run URL *and* the required-check setting exists, the gate
+is not verified — and `SPEC-CUT-001` §4 S-01 is this repo's own record of a
+workflow that parsed perfectly and never ran. Promote to `DONE` in a later
+commit once both are true. Never `IMPLEMENTED` — Kairos maps it to Done.
 
-- [ ] **Step 3: Commit**
+Note the `<date>` placeholder: stamp the day you actually do this, not the day
+this plan was written.
+
+- [ ] **Step 3: Retire the deferral in `SPEC-CUT-001`**
+
+`SPEC-BACK-002` §6 names `SPEC-CUT-001` §4 S-01 as "the deferral this closes",
+so leaving CUT-001 unchanged leaves the repo's ledger asserting both. Two edits
+there:
+
+- the `**Status**:` line, which reads "S-01 (lint gate) and S-02 (Sentry)
+  deferred by decision" — the lint half is no longer deferred, it is owned by
+  `POS-BACK-002`;
+- the §4 S-01 row, whose tail reads "**Deferred:** lint gate — neither app
+  ships an ESLint config (`next lint`/`eslint` have nothing to run); add
+  configs first." That sentence becomes false the moment Task 1 lands. Replace
+  it with a pointer to `POS-BACK-002` and its actual state.
+
+Leave §6's checkboxes alone — per `CLAUDE.md`, the status line is the ledger and
+the boxes are working notes.
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add docs/specs/SPEC-BACK-002-lint-gating.md
-git commit -m "docs(specs): record BACK-002 outcome in the status line"
+git add docs/specs/SPEC-BACK-002-lint-gating.md docs/specs/SPEC-CUT-001-cutover-deploy-readiness.md
+git commit -m "docs(specs): record BACK-002 outcome and retire the CUT-001 S-01 deferral"
 ```
 
 ---
@@ -437,4 +663,11 @@ git commit -m "docs(specs): record BACK-002 outcome in the status line"
 
 Put `Closes POS-BACK-002` in the body if the work completes the spec — a bare mention of the id does nothing.
 
-Reviewers should check two things specifically: that every `eslint-disable` added in Task 1 carries a reason, and that the diff contains no whitespace-only hunks. Those are the two ways this particular PR can go wrong while still being green.
+Reviewers should check four things specifically — each is a way this PR can go wrong *while still being green*:
+
+1. **The frontend file list in `lint:ci`.** Directories missing from it are not linted, and nothing in a green CI run says so. This plan's own first draft lost both frontend errors that way.
+2. **Every `eslint-disable` added in Task 1 carries a reason.**
+3. **No whitespace-only hunks** anywhere in the diff.
+4. **`CAP` is 117**, not 116 — Task 3's failure proof runs against a copy precisely so a stopped run cannot commit the tampered value.
+
+Say plainly in the body that the lint check is advisory until `main` gets branch protection. A PR that reads as "lint is now gated" when it is not is worse than one that admits the gap.
