@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ProductCategory } from './entities/product-category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { User } from '../auth/entities/user.entity';

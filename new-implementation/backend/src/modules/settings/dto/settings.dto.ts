@@ -4,7 +4,6 @@ import {
   IsBoolean,
   IsNumber,
   IsEmail,
-  IsUrl,
   MaxLength,
   Min,
   Max,

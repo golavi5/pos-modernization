@@ -5,7 +5,6 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from '../auth.service';
 import { User } from '../entities/user.entity';
-import { Role } from '../entities/role.entity';
 import {
   UnauthorizedException,
   ConflictException,
@@ -43,19 +42,6 @@ describe('AuthService', () => {
     hasAllRoles: jest.fn(),
     generateId: jest.fn(),
     orders: [],
-  };
-
-  const mockRole: Role = {
-    id: 'role-123',
-    name: 'admin',
-    description: 'Administrator role',
-    company_id: null,
-    is_system_role: true,
-    created_at: new Date(),
-    updated_at: new Date(),
-    deleted_at: null,
-    users: [],
-    generateId: jest.fn(),
   };
 
   beforeEach(async () => {

@@ -25,9 +25,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { Roles } from './decorators/roles.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
 import { User } from './entities/user.entity';
 
 @ApiTags('Authentication')
@@ -52,7 +50,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   @UseGuards(AuthGuard('local'))
-  async login(@Request() req, @Body() loginDto: LoginDto): Promise<AuthResponseDto> {
+  async login(@Request() req, @Body() _loginDto: LoginDto): Promise<AuthResponseDto> {
     try {
       const user = req.user;
       this.logger.log(`User logged in: ${user.email}`);

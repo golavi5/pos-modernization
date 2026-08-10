@@ -19,7 +19,6 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AdjustStockDto } from './dto/adjust-stock.dto';
-import { StockQueryDto } from './dto/stock-query.dto';
 import { MovementQueryDto } from './dto/movement-query.dto';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { CreateLocationDto } from './dto/create-location.dto';

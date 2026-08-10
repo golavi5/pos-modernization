@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { CreateOrderItemDto } from '../dto/create-order.dto';
-import { OrderItem } from '../entities/order-item.entity';
 
 interface CalculatedOrderItem {
   product_id: string;
