@@ -66,10 +66,14 @@ rationale, nor assigned elsewhere.
    matches the repo instead of reformatting it. Nothing is reformatted by this
    spec.
 5. **A non-mutating `lint:ci` script** in both apps, and a CI job that calls it
-   on every PR — never the `--fix` variant. The job runs; making it *block* a
-   merge additionally requires branch protection on `main`, which this repo
-   does not have (`gh api …/branches/main/protection` → 404, rulesets `[]`).
-   That is a repo setting, not a code change; see §4.
+   on every PR — never the `--fix` variant. Branch protection now exists on
+   `main` (added 2026-08-10; `gh api …/branches/main/protection` →
+   `required_status_checks.contexts` = "Backend — test + build", "Frontend —
+   build", "Frontend — i18n checks"; `enforce_admins` off, no required
+   reviews), so this job blocks once its check name is **added to that
+   required list** — a repo setting, not a code change. Do not add the name
+   before the job exists and is green: a required check that never reports
+   wedges every PR. See §4.
 
 ## 4. Acceptance
 
@@ -89,11 +93,12 @@ rationale, nor assigned elsewhere.
       `Lint — backend + frontend`, and the job is observed green on a real
       runner (cite the run URL — a workflow that parses is not a workflow that
       ran; see `SPEC-CUT-001` §4 S-01 for why this repo insists).
-- [ ] **Open, and not closable from this repo's code:** `main` has no branch
-      protection, so a red lint check does not stop a merge. Adding
-      `Lint — backend + frontend` to the required-checks list is an admin repo
-      setting. Until it exists, the gate is advisory — say so in the status
-      line rather than claiming a gate.
+- [ ] **Requires a repo setting after this ships:** `main` has branch
+      protection as of 2026-08-10, but this job's check name is not in the
+      required list — it cannot be, until the job exists and has reported green
+      once. Add `Lint — backend + frontend` to the required checks *after*
+      merging, then say so in the status line. Until that is done the lint job
+      reports without blocking; claim advisory, not a gate.
 - [ ] `npm run build` and the backend test suite still pass (246 tests at the
       time of writing).
 - [ ] No file is reformatted: the diff contains no whitespace-only changes.

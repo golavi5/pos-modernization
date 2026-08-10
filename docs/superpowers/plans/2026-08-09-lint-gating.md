@@ -552,8 +552,10 @@ when frontend deps move.
 
 Every clause of that is false once Step 1 lands. Replace it with what is then
 true: both apps ship an ESLint config, the `lint` job runs `lint:ci` for each
-plus the backend `any` budget, and it is advisory until `main` gets branch
-protection. A stale comment sitting next to the thing it denies is the ledger
+plus the backend `any` budget, and it stays advisory — `main`'s branch
+protection (added 2026-08-10; see `SPEC-BACK-002` §3 item 5) does not include
+this check's name yet, and cannot until the job exists and has reported green
+at least once. A stale comment sitting next to the thing it denies is the ledger
 rot this repo's conventions exist to prevent.
 
 - [ ] **Step 3: Verify the workflow parses**
@@ -568,18 +570,23 @@ does not prove the job blocks anything — see Steps 4 and 5.
 
 - [ ] **Step 4: Record what "gating" actually requires — do not claim it**
 
-`main` has **no branch protection**: `gh api repos/:owner/:repo/branches/main/protection`
-returns 404 and `gh api repos/:owner/:repo/rulesets` returns `[]`. A job in
-`ci.yml` runs on every PR; it blocks a merge only when its check name is in the
-required-status-checks list. Nothing in this plan can add that — it is an admin
-repo setting, and a worker executing this plan most likely lacks the rights.
+`main` now **has** branch protection (added 2026-08-10; `gh api
+repos/:owner/:repo/branches/main/protection` → `required_status_checks.contexts`
+= "Backend — test + build", "Frontend — build", "Frontend — i18n checks" — see
+`SPEC-BACK-002` §3 item 5). That does not mean this plan's lint job blocks
+anything: a job in `ci.yml` runs on every PR, but it blocks a merge only once
+its check name is added to the required-status-checks list, and that name
+cannot be added before the job exists and has reported green at least once.
+Nothing in this plan can add it — it is an admin repo setting, and a worker
+executing this plan most likely lacks the rights.
 
 So: **do not add a `gh api -X PUT …/protection` step you cannot verify, and do
 not describe the result as a gate.** Instead, note in the PR body that
-`Lint — backend + frontend` is ready to be added as a required check, and leave
-the acceptance item in `SPEC-BACK-002` §4 open with that as its reason. The
-FRONT-002 spec carries the same open item for the same setting; this is a
-repo-wide follow-up, not a per-spec one.
+`Lint — backend + frontend` is ready to be added as a required check once it
+ships and is observed green, and leave the acceptance item in `SPEC-BACK-002`
+§4 open with that as its reason. FRONT-002's equivalent item is already
+closed — its check ("Frontend — i18n checks") is in the required list; this
+plan closes the same gap for BACK-002's job.
 
 - [ ] **Step 5: Verify nothing mutates**
 
@@ -619,7 +626,7 @@ Mark each `- [ ]` in §4 the work satisfies. The last item — "no file is refor
 Per the convention in `CLAUDE.md`, the status line is the ledger and carries its evidence. Fill the bracketed values from what you actually observed — do not copy the template's numbers:
 
 ```markdown
-**Status**: APPROVED — <date> (PR #NN). Both apps linted; `lint` runs on every PR (<link to the first green run>); frontend at 0 errors / 0 warnings over its full file list; backend at 0 errors with no-explicit-any capped at <N>. Nothing reformatted. Open: `main` has no branch protection, so the check is advisory — add `Lint — backend + frontend` to required checks to make it gate.
+**Status**: APPROVED — <date> (PR #NN). Both apps linted; `lint` runs on every PR (<link to the first green run>); frontend at 0 errors / 0 warnings over its full file list; backend at 0 errors with no-explicit-any capped at <N>. Nothing reformatted. Open: `main` has branch protection but this check's name is not yet in the required list — add `Lint — backend + frontend` to required checks once the job is observed green to make it gate.
 ```
 
 `APPROVED`, not `DONE`, and here is the rule that decides it: this repo defines
@@ -670,4 +677,4 @@ Reviewers should check four things specifically — each is a way this PR can go
 3. **No whitespace-only hunks** anywhere in the diff.
 4. **`CAP` is 117**, not 116 — Task 3's failure proof runs against a copy precisely so a stopped run cannot commit the tampered value.
 
-Say plainly in the body that the lint check is advisory until `main` gets branch protection. A PR that reads as "lint is now gated" when it is not is worse than one that admits the gap.
+Say plainly in the body that the lint check is advisory until its name is added to `main`'s required-status-checks list — branch protection itself already exists (added 2026-08-10). A PR that reads as "lint is now gated" when it is not is worse than one that admits the gap.
