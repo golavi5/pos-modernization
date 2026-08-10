@@ -107,7 +107,7 @@ export function LoyaltyPointsModal({
         <div className="p-6 space-y-6">
           {/* Customer info */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-secondary mb-1">{tDashboard('customer')}</p>
+            <p className="text-sm text-secondary mb-1">{tCommon('customer')}</p>
             <p className="text-lg font-semibold">{customer.name}</p>
             <div className="mt-3 flex items-center gap-2">
               <span className="text-sm text-secondary">{t('currentBalance')}:</span>
@@ -176,7 +176,7 @@ export function LoyaltyPointsModal({
           {/* Preview */}
           {points > 0 && (
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <p className="text-sm text-blue-700 mb-2">{tProducts('preview')}</p>
+              <p className="text-sm text-blue-700 mb-2">{tCommon('preview')}</p>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-blue-600">{t('currentBalance')}:</span>
                 <span className="font-semibold text-blue-900">
@@ -186,7 +186,7 @@ export function LoyaltyPointsModal({
               {operation !== 'set' && (
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-sm text-blue-600">
-                    {operation === 'add' ? t('addLabel') : t('subtractLabel')}
+                    {operation === 'add' ? t('addLabel') : tCommon('subtractLabel')}
                   </span>
                   <span
                     className={`font-semibold ${
@@ -225,7 +225,7 @@ export function LoyaltyPointsModal({
             disabled={isLoading || points <= 0}
             className="flex-1"
           >
-            {isLoading ? tSales('processing') : tCommon('confirm')}
+            {isLoading ? tCommon('processing') : tCommon('confirm')}
           </Button>
         </div>
       </div>

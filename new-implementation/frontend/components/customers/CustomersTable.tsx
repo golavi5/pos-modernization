@@ -75,13 +75,13 @@ export function CustomersTable({
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left p-4 font-semibold text-secondary">{tDashboard('customer')}</th>
-            <th className="text-left p-4 font-semibold text-secondary">{tReports('customerTab.contact')}</th>
-            <th className="text-right p-4 font-semibold text-secondary">{tReports('customerTab.purchases')}</th>
-            <th className="text-center p-4 font-semibold text-secondary">{tReports('customerTab.points')}</th>
+            <th className="text-left p-4 font-semibold text-secondary">{tCommon('customer')}</th>
+            <th className="text-left p-4 font-semibold text-secondary">{tCommon('contact')}</th>
+            <th className="text-right p-4 font-semibold text-secondary">{tCommon('purchases')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('points')}</th>
             <th className="text-center p-4 font-semibold text-secondary">{t('table.lastPurchase')}</th>
-            <th className="text-center p-4 font-semibold text-secondary">{tDashboard('status')}</th>
-            <th className="text-center p-4 font-semibold text-secondary">{t('table.actions')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('status')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -118,7 +118,7 @@ export function CustomersTable({
                   <div className="font-semibold">
                     {formatCOP(customer.total_purchases)}
                   </div>
-                  <div className="text-sm text-tertiary">{tDashboard('total')}</div>
+                  <div className="text-sm text-tertiary">{tCommon('total')}</div>
                 </div>
               </td>
               <td className="p-4 text-center">
@@ -136,9 +136,9 @@ export function CustomersTable({
               </td>
               <td className="p-4 text-center">
                 {customer.is_active ? (
-                  <Badge variant="success">{t('table.active')}</Badge>
+                  <Badge variant="success">{tCommon('statusActive')}</Badge>
                 ) : (
-                  <Badge variant="secondary">{t('table.inactive')}</Badge>
+                  <Badge variant="secondary">{tCommon('statusInactive')}</Badge>
                 )}
               </td>
               <td className="p-4">

@@ -28,7 +28,30 @@
     "yes": "Yes",
     "no": "No",
     "optional": "Optional",
-    "required": "Required"
+    "required": "Required",
+    "brand": "POS",
+    "logout": "Logout",
+    "customer": "Customer",
+    "status": "Status",
+    "total": "Total",
+    "contact": "Contact",
+    "purchases": "Purchases",
+    "points": "Points",
+    "email": "Email",
+    "actions": "Actions",
+    "statusActive": "Active",
+    "statusInactive": "Inactive",
+    "product": "Product",
+    "quantity": "Quantity",
+    "notesOptional": "Notes (Optional)",
+    "preview": "Preview",
+    "processing": "Processing...",
+    "stock": "Stock",
+    "password": "Password",
+    "passwordMismatch": "Passwords do not match",
+    "lowStockAlerts": "Low Stock Alerts",
+    "subtractLabel": "Subtract:",
+    "system": "System"
   },
   "auth": {
     "signIn": "Sign in",
@@ -36,7 +59,6 @@
     "enterCredentials": "Enter your credentials to access the POS system",
     "emailAddress": "Email address",
     "emailPlaceholder": "you@example.com",
-    "password": "Password",
     "passwordPlaceholder": "••••••••",
     "signingIn": "Signing in...",
     "needAccount": "Need an account?",
@@ -47,15 +69,12 @@
     "fullName": "Full Name",
     "fullNamePlaceholder": "John Doe",
     "confirmPassword": "Confirm Password",
-    "passwordMismatch": "Passwords do not match",
     "passwordMinLength": "Password must be at least 6 characters",
     "registrationFailed": "Registration failed",
     "register": "Register",
     "alreadyHaveAccount": "Already have an account?",
-    "logout": "Logout",
     "settings": "Settings",
     "layout": {
-      "brand": "POS",
       "title": "POS Modernization",
       "subtitle": "Modern Point of Sale System",
       "copyright": "© 2024 POS System. All rights reserved."
@@ -96,14 +115,10 @@
     "fromTransactions": "from {count} transactions",
     "totalProducts": "Total Products",
     "inInventory": "in inventory",
-    "lowStockAlerts": "Low Stock Alerts",
     "itemsNeedRestock": "items need restock",
     "pendingOrders": "Pending Orders",
     "awaitingShipment": "awaiting shipment",
     "recentSales": "Recent sales",
-    "customer": "Customer",
-    "total": "Total",
-    "status": "Status",
     "noCustomer": "No customer",
     "viewAll": "View all",
     "statusPaid": "Paid",
@@ -124,7 +139,8 @@
       "adjustInventory": "Adjust inventory",
       "viewDailyReport": "View daily report",
       "addProduct": "Add product"
-    }
+    },
+    "salesLast7Days": "Sales — last 7 days"
   },
   "sales": {
     "title": "Sales",
@@ -151,10 +167,8 @@
     "credit": "Credit",
     "cashReceived": "Cash received",
     "change": "Change",
-    "notes": "Notes (Optional)",
     "notesPlaceholder": "E.g.: Customer requested invoice, home delivery...",
     "amountMustBeGreater": "Amount received must be greater than or equal to total",
-    "processing": "Processing...",
     "confirmSale": "Confirm Sale",
     "cartEmpty": "Cart empty",
     "searchToAdd": "Search products to add to cart",
@@ -240,7 +254,6 @@
     "taxRate": "Tax rate (%)",
     "imageUrl": "Image URL",
     "imageUrlPlaceholder": "https://example.com/image.jpg",
-    "preview": "Preview",
     "searchPlaceholder": "Search by name, SKU or barcode...",
     "filters": "Filters",
     "allCategories": "All",
@@ -249,7 +262,6 @@
     "creationDate": "Creation date",
     "name": "Name",
     "price": "Price",
-    "stock": "Stock",
     "order": "Order",
     "ascending": "Ascending",
     "descending": "Descending",
@@ -257,7 +269,6 @@
     "productNotFound": "Product not found",
     "noDescription": "No description",
     "stockStatus": "Stock status",
-    "status": "Status",
     "updateProductInfo": "Update product information",
     "loadingCategories": "Loading categories...",
     "categoryManagement": "Category Management",
@@ -306,7 +317,6 @@
     "pointsUpdateError": "Error updating points",
     "fullName": "Full name *",
     "fullNamePlaceholder": "E.g.: John Smith",
-    "email": "Email",
     "emailPlaceholder": "example@email.com",
     "emailHelp": "Used to send receipts and notifications",
     "phone": "Phone",
@@ -330,9 +340,6 @@
       "empty": "No customers found",
       "emptyHint": "Try adjusting the filters or create a new customer",
       "lastPurchase": "Last purchase",
-      "actions": "Actions",
-      "active": "Active",
-      "inactive": "Inactive",
       "viewDetails": "View details",
       "managePoints": "Manage points"
     },
@@ -353,7 +360,6 @@
       "newBalance": "New balance",
       "pointsAmount": "Points amount",
       "addLabel": "Add:",
-      "subtractLabel": "Subtract:",
       "invalidAmount": "Enter a valid amount of points",
       "insufficientPoints": "Not enough points to subtract"
     },
@@ -391,7 +397,6 @@
       "notesPlaceholder": "Reason for adjustment, observations...",
       "newStock": "New stock",
       "addLabel": "Add:",
-      "subtractLabel": "Subtract:",
       "invalidQuantity": "Enter a valid quantity",
       "insufficientStock": "Not enough stock available",
       "confirmAdjust": "Confirm Adjustment"
@@ -439,8 +444,7 @@
       "restock": "Restock"
     },
     "page": {
-      "searchPlaceholder": "Search product or SKU...",
-      "stock": "Stock"
+      "searchPlaceholder": "Search product or SKU..."
     }
   },
   "users": {
@@ -474,11 +478,9 @@
       "confirmPassword": "Confirm Password *",
       "minChars": "Minimum 8 characters",
       "repeatPassword": "Repeat password",
-      "mismatch": "Passwords do not match",
       "action": "Reset password"
     },
     "form": {
-      "password": "Password",
       "firstName": "First name",
       "lastName": "Last name",
       "activeUser": "Active user",
@@ -497,8 +499,7 @@
       "registered": "Registered",
       "noRoles": "No roles",
       "never": "Never",
-      "assignRoles": "Assign roles",
-      "resetPassword": "Reset password"
+      "assignRoles": "Assign roles"
     },
     "page": {
       "searchPlaceholder": "Search users...",
@@ -546,7 +547,6 @@
     "customers": "Customers",
     "inventory": "Inventory",
     "vsLastPeriod": "vs last period",
-    "product": "Product",
     "revenue": "Revenue",
     "avgTicket": "Avg. Ticket",
     "days": "{count} days",
@@ -573,10 +573,7 @@
       "avgSpent": "{amount} average",
       "topBuyers": "Top Customers",
       "topBuyersDesc": "Customers with the highest spend in the period",
-      "contact": "Contact",
-      "purchases": "Purchases",
       "totalSpent": "Total Spent",
-      "points": "Points",
       "pts": "{count} pts"
     },
     "inventoryTab": {
@@ -603,9 +600,7 @@
     "productTab": {
       "topSelling": "Top Selling Products",
       "topSellingDesc": "The {count} best performing products in the period",
-      "quantity": "Quantity",
       "noSalesData": "No sales data available",
-      "lowStockAlerts": "Low Stock Alerts",
       "lowStockDesc": "Products that need urgent restocking",
       "warehouse": "Warehouse",
       "reorderPoint": "Reorder Point",

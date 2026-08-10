@@ -16,6 +16,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +66,7 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="block text-sm font-medium text-tertiary">
-                {t('password')}
+                {tCommon('password')}
               </label>
               <Input
                 id="password"

@@ -76,7 +76,7 @@ export default function InventoryPage() {
                 : 'hover:bg-muted'
             }`}
           >
-            {t('page.stock')}
+            {tCommon('stock')}
           </button>
           <button
             onClick={() => setActiveTab('movements')}

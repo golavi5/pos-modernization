@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { MessageKey } from '@/types/i18n';
 import {
   useSettings,
   useUpdateCompany,
@@ -22,7 +23,7 @@ import {
 
 type SectionId = 'company' | 'tax' | 'payments' | 'inventory' | 'sales' | 'loyalty';
 
-const SECTIONS: { id: SectionId; labelKey: string; icon: React.ReactNode }[] = [
+const SECTIONS: { id: SectionId; labelKey: MessageKey<'settings'>; icon: React.ReactNode }[] = [
   { id: 'company',   labelKey: 'company',   icon: <Building2 className="h-4 w-4" /> },
   { id: 'tax',       labelKey: 'taxes',     icon: <Receipt className="h-4 w-4" /> },
   { id: 'payments',  labelKey: 'payments',  icon: <CreditCard className="h-4 w-4" /> },

@@ -52,6 +52,7 @@ export function Sidebar() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const t = useTranslations('sidebar');
+  const tCommon = useTranslations('common');
   const sidebarPinned = useUIStore((s) => s.sidebarPinned);
   const toggleSidebarPinned = useUIStore((s) => s.toggleSidebarPinned);
 
@@ -132,7 +133,7 @@ export function Sidebar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-destructive gap-2">
               <LogOut size={14} />
-              Cerrar sesión
+              {tCommon('logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

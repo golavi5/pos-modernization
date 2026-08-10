@@ -83,7 +83,7 @@ export function CustomerFilters({ onFilterChange }: CustomerFiltersProps) {
           {/* Estado */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-2">
-              {tDashboard('status')}
+              {tCommon('status')}
             </label>
             <select
               value={isActive === undefined ? '' : isActive ? 'true' : 'false'}

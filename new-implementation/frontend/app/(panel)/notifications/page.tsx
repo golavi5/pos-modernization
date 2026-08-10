@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRelativeTime } from '@/hooks/useRelativeTime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,24 +27,18 @@ const TYPE_ICONS: Record<string, string> = {
   new_user: '👤', system: '⚙️', reorder_alert: '🔔', large_sale: '💰',
 };
 
-const TYPE_LABEL_KEYS: Record<string, string> = {
+const TYPE_LABEL_KEYS = {
   low_stock: 'lowStock', out_of_stock: 'outOfStock', sale_milestone: 'salesMilestone',
   new_user: 'newUser', system: 'system', reorder_alert: 'reorder', large_sale: 'largeSale',
-};
+} as const;
+
+const typeLabelKey = (type: string) => TYPE_LABEL_KEYS[type as keyof typeof TYPE_LABEL_KEYS];
 
 export default function NotificationsPage() {
   const t = useTranslations('notifications');
   const tCommon = useTranslations('common');
 
-  const timeAgo = (dateStr: string): string => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const min = Math.floor(diff / 60000);
-    if (min < 1) return t('justNow');
-    if (min < 60) return t('minutesAgo', { min });
-    const h = Math.floor(min / 60);
-    if (h < 24) return t('hoursAgo', { h });
-    return t('daysAgo', { d: Math.floor(h / 24) });
-  };
+  const timeAgo = useRelativeTime();
 
   const [query, setQuery] = useState<NotificationQuery>({ page: 1, pageSize: 20 });
   const [typeFilter, setTypeFilter] = useState('');
@@ -179,7 +174,7 @@ export default function NotificationsPage() {
                       </div>
                       <div className="flex items-center gap-4 mt-2">
                         <span className="text-xs text-quaternary">{timeAgo(notif.createdAt)}</span>
-                        <span className="text-xs text-quaternary">{TYPE_LABEL_KEYS[notif.type] ? t(`types.${TYPE_LABEL_KEYS[notif.type]}`) : notif.type}</span>
+                        <span className="text-xs text-quaternary">{typeLabelKey(notif.type) ? t(`types.${typeLabelKey(notif.type)!}`) : notif.type}</span>
                         {!notif.isRead && (
                           <button
                             onClick={() => markAsRead.mutate(notif.id)}

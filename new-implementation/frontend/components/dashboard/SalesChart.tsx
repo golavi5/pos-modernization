@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { useTranslations } from 'next-intl';
 import { formatCOP } from '@/lib/utils';
 
 interface ChartDay {
@@ -20,12 +21,13 @@ interface SalesChartProps {
 }
 
 export function SalesChart({ data }: SalesChartProps) {
+  const t = useTranslations('dashboard');
   const lastIndex = data.length > 0 ? data.length - 1 : null;
 
   return (
     <div className="bg-card rounded-xl p-4">
       <p className="text-sm font-semibold text-foreground mb-3">
-        Ventas — últimos 7 días
+        {t('salesLast7Days')}
       </p>
       <ResponsiveContainer width="100%" height={100}>
         <BarChart data={data} barSize={28}>

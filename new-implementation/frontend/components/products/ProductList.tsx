@@ -23,9 +23,9 @@ export function ProductList({ products, onDelete }: ProductListProps) {
             <th className="text-left p-3">{t('name')}</th>
             <th className="text-left p-3">{t('skuLabel')}</th>
             <th className="text-left p-3">{t('price')}</th>
-            <th className="text-left p-3">{t('stock')}</th>
-            <th className="text-left p-3">{t('status')}</th>
-            <th className="text-right p-3">{tCustomers('table.actions')}</th>
+            <th className="text-left p-3">{tCommon('stock')}</th>
+            <th className="text-left p-3">{tCommon('status')}</th>
+            <th className="text-right p-3">{tCommon('actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -47,9 +47,9 @@ export function ProductList({ products, onDelete }: ProductListProps) {
               </td>
               <td className="p-3">
                 {product.is_active ? (
-                  <span className="text-green-600">{tCustomers('table.active')}</span>
+                  <span className="text-green-600">{tCommon('statusActive')}</span>
                 ) : (
-                  <span className="text-quaternary">{tCustomers('table.inactive')}</span>
+                  <span className="text-quaternary">{tCommon('statusInactive')}</span>
                 )}
               </td>
               <td className="p-3 text-right">

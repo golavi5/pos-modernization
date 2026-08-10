@@ -21,6 +21,7 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
   const tReports = useTranslations('reports');
   const tDashboard = useTranslations('dashboard');
   const tNotifications = useTranslations('notifications');
+  const tCommon = useTranslations('common');
   const queryEnabled = search !== undefined;
   const { data: stockData, isLoading: isLoadingQuery } = useStock(
     queryEnabled ? { page: 1, pageSize: 50, search: search || undefined } : undefined
@@ -67,12 +68,12 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            <th className="text-left p-4 font-semibold text-secondary">{tReports('product')}</th>
+            <th className="text-left p-4 font-semibold text-secondary">{tCommon('product')}</th>
             <th className="text-left p-4 font-semibold text-secondary">{tReports('productTab.warehouse')}</th>
-            <th className="text-center p-4 font-semibold text-secondary">{tReports('productTab.quantity')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('quantity')}</th>
             <th className="text-center p-4 font-semibold text-secondary">{t('table.reserved')}</th>
             <th className="text-center p-4 font-semibold text-secondary">{t('table.available')}</th>
-            <th className="text-center p-4 font-semibold text-secondary">{tDashboard('status')}</th>
+            <th className="text-center p-4 font-semibold text-secondary">{tCommon('status')}</th>
             <th className="text-center p-4 font-semibold text-secondary">{t('table.action')}</th>
           </tr>
         </thead>

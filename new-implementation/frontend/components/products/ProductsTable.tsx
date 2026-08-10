@@ -67,13 +67,13 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-border bg-muted/50">
-            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">{tReports('product')}</th>
+            <th className="text-left p-4 font-semibold text-muted-foreground text-sm">{tCommon('product')}</th>
             <th className="text-left p-4 font-semibold text-muted-foreground text-sm">{t('skuLabel')}</th>
             <th className="text-left p-4 font-semibold text-muted-foreground text-sm">{t('category')}</th>
             <th className="text-right p-4 font-semibold text-muted-foreground text-sm">{t('price')}</th>
-            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{t('stock')}</th>
-            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{t('status')}</th>
-            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{tCustomers('table.actions')}</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{tCommon('stock')}</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{tCommon('status')}</th>
+            <th className="text-center p-4 font-semibold text-muted-foreground text-sm">{tCommon('actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -129,9 +129,9 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
               </td>
               <td className="p-4 text-center">
                 {product.is_active ? (
-                  <Badge variant="success">{tCustomers('table.active')}</Badge>
+                  <Badge variant="success">{tCommon('statusActive')}</Badge>
                 ) : (
-                  <Badge variant="default">{tCustomers('table.inactive')}</Badge>
+                  <Badge variant="default">{tCommon('statusInactive')}</Badge>
                 )}
               </td>
               <td className="p-4">

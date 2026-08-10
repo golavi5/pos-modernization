@@ -30,6 +30,7 @@ export function PaymentModal({
   isLoading,
 }: PaymentModalProps) {
   const t = useTranslations('sales');
+  const tCommon = useTranslations('common');
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [cashReceived, setCashReceived] = useState('');
   const [status, setStatus] = useState<ModalStatus>('payment');
@@ -192,7 +193,7 @@ export function PaymentModal({
             data-testid="confirm-payment-button"
           >
             {isLoading ? (
-              t('processing')
+              tCommon('processing')
             ) : (
               <>
                 ✓ {t('confirmarPago')}{' '}

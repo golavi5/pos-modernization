@@ -28,7 +28,30 @@
     "yes": "Sí",
     "no": "No",
     "optional": "Opcional",
-    "required": "Requerido"
+    "required": "Requerido",
+    "brand": "POS",
+    "logout": "Cerrar sesión",
+    "customer": "Cliente",
+    "status": "Estado",
+    "total": "Total",
+    "contact": "Contacto",
+    "purchases": "Compras",
+    "points": "Puntos",
+    "email": "Email",
+    "actions": "Acciones",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "product": "Producto",
+    "quantity": "Cantidad",
+    "notesOptional": "Notas (Opcional)",
+    "preview": "Vista previa",
+    "processing": "Procesando...",
+    "stock": "Stock",
+    "password": "Contraseña",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "lowStockAlerts": "Alertas de Stock Bajo",
+    "subtractLabel": "Restar:",
+    "system": "Sistema"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -36,7 +59,6 @@
     "enterCredentials": "Ingresa tus credenciales para acceder al sistema POS",
     "emailAddress": "Correo electrónico",
     "emailPlaceholder": "tu@ejemplo.com",
-    "password": "Contraseña",
     "passwordPlaceholder": "••••••••",
     "signingIn": "Iniciando sesión...",
     "needAccount": "¿Necesitas una cuenta?",
@@ -47,15 +69,12 @@
     "fullName": "Nombre completo",
     "fullNamePlaceholder": "Juan Pérez",
     "confirmPassword": "Confirmar contraseña",
-    "passwordMismatch": "Las contraseñas no coinciden",
     "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
     "registrationFailed": "Falló el registro",
     "register": "Registrarse",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
-    "logout": "Cerrar sesión",
     "settings": "Configuración",
     "layout": {
-      "brand": "POS",
       "title": "POS Modernization",
       "subtitle": "Sistema de Punto de Venta moderno",
       "copyright": "© 2024 POS System. Todos los derechos reservados."
@@ -96,14 +115,10 @@
     "fromTransactions": "de {count} transacciones",
     "totalProducts": "Total de Productos",
     "inInventory": "en inventario",
-    "lowStockAlerts": "Alertas de Stock Bajo",
     "itemsNeedRestock": "artículos necesitan reabastecimiento",
     "pendingOrders": "Pedidos Pendientes",
     "awaitingShipment": "esperando envío",
     "recentSales": "Ventas recientes",
-    "customer": "Cliente",
-    "total": "Total",
-    "status": "Estado",
     "noCustomer": "Sin cliente",
     "viewAll": "Ver todas",
     "statusPaid": "Pagado",
@@ -124,7 +139,8 @@
       "adjustInventory": "Ajustar inventario",
       "viewDailyReport": "Ver reporte del día",
       "addProduct": "Agregar producto"
-    }
+    },
+    "salesLast7Days": "Ventas — últimos 7 días"
   },
   "sales": {
     "title": "Ventas",
@@ -151,10 +167,8 @@
     "credit": "Crédito",
     "cashReceived": "Efectivo recibido",
     "change": "Cambio",
-    "notes": "Notas (Opcional)",
     "notesPlaceholder": "Ej: Cliente pidió factura, entregar en domicilio...",
     "amountMustBeGreater": "El monto recibido debe ser mayor o igual al total",
-    "processing": "Procesando...",
     "confirmSale": "Confirmar Venta",
     "cartEmpty": "Carrito vacío",
     "searchToAdd": "Busca productos para agregar al carrito",
@@ -240,7 +254,6 @@
     "taxRate": "Tasa de impuesto (%)",
     "imageUrl": "URL de imagen",
     "imageUrlPlaceholder": "https://example.com/image.jpg",
-    "preview": "Vista previa",
     "searchPlaceholder": "Buscar por nombre, SKU o código de barras...",
     "filters": "Filtros",
     "allCategories": "Todas",
@@ -249,7 +262,6 @@
     "creationDate": "Fecha de creación",
     "name": "Nombre",
     "price": "Precio",
-    "stock": "Stock",
     "order": "Orden",
     "ascending": "Ascendente",
     "descending": "Descendente",
@@ -257,7 +269,6 @@
     "productNotFound": "Producto no encontrado",
     "noDescription": "Sin descripción",
     "stockStatus": "Estado de stock",
-    "status": "Estado",
     "updateProductInfo": "Actualizar información del producto",
     "loadingCategories": "Cargando categorías...",
     "categoryManagement": "Gestión de categorías",
@@ -306,7 +317,6 @@
     "pointsUpdateError": "Error al actualizar los puntos",
     "fullName": "Nombre completo *",
     "fullNamePlaceholder": "Ej: Juan Pérez García",
-    "email": "Email",
     "emailPlaceholder": "ejemplo@correo.com",
     "emailHelp": "Usado para enviar recibos y notificaciones",
     "phone": "Teléfono",
@@ -330,9 +340,6 @@
       "empty": "No se encontraron clientes",
       "emptyHint": "Intenta ajustar los filtros o crear un nuevo cliente",
       "lastPurchase": "Última compra",
-      "actions": "Acciones",
-      "active": "Activo",
-      "inactive": "Inactivo",
       "viewDetails": "Ver detalles",
       "managePoints": "Gestionar puntos"
     },
@@ -353,7 +360,6 @@
       "newBalance": "Nuevo balance",
       "pointsAmount": "Cantidad de puntos",
       "addLabel": "Sumar:",
-      "subtractLabel": "Restar:",
       "invalidAmount": "Ingresa una cantidad válida de puntos",
       "insufficientPoints": "No hay suficientes puntos para restar"
     },
@@ -391,7 +397,6 @@
       "notesPlaceholder": "Motivo del ajuste, observaciones...",
       "newStock": "Nuevo stock",
       "addLabel": "Agregar:",
-      "subtractLabel": "Restar:",
       "invalidQuantity": "Ingresa una cantidad válida",
       "insufficientStock": "No hay suficiente stock disponible",
       "confirmAdjust": "Confirmar Ajuste"
@@ -439,8 +444,7 @@
       "restock": "Reabastecer"
     },
     "page": {
-      "searchPlaceholder": "Buscar producto o SKU...",
-      "stock": "Stock"
+      "searchPlaceholder": "Buscar producto o SKU..."
     }
   },
   "users": {
@@ -474,11 +478,9 @@
       "confirmPassword": "Confirmar Contraseña *",
       "minChars": "Mínimo 8 caracteres",
       "repeatPassword": "Repetir contraseña",
-      "mismatch": "Las contraseñas no coinciden",
       "action": "Resetear contraseña"
     },
     "form": {
-      "password": "Contraseña",
       "firstName": "Primer nombre",
       "lastName": "Apellido",
       "activeUser": "Usuario activo",
@@ -497,8 +499,7 @@
       "registered": "Registrado",
       "noRoles": "Sin roles",
       "never": "Nunca",
-      "assignRoles": "Asignar roles",
-      "resetPassword": "Resetear contraseña"
+      "assignRoles": "Asignar roles"
     },
     "page": {
       "searchPlaceholder": "Buscar usuarios...",
@@ -546,7 +547,6 @@
     "customers": "Clientes",
     "inventory": "Inventario",
     "vsLastPeriod": "vs período anterior",
-    "product": "Producto",
     "revenue": "Ingresos",
     "avgTicket": "Ticket Prom.",
     "days": "{count} días",
@@ -573,10 +573,7 @@
       "avgSpent": "{amount} promedio",
       "topBuyers": "Mejores Clientes",
       "topBuyersDesc": "Clientes con mayor gasto en el período",
-      "contact": "Contacto",
-      "purchases": "Compras",
       "totalSpent": "Total Gastado",
-      "points": "Puntos",
       "pts": "{count} pts"
     },
     "inventoryTab": {
@@ -603,9 +600,7 @@
     "productTab": {
       "topSelling": "Productos Más Vendidos",
       "topSellingDesc": "Los {count} productos con mejor desempeño en el período",
-      "quantity": "Cantidad",
       "noSalesData": "No hay datos de ventas disponibles",
-      "lowStockAlerts": "Alertas de Stock Bajo",
       "lowStockDesc": "Productos que necesitan reabastecimiento urgente",
       "warehouse": "Almacén",
       "reorderPoint": "Punto Reorden",

@@ -9,7 +9,7 @@ const ACTIONS = [
   { labelKey: 'adjustInventory', href: '/inventory', icon: Warehouse,    primary: false },
   { labelKey: 'viewDailyReport', href: '/reports',   icon: BarChart3,    primary: false },
   { labelKey: 'addProduct',      href: '/products',  icon: Plus,         primary: false },
-];
+] as const;
 
 export function QuickActions() {
   const t = useTranslations('dashboard.quickActions');

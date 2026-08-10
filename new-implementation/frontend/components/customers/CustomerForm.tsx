@@ -116,7 +116,7 @@ export function CustomerForm({
 
         {/* Email */}
         <div>
-          <Label htmlFor="email">{t('email')}</Label>
+          <Label htmlFor="email">{tCommon('email')}</Label>
           <Input
             id="email"
             type="email"

@@ -18,7 +18,6 @@ interface AssignRolesModalProps {
 export function AssignRolesModal({ user, onSubmit, onCancel, isLoading }: AssignRolesModalProps) {
   const t = useTranslations('users');
   const tCommon = useTranslations('common');
-  const tNotifications = useTranslations('notifications');
   const { data: roles = [] } = useRoles();
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>(user.roles.map((r) => r.id));
 
@@ -65,7 +64,7 @@ export function AssignRolesModal({ user, onSubmit, onCancel, isLoading }: Assign
                   <p className="text-sm text-tertiary">{role.description}</p>
                 </div>
                 {role.isSystemRole && (
-                  <span className="text-xs bg-gray-100 text-secondary px-2 py-0.5 rounded">{tNotifications('types.system')}</span>
+                  <span className="text-xs bg-gray-100 text-secondary px-2 py-0.5 rounded">{tCommon('system')}</span>
                 )}
               </label>
             ))}

@@ -13,6 +13,7 @@ interface StockMovementsProps {
 export function StockMovements({ movements, isLoading }: StockMovementsProps) {
   const t = useTranslations('inventory');
   const tReports = useTranslations('reports');
+  const tCommon = useTranslations('common');
   const getMovementConfig = (type: StockMovement['movement_type']) => {
     const configs = {
       IN: {
@@ -108,7 +109,7 @@ export function StockMovements({ movements, isLoading }: StockMovementsProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h4 className="font-medium ">
-                  {movement.product_name || tReports('product')}
+                  {movement.product_name || tCommon('product')}
                 </h4>
                 <Badge variant={config.variant}>{config.label}</Badge>
               </div>

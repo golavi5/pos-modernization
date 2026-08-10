@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { CommandRoute } from '@/types/command';
+import type { MessageKey } from '@/types/i18n';
 
 /**
  * Single source of truth for the app's primary navigation routes.
@@ -59,7 +60,7 @@ export const SETTINGS_NAV_ITEM: NavItem = {
  * (`/salesperson` ↛ `/sales`). Returns `undefined` for unknown routes; the
  * breadcrumb then renders `POS` alone, as it does today.
  */
-export function findNavLabelKey(pathname: string): string | undefined {
+export function findNavLabelKey(pathname: string): MessageKey<'sidebar'> | undefined {
   const all = [...NAV_ITEMS, SETTINGS_NAV_ITEM];
   const match = all
     .filter((item) => pathname === item.href || pathname.startsWith(item.href + '/'))

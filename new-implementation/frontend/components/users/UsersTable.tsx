@@ -81,12 +81,12 @@ export function UsersTable({
         <thead>
           <tr className="border-b text-tertiary text-xs uppercase">
             <th className="text-left py-3 px-4">{t('table.user')}</th>
-            <th className="text-left py-3 px-4">{tCustomers('email')}</th>
+            <th className="text-left py-3 px-4">{tCommon('email')}</th>
             <th className="text-left py-3 px-4">{t('table.roles')}</th>
-            <th className="text-center py-3 px-4">{tDashboard('status')}</th>
+            <th className="text-center py-3 px-4">{tCommon('status')}</th>
             <th className="text-left py-3 px-4">{t('table.lastAccess')}</th>
             <th className="text-left py-3 px-4">{t('table.registered')}</th>
-            <th className="text-right py-3 px-4">{tCustomers('table.actions')}</th>
+            <th className="text-right py-3 px-4">{tCommon('actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -123,7 +123,7 @@ export function UsersTable({
                     user.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-tertiary'
                   }`}
                 >
-                  {user.isActive ? tCustomers('table.active') : tCustomers('table.inactive')}
+                  {user.isActive ? tCommon('statusActive') : tCommon('statusInactive')}
                 </span>
               </td>
               <td className="py-3 px-4 text-tertiary">{formatDate(user.lastLogin)}</td>
@@ -136,7 +136,7 @@ export function UsersTable({
                   <Button variant="ghost" size="sm" onClick={() => onAssignRoles?.(user)} title={t('table.assignRoles')}>
                     <Shield className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => onResetPassword?.(user)} title={t('table.resetPassword')}>
+                  <Button variant="ghost" size="sm" onClick={() => onResetPassword?.(user)} title={t('resetPassword.action')}>
                     <KeyRound className="h-4 w-4" />
                   </Button>
                   <Button

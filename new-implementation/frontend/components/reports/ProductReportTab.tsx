@@ -16,6 +16,7 @@ export function ProductReportTab() {
   const tProducts = useTranslations('products');
   const tDashboard = useTranslations('dashboard');
   const tInventory = useTranslations('inventory');
+  const tCommon = useTranslations('common');
   const [query, setQuery] = useState<ReportQuery>({ period: 'monthly', limit: 10 });
 
   const { data: topSelling, isLoading: topLoading } = useTopSellingProducts(query);
@@ -55,9 +56,9 @@ export function ProductReportTab() {
                 <thead>
                   <tr className="border-b text-tertiary text-xs uppercase">
                     <th className="text-left py-3 px-4">#</th>
-                    <th className="text-left py-3 px-4">{t('product')}</th>
+                    <th className="text-left py-3 px-4">{tCommon('product')}</th>
                     <th className="text-left py-3 px-4">{tProducts('category')}</th>
-                    <th className="text-right py-3 px-4">{t('productTab.quantity')}</th>
+                    <th className="text-right py-3 px-4">{tCommon('quantity')}</th>
                     <th className="text-right py-3 px-4">{t('revenue')}</th>
                     <th className="text-right py-3 px-4">{t('productTab.avgPrice')}</th>
                   </tr>
@@ -92,7 +93,7 @@ export function ProductReportTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
-            {t('productTab.lowStockAlerts')}
+            {tCommon('lowStockAlerts')}
           </CardTitle>
           <CardDescription>{t('productTab.lowStockDesc')}</CardDescription>
         </CardHeader>
@@ -102,11 +103,11 @@ export function ProductReportTab() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-tertiary text-xs uppercase">
-                    <th className="text-left py-3 px-4">{t('product')}</th>
+                    <th className="text-left py-3 px-4">{tCommon('product')}</th>
                     <th className="text-left py-3 px-4">{t('productTab.warehouse')}</th>
                     <th className="text-right py-3 px-4">{tInventory('currentStock')}</th>
                     <th className="text-right py-3 px-4">{t('productTab.reorderPoint')}</th>
-                    <th className="text-center py-3 px-4">{tDashboard('status')}</th>
+                    <th className="text-center py-3 px-4">{tCommon('status')}</th>
                     <th className="text-right py-3 px-4">{t('productTab.daysRemaining')}</th>
                   </tr>
                 </thead>

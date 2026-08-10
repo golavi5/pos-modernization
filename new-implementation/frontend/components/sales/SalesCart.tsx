@@ -38,6 +38,7 @@ export function SalesCart({
 }: SalesCartProps) {
   const t = useTranslations('sales');
   const tDashboard = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -129,7 +130,7 @@ export function SalesCart({
           </div>
         )}
         <div className="flex justify-between text-base font-bold text-foreground pt-1 border-t border-border">
-          <span>{tDashboard('total')}</span>
+          <span>{tCommon('total')}</span>
           <span>{formatCOP(total)}</span>
         </div>
 

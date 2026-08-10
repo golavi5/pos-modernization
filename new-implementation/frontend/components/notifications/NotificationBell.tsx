@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRelativeTime } from '@/hooks/useRelativeTime';
 import { Bell, X, CheckCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,16 +34,7 @@ const TYPE_ICONS: Record<string, string> = {
 export function NotificationBell() {
   const t = useTranslations('notifications');
 
-  const timeAgo = (dateStr: string): string => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return t('bell.justNow');
-    if (minutes < 60) return t('bell.minutesAgo', { min: minutes });
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return t('hoursAgo', { h: hours });
-    const days = Math.floor(hours / 24);
-    return t('daysAgo', { d: days });
-  };
+  const timeAgo = useRelativeTime('compact');
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

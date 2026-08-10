@@ -115,7 +115,7 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="product_name">{t('filters.productName')}</option>
-              <option value="quantity">{tReports('productTab.quantity')}</option>
+              <option value="quantity">{tCommon('quantity')}</option>
               <option value="last_movement_date">{t('filters.lastMovement')}</option>
             </select>
           </div>

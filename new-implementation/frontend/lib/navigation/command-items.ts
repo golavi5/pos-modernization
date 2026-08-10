@@ -1,6 +1,7 @@
 import { canAccessRoute } from '@/lib/auth/roles';
 import { NAV_ITEMS, SETTINGS_NAV_ITEM } from '@/lib/navigation/nav-items';
 import type { CommandItem, CommandRoute } from '@/types/command';
+import type { Translate } from '@/types/i18n';
 
 /**
  * Routes the palette can jump to: `NAV_ITEMS` — the same array `Sidebar.tsx`
@@ -23,7 +24,7 @@ export const COMMAND_ROUTES: readonly CommandRoute[] = [...NAV_ITEMS, SETTINGS_N
  * boundary, see `lib/auth/roles.ts`.)
  */
 export function buildCommandItems(
-  t: (key: string) => string,
+  t: Translate<'sidebar'>,
   userRoles: string[] | undefined,
 ): CommandItem[] {
   return COMMAND_ROUTES.filter((r) => canAccessRoute(r.href, userRoles)).map((r) => ({

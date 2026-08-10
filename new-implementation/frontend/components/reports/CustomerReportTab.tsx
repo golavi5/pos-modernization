@@ -28,6 +28,7 @@ export function CustomerReportTab() {
   const t = useTranslations('reports');
   const tCustomers = useTranslations('customers');
   const tDashboard = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
   const [query, setQuery] = useState<ReportQuery>({ period: 'monthly', limit: 10 });
   const { data: report, isLoading } = useCustomerReport(query);
 
@@ -123,12 +124,12 @@ export function CustomerReportTab() {
               <thead>
                 <tr className="border-b text-tertiary text-xs uppercase">
                   <th className="text-left py-3 px-4">#</th>
-                  <th className="text-left py-3 px-4">{tDashboard('customer')}</th>
-                  <th className="text-left py-3 px-4">{t('customerTab.contact')}</th>
-                  <th className="text-right py-3 px-4">{t('customerTab.purchases')}</th>
+                  <th className="text-left py-3 px-4">{tCommon('customer')}</th>
+                  <th className="text-left py-3 px-4">{tCommon('contact')}</th>
+                  <th className="text-right py-3 px-4">{tCommon('purchases')}</th>
                   <th className="text-right py-3 px-4">{t('customerTab.totalSpent')}</th>
                   <th className="text-right py-3 px-4">{t('avgTicket')}</th>
-                  <th className="text-right py-3 px-4">{t('customerTab.points')}</th>
+                  <th className="text-right py-3 px-4">{tCommon('points')}</th>
                 </tr>
               </thead>
               <tbody>

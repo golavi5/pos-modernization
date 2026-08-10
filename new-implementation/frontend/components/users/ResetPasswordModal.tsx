@@ -26,7 +26,7 @@ export function ResetPasswordModal({ user, onSubmit, onCancel, isLoading }: Rese
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password.length < 8) { setError(t('minChars')); return; }
-    if (password !== confirm) { setError(t('mismatch')); return; }
+    if (password !== confirm) { setError(tCommon('passwordMismatch')); return; }
     setError('');
     onSubmit(password);
   };

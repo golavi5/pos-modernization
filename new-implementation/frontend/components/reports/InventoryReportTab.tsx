@@ -9,16 +9,17 @@ import { BarChart3, TrendingUp, AlertTriangle, Warehouse } from 'lucide-react';
 import type { ReportQuery } from '@/types/reports';
 import { formatCOP } from '@/lib/utils';
 
-const STATUS_STYLES: Record<string, { labelKey: string; className: string }> = {
+const STATUS_STYLES = {
   'fast-moving': { labelKey: 'inventoryTab.statusFast', className: 'bg-green-100 text-green-700' },
   'slow-moving': { labelKey: 'inventoryTab.statusSlow', className: 'bg-orange-100 text-orange-700' },
   'dead-stock': { labelKey: 'inventoryTab.statusDead', className: 'bg-red-100 text-red-700' },
-};
+} as const;
 
 export function InventoryReportTab() {
   const t = useTranslations('reports');
   const tProducts = useTranslations('products');
   const tDashboard = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
   const [query, setQuery] = useState<ReportQuery>({ period: 'monthly', limit: 20 });
   const { data: turnover, isLoading: turnLoading } = useInventoryTurnover(query);
   const { data: warehouseValue, isLoading: valLoading } = useInventoryValueByWarehouse();
@@ -125,18 +126,18 @@ export function InventoryReportTab() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-tertiary text-xs uppercase">
-                    <th className="text-left py-3 px-4">{t('product')}</th>
+                    <th className="text-left py-3 px-4">{tCommon('product')}</th>
                     <th className="text-left py-3 px-4">{tProducts('category')}</th>
                     <th className="text-right py-3 px-4">{t('inventoryTab.avgStock')}</th>
                     <th className="text-right py-3 px-4">{t('inventoryTab.sold')}</th>
                     <th className="text-right py-3 px-4">{t('inventoryTab.rotation')}</th>
                     <th className="text-right py-3 px-4">{t('inventoryTab.daysInv')}</th>
-                    <th className="text-center py-3 px-4">{tDashboard('status')}</th>
+                    <th className="text-center py-3 px-4">{tCommon('status')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {turnover.turnover.map((item) => {
-                    const style = STATUS_STYLES[item.status];
+                    const style = STATUS_STYLES[item.status as keyof typeof STATUS_STYLES];
                     return (
                       <tr key={item.productId} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4">

@@ -135,8 +135,8 @@ export function UserForm({ user, formId, onSuccess, onSubmit, onCancel, isLoadin
     <form id={formId} onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-4">
         {field('name', tAuth('fullName'), 'text', true)}
-        {!isEdit && field('email', tCustomers('email'), 'email', true)}
-        {!isEdit && field('password', t('form.password'), 'password', true)}
+        {!isEdit && field('email', tCommon('email'), 'email', true)}
+        {!isEdit && field('password', tCommon('password'), 'password', true)}
         {field('firstName', t('form.firstName'))}
         {field('lastName', t('form.lastName'))}
         {field('phone', tCustomers('phone'))}
