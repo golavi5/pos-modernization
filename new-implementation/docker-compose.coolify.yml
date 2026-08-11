@@ -15,6 +15,12 @@
 #
 # Coolify auto-detecta cada `${VARIABLE}` de este archivo y la ofrece en la
 # pestaña Environment Variables del recurso. Ver DEPLOYMENT-COOLIFY.md.
+#
+# ⚠️ Los `context:` de abajo son relativos al PROJECT DIRECTORY de compose, que
+# Coolify toma del campo "Base directory" del recurso. Tiene que ser
+# `/new-implementation`. Si queda en `/`, `./backend` apunta a la raíz del repo
+# y el build muere con:
+#   unable to prepare context: path "/artifacts/<id>/backend" not found
 
 services:
   # ── MySQL ──────────────────────────────────────────────────────────────────

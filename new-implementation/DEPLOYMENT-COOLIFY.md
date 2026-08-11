@@ -75,7 +75,31 @@ En Coolify: **New Resource → Public Repository** (o Private, si aplica)
 | Branch | `main` |
 | Build Pack | **Docker Compose** |
 | Base directory | `/new-implementation` |
-| Docker Compose location | `/new-implementation/docker-compose.coolify.yml` |
+| Docker Compose location | `docker-compose.coolify.yml` |
+
+> 🚨 **Estos dos campos son la causa nº 1 de que el deploy falle.** Los dos.
+>
+> **La ruta del compose es relativa al Base directory** — va sin repetir el
+> prefijo `new-implementation/`. Y el Base directory tiene que ser
+> `/new-implementation`, no `/`: Coolify lo usa como `--project-directory` de
+> `docker compose`, y **Compose resuelve las rutas relativas contra el
+> project-directory, no contra la ubicación del archivo compose**. Con el Base
+> directory en `/`, el `context: ./backend` del compose apunta a
+> `<raíz-del-repo>/backend`, que no existe:
+>
+> ```
+> Error: unable to prepare context: path "/artifacts/<id>/backend" not found
+> ```
+>
+> El mismo fallo se anuncia antes, en forma de warning fácil de descartar —
+> `Dockerfile not found for service backend at backend/Dockerfile, skipping ARG
+> injection`. Si ves esa línea, el Base directory está mal: el build continúa un
+> rato más y muere en el contexto.
+>
+> Y comprobá que el archivo sea **`docker-compose.coolify.yml`**. Si Coolify
+> arranca con `-f .../docker-compose.yml` está construyendo el de desarrollo:
+> aunque el build funcione, el resultado publica MySQL al host y hornea
+> `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000` en el frontend.
 
 Coolify parsea el archivo y detecta los tres servicios (`mysql`, `backend`,
 `frontend`) y **todas** las variables `${...}` que aparecen en él, que quedan
@@ -448,6 +472,32 @@ docker restart <nombre>
 ---
 
 ## Troubleshooting
+
+### `unable to prepare context: path ".../backend" not found`
+
+El **Base directory** está en `/` en vez de `/new-implementation`. Coolify lo
+pasa como `--project-directory`, y Compose resuelve `context: ./backend` contra
+eso, no contra la carpeta del archivo compose. Comprobado:
+
+```
+--project-directory <raíz>              → context: <raíz>/backend              ❌
+--project-directory <raíz>/new-implementation → context: .../new-implementation/backend  ✅
+```
+
+Aviso temprano del mismo problema, unas líneas antes en el log:
+`Dockerfile not found for service backend at backend/Dockerfile, skipping ARG
+injection`. No es inocuo — es este error anunciándose.
+
+### El log muestra `-f .../docker-compose.yml`
+
+Está construyendo el compose de **desarrollo**. Corregí *Docker Compose
+location* a `docker-compose.coolify.yml` (relativa al Base directory).
+
+Al cambiar de archivo revisá las variables: el compose de desarrollo usa
+`MYSQL_DATABASE` / `MYSQL_USER` / `MYSQL_PASSWORD`, y el de producción usa
+`DB_NAME` / `DB_USERNAME` / `DB_PASSWORD` + `MYSQL_ROOT_PASSWORD`. Las que
+sobren no estorban; las que falten cortan el deploy al interpolar, nombrándolas.
+`NEXT_PUBLIC_APP_NAME` no la lee nadie: se puede borrar.
 
 ### El deploy falla al interpolar variables
 - Es el comportamiento buscado: falta una variable obligatoria. El error nombra
