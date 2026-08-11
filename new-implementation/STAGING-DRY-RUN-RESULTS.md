@@ -617,7 +617,21 @@ se puede sortear por API. Es una corrección de DTO comparable a las ya hechas.
 |---|---|
 | Ejecutado por | Claude Opus 5 (sesión asistida), 2026-08-11 |
 | Secciones verdes | §4 (4 de 5), §5 (vigente de la 1ª pasada), §6, §7 |
-| Único bloqueo | D3 — alta de producto por UI |
-| **Go / No-Go** | _pendiente de firma_ |
-| **Operador** | _pendiente_ |
-| **Fecha de firma** | _pendiente_ |
+| **Go / No-Go** | 🟢 **GO** |
+| **Operador** | **Gandhi Olavi** |
+| **Fecha de firma** | **2026-08-11** |
+
+**Razón del GO, y su condición.** El sistema vende de punta a punta con el
+importe correcto, cierra la venta, descuenta inventario dejando rastro, adjunta
+el cliente y cuadra los reportes; el backup, el restore y el rollback funcionan
+sobre la instancia real. El único item rojo, **D3** (no se puede dar de alta un
+producto desde la UI), no toca el camino de venta: el catálogo inicial se carga
+por API o migración. Se acepta como **fast-follow**, con item propio en
+`SPEC-BACK-004`, y es el primero de la siguiente iteración.
+
+**Fast-follow acordados en esta firma:** D3 (`SPEC-BACK-004`), S-02 Sentry,
+S-03 automatización de backups a S3 con retención, S-06 política de contraseñas.
+Y los cuatro huecos nombrados en `SPEC-BACK-003`: el `retry` global del
+QueryClient, el bloqueo pesimista sin ejercitar bajo concurrencia real, la
+divergencia entre los dos libros de inventario, y `refundPayment` sin guarda de
+exactamente-una-vez.
