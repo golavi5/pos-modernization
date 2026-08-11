@@ -16,22 +16,25 @@
 # Coolify auto-detecta cada `${VARIABLE}` de este archivo y la ofrece en la
 # pestaña Environment Variables del recurso. Ver DEPLOYMENT-COOLIFY.md.
 #
-# ⚠️ DOS COSAS QUE PARECEN ERRORES DE ESTILO Y NO LO SON. Verificadas contra
-# despliegues reales; cambiarlas rompe el build:
+# ⚠️ DOS COSAS VERIFICADAS CONTRA DESPLIEGUES REALES:
 #
-# 1. Los `context:` llevan el prefijo `./new-implementation/` aunque este archivo
-#    ya viva ahí. Compose resuelve las rutas relativas contra el PROJECT
-#    DIRECTORY, y Coolify lo fija siempre en la raíz del repo
-#    (`--project-directory /artifacts/<id>`) sin importar el "Base directory".
-#    Con `./backend` el build muere con:
-#      unable to prepare context: path "/artifacts/<id>/backend" not found
-#    Consecuencia: para validar en local hay que pararse en la raíz del repo:
-#      docker compose --project-directory . -f new-implementation/docker-compose.coolify.yml config
+# 1. Los `context:` son relativos a ESTE archivo (`./backend`, `./frontend`), y
+#    eso EXIGE que el "Base directory" del recurso sea `/new-implementation`.
+#    Coolify lo usa como `--project-directory`, y Compose resuelve las rutas
+#    relativas contra el project-directory, no contra la ubicación del archivo.
+#      Base directory = /                    → busca <raíz>/backend                    ✗
+#      Base directory = /new-implementation  → busca <raíz>/new-implementation/backend ✓
+#    No "arregles" esto poniéndole el prefijo `./new-implementation/`: con el
+#    Base directory correcto queda duplicado y falla igual —
+#      path "/artifacts/<id>/new-implementation/new-implementation/backend" not found
 #
 # 2. Los `environment:` van en formato MAPA (`CLAVE: valor`), nunca en lista
 #    (`- CLAVE=valor`). Coolify reprocesa ese bloque y una secuencia le llega con
 #    claves enteras:
 #      Error: non-string key in services.frontend.environment: 0
+#    Por eso tampoco se usan las variables mágicas `SERVICE_FQDN_*`: se escriben
+#    como nombre suelto y obligan al formato lista. Los dominios se asignan
+#    desde la UI de Coolify.
 
 services:
   # ── MySQL ──────────────────────────────────────────────────────────────────
@@ -68,7 +71,7 @@ services:
   # ── Backend (NestJS) ───────────────────────────────────────────────────────
   backend:
     build:
-      context: ./new-implementation/backend
+      context: ./backend
       dockerfile: Dockerfile
       target: production
     restart: unless-stopped
@@ -115,7 +118,7 @@ services:
   # ── Frontend (Next.js) ─────────────────────────────────────────────────────
   frontend:
     build:
-      context: ./new-implementation/frontend
+      context: ./frontend
       dockerfile: Dockerfile
       target: production
       args:

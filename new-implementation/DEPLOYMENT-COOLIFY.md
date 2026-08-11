@@ -82,22 +82,22 @@ En Coolify: **New Resource → Public Repository** (o Private, si aplica)
 > aunque el build funcione, el resultado publica MySQL al host y hornea
 > `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000` en el frontend.
 
-> **Sobre el "Base directory": Coolify lo usa para encontrar el compose, pero
-> NO para el `--project-directory`.** Comprobado en el log de un deploy real: con
-> Base directory en `/new-implementation`, Coolify igual invoca
-> `--project-directory /artifacts/<id>` (la raíz del repo) y sólo el `-f` lleva
-> el prefijo. Como Compose resuelve las rutas relativas contra el
-> project-directory, **los `context:` del compose están escritos relativos a la
-> raíz** (`./new-implementation/backend`). Por eso el archivo se ve "redundante"
-> y no hay que corregirlo: si le quitás el prefijo, el build muere con
+> **El "Base directory" tiene que ser `/new-implementation`, y no es cosmético.**
+> Coolify lo usa como `--project-directory` de `docker compose`, y **Compose
+> resuelve las rutas relativas contra el project-directory, no contra la
+> ubicación del archivo compose**. Los `context:` del compose son `./backend` y
+> `./frontend`, así que:
 >
 > ```
-> Error: unable to prepare context: path "/artifacts/<id>/backend" not found
+> Base directory = /                    → busca <raíz>/backend                     ✗
+> Base directory = /new-implementation  → busca <raíz>/new-implementation/backend  ✓
 > ```
 >
-> Ese fallo se anuncia antes como un warning fácil de descartar —
-> `Dockerfile not found for service backend at backend/Dockerfile, skipping ARG
-> injection`. No es inocuo: es este error avisando.
+> Con el Base directory mal, el build muere con
+> `unable to prepare context: path "/artifacts/<id>/backend" not found`. Se
+> anuncia antes como un warning fácil de descartar — `Dockerfile not found for
+> service backend at backend/Dockerfile, skipping ARG injection`. No es inocuo:
+> es este error avisando.
 
 Coolify parsea el archivo y detecta los tres servicios (`mysql`, `backend`,
 `frontend`) y **todas** las variables `${...}` que aparecen en él, que quedan
@@ -478,20 +478,24 @@ docker restart <nombre>
 
 ### `unable to prepare context: path ".../backend" not found`
 
-Alguien le quitó el prefijo `./new-implementation/` a un `context:` del compose
-por parecer redundante. No lo es: Coolify invoca `--project-directory` en la
-**raíz del repo** aunque el Base directory apunte a `/new-implementation`, y
-Compose resuelve las rutas relativas contra el project-directory, no contra la
-carpeta del archivo. Verificalo replicando el comando:
+Mirá la ruta del error, que dice cuál de los dos casos es:
+
+| Ruta en el error | Causa |
+|---|---|
+| `/artifacts/<id>/backend` | **Base directory está en `/`.** Ponelo en `/new-implementation`. |
+| `/artifacts/<id>/new-implementation/new-implementation/backend` | Alguien le agregó el prefijo `./new-implementation/` a un `context:`. Quitalo: con el Base directory correcto queda duplicado. |
+
+El `--project-directory` que aparece en el comando del log te dice qué está
+usando Coolify. Replicá la validación en local con ese mismo valor:
 
 ```bash
-# como lo llama Coolify — las dos rutas deben existir
-docker compose --project-directory . \
+docker compose --project-directory new-implementation \
   -f new-implementation/docker-compose.coolify.yml config | grep context:
+# las rutas que imprima tienen que existir
 ```
 
 Aviso temprano del mismo problema, unas líneas antes en el log:
-`Dockerfile not found for service backend at backend/Dockerfile, skipping ARG
+`Dockerfile not found for service backend at .../Dockerfile, skipping ARG
 injection`. No es inocuo — es este error anunciándose.
 
 ### `non-string key in services.<servicio>.environment: 0`
