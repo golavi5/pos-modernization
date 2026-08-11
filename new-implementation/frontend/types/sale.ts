@@ -95,3 +95,10 @@ export interface Cart {
   customer_id?: string;
   customer_name?: string;
 }
+
+/** Cuerpo de `POST /sales/orders/:id/payments`. */
+export interface RecordPaymentDto {
+  payment_method: string;
+  amount: number;
+  notes?: string;
+}
