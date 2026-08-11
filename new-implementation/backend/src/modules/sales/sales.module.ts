@@ -10,12 +10,14 @@ import { OrderItem } from './entities/order-item.entity';
 import { Payment } from './entities/payment.entity';
 import { AuthModule } from '../auth/auth.module';
 import { ProductsModule } from '../products/products.module';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, OrderItem, Payment]),
     AuthModule,
     ProductsModule,
+    InventoryModule,
   ],
   controllers: [SalesController, PaymentsController],
   providers: [SalesService, PaymentsService, OrderCalculationService],

@@ -5,21 +5,33 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Payment, PaymentStatus } from '../entities/payment.entity';
-import { Order, PaymentStatus as OrderPaymentStatus } from '../entities/order.entity';
+import {
+  Order,
+  OrderStatus,
+  PaymentStatus as OrderPaymentStatus,
+} from '../entities/order.entity';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { User } from '../../auth/entities/user.entity';
+import { Product } from '../../products/entities/product.entity';
+import {
+  StockMovement,
+  MovementType,
+} from '../../inventory/entities/stock-movement.entity';
+import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
 
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
-    @InjectRepository(Payment)
-    private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>,
+    private readonly dataSource: DataSource,
+    private readonly locations: InventoryLocationsService,
   ) {}
 
   async recordPayment(
@@ -30,7 +42,7 @@ export class PaymentsService {
     // Get order and verify ownership
     const order = await this.orderRepository.findOne({
       where: { id: orderId, company_id: user.company_id },
-      relations: ['payments'],
+      relations: ['payments', 'order_items'],
     });
 
     if (!order) {
@@ -55,26 +67,83 @@ export class PaymentsService {
       );
     }
 
-    // Create payment record
-    const payment = new Payment();
-    payment.order_id = orderId;
-    payment.payment_method = dto.payment_method;
-    payment.amount = dto.amount;
-    payment.transaction_id = dto.transaction_id;
-    payment.status = PaymentStatus.COMPLETED;
-    payment.payment_date = new Date();
+    // Se calcula ANTES de tocar el pedido: la guarda del descuento cuelga de la
+    // TRANSICIÓN a completed, no del estado final.
+    const wasCompleted = order.status === OrderStatus.COMPLETED;
 
-    const savedPayment = await this.paymentRepository.save(payment);
+    const savedPayment = await this.dataSource.transaction(async (manager) => {
+      const payment = manager.create(Payment, {
+        order_id: orderId,
+        payment_method: dto.payment_method,
+        amount: dto.amount,
+        transaction_id: dto.transaction_id,
+        status: PaymentStatus.COMPLETED,
+        payment_date: new Date(),
+      });
+      const saved = await manager.save(Payment, payment);
 
-    // Update order payment status
-    const newTotalPaid = totalPaid + dto.amount;
-    if (newTotalPaid >= Number(order.total_amount)) {
-      order.payment_status = OrderPaymentStatus.PAID;
-    } else if (newTotalPaid > 0) {
-      order.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
-    }
+      const newTotalPaid = totalPaid + dto.amount;
+      if (newTotalPaid >= order.total_amount) {
+        order.payment_status = OrderPaymentStatus.PAID;
+      } else if (newTotalPaid > 0) {
+        order.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
+      }
 
-    await this.orderRepository.save(order);
+      // La guarda es la TRANSICIÓN a completed, no el estado: así un reintento
+      // de la caja tras un timeout, o un segundo pago, no vuelven a descontar.
+      const becomesCompleted =
+        !wasCompleted && order.payment_status === OrderPaymentStatus.PAID;
+
+      if (becomesCompleted) {
+        const locationId = await this.locations.ensureDefaultLocation(
+          order.company_id,
+          manager,
+        );
+
+        for (const item of order.order_items ?? []) {
+          // Bloqueo pesimista: entre crear el pedido y cobrarlo, otra caja pudo
+          // llevarse la última unidad. Revalidamos dentro de la transacción.
+          const product = await manager.findOne(Product, {
+            where: { id: item.product_id, company_id: order.company_id },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (!product) {
+            throw new BadRequestException(
+              `Product ${item.product_id} not found`,
+            );
+          }
+          if (product.stock_quantity < item.quantity) {
+            throw new BadRequestException(
+              `Insufficient stock for ${product.name}. Available: ${product.stock_quantity}, required: ${item.quantity}`,
+            );
+          }
+
+          product.stock_quantity -= item.quantity;
+          await manager.save(Product, product);
+
+          await manager.insert(
+            StockMovement,
+            manager.create(StockMovement, {
+              company_id: order.company_id,
+              product_id: item.product_id,
+              location_id: locationId,
+              movement_type: MovementType.OUT,
+              quantity: item.quantity,
+              reference_id: order.id,
+              notes: `Venta ${order.order_number}`,
+              created_by: user.id,
+            }),
+          );
+        }
+
+        // Se marca completado sólo cuando todo el inventario se descontó sin
+        // incidencias: si el stock falla, el pedido no queda como vendido.
+        order.status = OrderStatus.COMPLETED;
+      }
+
+      await manager.save(Order, order);
+      return saved;
+    });
 
     this.logger.log(
       `Recorded payment of ${dto.amount} for order ${order.order_number} via ${dto.payment_method}`,

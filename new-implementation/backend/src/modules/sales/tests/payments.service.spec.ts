@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PaymentsService } from '../services/payments.service';
 import { Payment, PaymentStatus, PaymentMethod } from '../entities/payment.entity';
 import { Order, PaymentStatus as OrderPaymentStatus } from '../entities/order.entity';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
+import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -20,23 +21,47 @@ describe('PaymentsService', () => {
   } as any;
 
   beforeEach(async () => {
+    const paymentRepoMock = {
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+    };
+    const orderRepoMock = {
+      findOne: jest.fn(),
+      save: jest.fn(),
+    };
+
+    // `recordPayment` escribe dentro de una transacción: el manager delega en
+    // los mismos mocks de repositorio para que las aserciones de este spec
+    // (que son sobre el efecto, no sobre quién escribe) sigan valiendo.
+    const manager = {
+      create: (_entity: unknown, obj: unknown) => obj,
+      save: (entity: unknown, obj: any) =>
+        entity === Payment ? paymentRepoMock.save(obj) : orderRepoMock.save(obj),
+      findOne: jest.fn(),
+      insert: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentsService,
         {
           provide: getRepositoryToken(Payment),
-          useValue: {
-            save: jest.fn(),
-            find: jest.fn(),
-            findOne: jest.fn(),
-          },
+          useValue: paymentRepoMock,
         },
         {
           provide: getRepositoryToken(Order),
+          useValue: orderRepoMock,
+        },
+        {
+          provide: DataSource,
           useValue: {
-            findOne: jest.fn(),
-            save: jest.fn(),
+            transaction: (cb: (m: typeof manager) => unknown) => cb(manager),
           },
+        },
+        {
+          provide: InventoryLocationsService,
+          useValue: { ensureDefaultLocation: jest.fn(async () => 'loc1') },
         },
       ],
     }).compile();
