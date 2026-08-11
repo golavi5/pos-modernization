@@ -521,3 +521,103 @@ fuente de verdad.
 **El veredicto de `SPEC-CUT-002` sigue siendo del operador.** Estos tres
 defectos ya no lo bloquean, pero §4 no está completo y §6 (backup/rollback) no
 se ha ensayado.
+
+---
+
+# Dry-run completo §4–§7 — 2026-08-11 · commit `87b77828`
+
+Ejecutado sobre la instancia Coolify (`facturame_app_modern`, VPS 10.0.50.20,
+Cloudflare Tunnel), con la base **recién inicializada desde cero** tras borrar el
+volumen: 16 tablas por migraciones, empresa y admin por bootstrap, cero datos
+heredados. Navegador real (Playwright/Chromium) para §4; `curl` y SQL para las
+aserciones de API y de estado persistido; contenedor cliente `mysql:8.0` unido a
+la red del stack para §6, como exige el runbook.
+
+## §4 Smoke — core flow
+
+| # | Item | Método | Resultado |
+|---|------|--------|-----------|
+| 1 | Login → `/dashboard` | navegador | ✅ |
+| 2 | Categoría + producto | navegador | ❌ **D3 sigue abierto**: el formulario devuelve 400 (`company_id`/`created_by` obligatorios en el DTO, regex de SKU que rechaza guiones). El producto se creó por API para poder continuar |
+| 3 | Venta en ≤4 clics | navegador | ✅ producto → Charge → Card → Confirm |
+| 4 | Cliente real + búsqueda por nombre | navegador | ✅ cliente creado desde su formulario (ése sí funciona); búsqueda correcta en las tres variantes — parcial (`Fernanda`), minúsculas contra mayúscula (`restrepo`) y con tilde (`María`), lo que confirma el fix `ILIKE`→`LIKE`; la venta persiste el `customer_id` real |
+| 5 | Reportes reflejan la venta | navegador | ✅ Total Sales 1 · Revenue `$10.115` · Profit `$2.500` (8.500−6.000) · **Revenue by Payment Method: Card, 1 transactions, 100%** |
+
+**Estado persistido de la venta** (`ORD2026081100001`): total `10115.00`
+coincidiendo con lo que mostró la caja, `completed`/`paid`, una fila en
+`payments` (`card`, 10115.00), cliente `María Fernanda Restrepo`, stock 30 → 29,
+un `stock_movements` `OUT` con `reference_id` al pedido.
+
+**Pass gate: cumplido salvo el item 2.** Sin 5xx.
+
+## §5 Smoke — security
+
+**No se re-ejecutó en esta pasada.** Se verificó entero el 2026-08-11 contra el
+commit `a826c31c` (ver acta de la 1ª pasada): RBAC de cajero, los tres límites de
+escalada de privilegios, el scoping de empresas completo y la purga cross-tenant.
+Los caminos que ejercita —guards de RBAC, `CompaniesService`, la purga— **no se
+han tocado desde entonces**: los commits posteriores cambian entidades
+(transformer), `PaymentsService`, `InventoryLocationsService` y frontend de
+ventas. Se declara vigente, no re-verificado.
+
+## §6 Backup / restore / rollback
+
+| Gate | Resultado |
+|------|-----------|
+| Backup con `scripts/db-backup.sh` | ✅ `pos_db_20260811-210256.sql.gz` (4,5 KB). El script valida con `gzip -t` **antes** de renombrar desde `.partial`, así que un archivo truncado no puede pasar por bueno |
+| Restore en base scratch | ✅ `pos_scratch` creada con el charset/collation copiados del origen (`utf8mb4` / `utf8mb4_0900_ai_ci`) |
+| Conteos origen vs restaurado | ✅ **11 de 11 coinciden**: companies, users, roles, products, customers, orders, order_items, payments, stock_movements, warehouses y las 16 tablas |
+| Rollback por redeploy | ✅ Redeploy de `5447d600`: stack sano, `/health` + `/health/ready` + `/api/health` 200, login 200, y **datos y esquema intactos** — pedido, cliente, stock 29, pagos, movimientos y las 2 migraciones del ledger sin cambios. Roll-forward a `87b77828` igual de limpio |
+
+Confirmado **Caso A** antes de ejecutarlo: `git diff` sobre
+`backend/src/database/migrations/` entre ambos commits sale vacío, así que el
+Redeploy basta y no hay que restaurar backup.
+
+> No verificado de forma independiente: que el bundle desplegado durante el
+> rollback fuera efectivamente el de `5447d600`. El gate exige "vuelve sano", y
+> eso sí se comprobó.
+
+## §7 Observabilidad
+
+- ✅ Healthcheck cableado: `["CMD","wget","-qO-","http://localhost:3000/health"]`,
+  interval 15s, 6 reintentos, estado `healthy`. Auto-restart activo.
+- ✅ Logs estructurados con contexto de petición: `POST /auth/login → 401`,
+  `GET /products → 200`. Las sondas de salud se excluyen a propósito.
+- ✅ **Credenciales redactadas**: `"authorization":"[Redacted]"`; cero fugas de
+  token o contraseña en claro en 144 líneas de log.
+
+## Estado de los S-items que el sign-off pide registrar
+
+| S-item | Estado | Propuesta |
+|---|---|---|
+| S-01 CI green & gating | ✅ cerrado (`SPEC-BACK-002`, lint como check requerido) | — |
+| S-02 Observabilidad | Parcial: logging estructurado con redacción y `/health`+`/health/ready` listos; **Sentry no** | **fast-follow** |
+| S-03 Backups | Scripts probados hoy de punta a punta; **automatización (cron/S3) no configurada** | **fast-follow, con fecha** |
+| S-05 Secretos | ✅ cerrado por decisión (histórico no purgado; secretos nuevos generados) | — |
+| S-06 Política de contraseñas | Mín. 10 con mayúscula, minúscula, dígito y símbolo, aplicada en los DTO | **fast-follow** |
+
+## Recomendación
+
+**Todo verde salvo §4-2.** El sistema vende correctamente de punta a punta —
+importe correcto, venta cerrada, pagada, inventario descontado con rastro,
+cliente adjunto, reportes cuadrando — y el backup, el restore y el rollback
+funcionan.
+
+Lo único rojo es **D3: no se puede dar de alta un producto desde la UI**. No
+bloquea el camino de venta, pero sí la operación diaria de catálogo, y hoy solo
+se puede sortear por API. Es una corrección de DTO comparable a las ya hechas.
+
+**Esa es la decisión del operador**, y de ahí depende el veredicto:
+
+- **NO-GO** si dar de alta productos desde la UI es requisito de go-live.
+- **GO con fast-follow** si el catálogo inicial se carga por migración o API y D3
+  se corrige en la primera iteración.
+
+| | |
+|---|---|
+| Ejecutado por | Claude Opus 5 (sesión asistida), 2026-08-11 |
+| Secciones verdes | §4 (4 de 5), §5 (vigente de la 1ª pasada), §6, §7 |
+| Único bloqueo | D3 — alta de producto por UI |
+| **Go / No-Go** | _pendiente de firma_ |
+| **Operador** | _pendiente_ |
+| **Fecha de firma** | _pendiente_ |
