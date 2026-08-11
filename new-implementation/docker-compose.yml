@@ -10,7 +10,17 @@
 #        admin en la base vacía — si no, nadie puede iniciar sesión.
 #   3. cp frontend/.env.local.example frontend/.env.local   (opcional)
 #   4. docker compose up -d
-# En Coolify se despliega cada servicio por separado (ver DEPLOYMENT-COOLIFY.md).
+#
+# Puertos del host (sólo desarrollo). Si alguno está ocupado en tu máquina,
+# exportá la variable correspondiente antes de `up` — el puerto DENTRO del
+# contenedor no cambia, así que no hay que tocar Dockerfiles ni healthchecks:
+#   MYSQL_HOST_PORT     (def. 3308)
+#   BACKEND_HOST_PORT   (def. 3000)
+#   FRONTEND_HOST_PORT  (def. 3001)
+#
+# En Coolify NO se usa este archivo: se despliega el stack completo desde
+# docker-compose.coolify.yml, que no publica ningún puerto (ver
+# DEPLOYMENT-COOLIFY.md).
 
 services:
   # ── MySQL ──────────────────────────────────────────────────────────────────
@@ -26,7 +36,9 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3308:3306"
+      # Puerto del host configurable: si 3308 ya está tomado en tu máquina,
+      # exportá MYSQL_HOST_PORT=<otro> (o ponelo en .env) antes de `up`.
+      - "${MYSQL_HOST_PORT:-3308}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       # Schema is owned by TypeORM migrations (the backend runs them on boot via
@@ -60,7 +72,10 @@ services:
       PORT: "3000"
       DB_RUN_MIGRATIONS: "true"
     ports:
-      - "3000:3000"
+      # Puerto del host configurable: si 3000 ya está tomado, exportá
+      # BACKEND_HOST_PORT=<otro> antes de `up`. El contenedor sigue en 3000, así
+      # que el healthcheck de abajo no cambia.
+      - "${BACKEND_HOST_PORT:-3000}:3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
@@ -89,7 +104,8 @@ services:
     environment:
       NODE_ENV: production
     ports:
-      - "3001:3000"
+      # Igual que el backend: FRONTEND_HOST_PORT cambia sólo el puerto del host.
+      - "${FRONTEND_HOST_PORT:-3001}:3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s

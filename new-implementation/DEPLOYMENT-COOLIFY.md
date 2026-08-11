@@ -18,13 +18,25 @@ Internet → Coolify (reverse proxy + SSL)
 Los puertos son **los del contenedor** — es a donde enruta el proxy. Nadie
 publica puertos al host: el proxy llega por la red interna del stack.
 
+> **Que el VPS tenga el 3000 ocupado no importa.** Este compose no hace ningún
+> `ports:`, así que nada se enlaza a un puerto del host: cada contenedor tiene su
+> propia pila de red y el proxy de Coolify los alcanza por la red privada del
+> stack. Por eso `backend` y `frontend` pueden escuchar **los dos** en 3000 sin
+> chocar entre sí ni con lo que ya corra en el VPS.
+>
+> Si aun así querés mover el backend a otro puerto interno, son tres cambios
+> coordinados: `PORT` en el `environment`, el `healthcheck` de ese servicio, y el
+> nombre de la variable mágica (`SERVICE_FQDN_BACKEND_3001`, que lleva el puerto
+> en el nombre). No hace falta tocar el `Dockerfile`: `EXPOSE` es documentación y
+> el `healthcheck` del compose pisa al de la imagen.
+
 ---
 
 ## ⚠️ Hay dos archivos compose. No confundirlos
 
 | Archivo | Para qué | Qué hace distinto |
 |---------|----------|-------------------|
-| `docker-compose.yml` | **Desarrollo local** | Publica puertos en el host (MySQL `3308`, backend `3000`, frontend `3001`), lee `backend/.env`, hornea `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000` |
+| `docker-compose.yml` | **Desarrollo local** | Publica puertos en el host (MySQL `3308`, backend `3000`, frontend `3001` — configurables con `MYSQL_HOST_PORT` / `BACKEND_HOST_PORT` / `FRONTEND_HOST_PORT`), lee `backend/.env`, hornea `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000` |
 | `docker-compose.coolify.yml` | **Producción / Coolify** | No publica ningún puerto, variables inyectadas por Coolify, `NEXT_PUBLIC_API_URL` real |
 
 > 🚨 **No despliegues `docker-compose.yml` en Coolify.** Dos cosas se romperían:
