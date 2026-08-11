@@ -15,8 +15,39 @@ Internet → Coolify (reverse proxy + SSL)
               └── mysql     → MySQL    :3306  (sin publicar)
 ```
 
-Los puertos son **los del contenedor** — es a donde enruta el proxy. Nadie
-publica puertos al host: el proxy llega por la red interna del stack.
+Los puertos de la izquierda son **los del contenedor**. `backend` y `frontend`
+además se publican en el **loopback del host** (`127.0.0.1:3002` y
+`127.0.0.1:3001`, configurables con `BACKEND_HOST_PORT` / `FRONTEND_HOST_PORT`)
+para poder apuntarles directo desde un Cloudflare Tunnel sin pasar por el proxy
+— ver la sección de abajo. Al ir atados a `127.0.0.1` no quedan expuestos a
+Internet. **`mysql` no publica nada**, que es el gate de `SPEC-CUT-002` §2.
+
+## Cloudflare Tunnel (`cloudflared`)
+
+Si el VPS sirve por túnel en vez de por IP pública, hay tres cosas que cuestan
+una tarde si no se saben:
+
+1. **El CNAME del túnel TIENE que estar en Proxied.** Apunta a
+   `<id>.cfargotunnel.com`, que no resuelve a ninguna IP pública: en *DNS only*
+   el dominio deja de resolver y el sitio queda inalcanzable (`code=000`).
+2. **El modo SSL/TLS de la zona no manda; manda el `service:` del ingress.** Si
+   apunta a `http://…` contra el proxy de Coolify y éste tiene *Force HTTPS*,
+   sale un **bucle de redirecciones**: el origen responde `302` a la misma URL,
+   Cloudflare te lo devuelve, y vuelta a empezar. Se reconoce porque el cuerpo
+   del 302 son 5 bytes, `Found` — la firma de Traefik, no de Cloudflare.
+3. **Apuntar el ingress al puerto de la app da `502` si nadie lo publica.** Por
+   eso este compose publica backend y frontend en loopback.
+
+Dos configuraciones válidas del ingress:
+
+| | `service:` | Coolify |
+|---|---|---|
+| **Directo a la app** (evita el proxy) | `http://localhost:3001` (front) y `http://localhost:3002` (api) | *Force HTTPS* irrelevante |
+| **A través del proxy** | `http://localhost:80` para ambos | *Force HTTPS* **desactivado** |
+
+En la segunda, Traefik distingue los hostnames por la cabecera `Host`, así que
+los dos comparten el puerto 80. En la primera cada hostname necesita su propio
+puerto — son dos servicios HTTP distintos.
 
 > **Que el VPS tenga el 3000 ocupado no importa.** Este compose no hace ningún
 > `ports:`, así que nada se enlaza a un puerto del host: cada contenedor tiene su

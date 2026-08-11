@@ -118,6 +118,14 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       RATE_LIMIT_TTL: ${RATE_LIMIT_TTL:-60}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+    # Publicado SÓLO en la interfaz de loopback del host, para que `cloudflared`
+    # pueda apuntar directo aquí sin pasar por el proxy de Coolify. Al ir atado a
+    # 127.0.0.1 NO queda expuesto a Internet: `nc -zv <IP-del-VPS> 3002` falla.
+    # Si cloudflared corre en un contenedor (no como servicio del host), 127.0.0.1
+    # es el loopback DE ESE contenedor y no llega: en ese caso hay que exponerlo
+    # en la IP del bridge de docker y filtrar con firewall.
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-3002}:3000"
     healthcheck:
       # Liveness: no toca la base, para que un parpadeo de MySQL no reinicie el
       # backend. La readiness (`/health/ready`) es para monitoreo, no para esto.
@@ -150,6 +158,9 @@ services:
     # NODE_ENV acá la convertiría en variable gestionada por Coolify, que la
     # inyecta como ARG en el build y rompe `npm ci` — ver la nota del backend.
     # El contenedor escucha en 3000; el dominio se asigna desde la UI.
+    # Ver la nota del backend sobre por qué se publica en 127.0.0.1.
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-3001}:3000"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 15s
