@@ -2,8 +2,12 @@
 FROM node:20-slim AS deps
 
 WORKDIR /app
+# --include=dev: `next build` type-checks and needs @types/*, que son
+# devDependencies. npm las omite si NODE_ENV=production está en el entorno, y
+# Coolify inyecta `ARG NODE_ENV` en las etapas del build. Ver la nota extensa en
+# backend/Dockerfile. La etapa de producción no instala nada: copia standalone.
 COPY package*.json ./
-RUN npm ci --frozen-lockfile
+RUN npm ci --frozen-lockfile --include=dev
 
 # ── Stage 2: Build ─────────────────────────────────────────────────────────────
 FROM node:20-slim AS builder

@@ -143,6 +143,15 @@ RATE_LIMIT_TTL=60
 RATE_LIMIT_MAX=100
 ```
 
+> ⚠️ **No definas `NODE_ENV` acá.** El compose ya la fija en el `environment:`
+> de cada servicio. En la UI de Coolify sólo hace daño: Coolify inyecta un
+> `ARG NODE_ENV` en el Dockerfile y lo pasa como `--build-arg`, Docker lo expone
+> como variable de entorno a los `RUN`, y `npm ci` deja de instalar las
+> devDependencies — el build muere con `exit code: 127` al no encontrar `nest`.
+> Los Dockerfiles están blindados con `--include=dev`, pero el aviso que verás en
+> el log (*"Build-time environment variable warning: NODE_ENV=production"*) es
+> real, no ruido.
+
 > 💡 Generar secretos: `openssl rand -base64 48`
 >
 > ⚠️ **No reutilices valores del historial del repo.** Dos `.env` con secretos
@@ -475,6 +484,30 @@ docker restart <nombre>
 ---
 
 ## Troubleshooting
+
+### `npm run build ... did not complete successfully: exit code: 127`
+
+`127` es *command not found*: falta el binario de build (`nest` en el backend,
+`next`/`@types` en el frontend) porque `npm` omitió las devDependencies.
+
+Causa: Coolify **inyecta declaraciones `ARG` en el Dockerfile** — lo dice en el
+log, `Added 54 ARG declarations to Dockerfile for service backend` — y pasa
+`--build-arg NODE_ENV`. Docker expone los `ARG` como variables de entorno a los
+`RUN`, así que `npm ci` ve `NODE_ENV=production` y salta las devDependencies.
+
+Los Dockerfiles ya están blindados: la etapa de build usa
+`npm ci --frozen-lockfile --include=dev`, que ignora `NODE_ENV`. Comprobado en
+contenedor:
+
+```
+NODE_ENV=production npm ci --frozen-lockfile                 → node_modules/.bin/nest ausente
+NODE_ENV=production npm ci --frozen-lockfile --include=dev   → nest 10.4.9 presente
+```
+
+**No quites ese `--include=dev`**, y aparte **borrá `NODE_ENV` de las
+Environment Variables de Coolify**: el compose ya la fija en el `environment:`
+de cada servicio, así que en la UI sólo sirve para reintroducir este problema.
+Si preferís conservarla, desmarcá *Available at Buildtime*.
 
 ### `unable to prepare context: path ".../backend" not found`
 
