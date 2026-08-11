@@ -143,13 +143,24 @@ RATE_LIMIT_TTL=60
 RATE_LIMIT_MAX=100
 ```
 
-> ⚠️ **No definas `NODE_ENV` acá.** El compose ya la fija en el `environment:`
-> de cada servicio. En la UI de Coolify sólo hace daño: Coolify inyecta un
-> `ARG NODE_ENV` en el Dockerfile y lo pasa como `--build-arg`, Docker lo expone
-> como variable de entorno a los `RUN`, y `npm ci` deja de instalar las
-> devDependencies — el build muere con `exit code: 127` al no encontrar `nest`.
-> Los Dockerfiles están blindados con `--include=dev`, pero el aviso que verás en
-> el log (*"Build-time environment variable warning: NODE_ENV=production"*) es
+> ⚠️ **`NODE_ENV` no va en ninguna parte: ni acá, ni en el compose.** La fijan
+> las imágenes (`ENV NODE_ENV=production` en la etapa `production` de ambos
+> Dockerfiles), que es de donde tiene que venir.
+>
+> Si aparece en el `environment:` del compose, Coolify la registra como variable
+> del recurso, la inyecta como `ARG NODE_ENV` en el Dockerfile y la pasa como
+> `--build-arg`. Docker expone los ARG como variables de entorno a los `RUN`, así
+> que `npm ci` deja de instalar las devDependencies y el build muere con
+> `exit code: 127` al no encontrar `nest`. Y encima no se puede borrar desde la
+> UI mientras siga en el compose:
+>
+> ```
+> Cannot delete environment variable 'NODE_ENV'
+> Please remove it from the Docker Compose file first.
+> ```
+>
+> Los Dockerfiles están blindados aparte con `--include=dev`, pero el aviso
+> *"Build-time environment variable warning: NODE_ENV=production"* del log es
 > real, no ruido.
 
 > 💡 Generar secretos: `openssl rand -base64 48`

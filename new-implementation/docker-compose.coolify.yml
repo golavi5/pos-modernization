@@ -80,8 +80,14 @@ services:
         condition: service_healthy
     # Formato MAPA, no lista. Coolify reprocesa este bloque y una secuencia le
     # llega con claves enteras: `non-string key in services.<svc>.environment: 0`.
+    #
+    # NODE_ENV NO va acá: la etapa `production` del Dockerfile ya la fija
+    # (`ENV NODE_ENV=production`). Declararla aquí hace que Coolify la registre
+    # como variable del recurso, la inyecte como `ARG NODE_ENV` en el build y
+    # rompa `npm ci` — y además impide borrarla desde la UI ("Cannot delete
+    # environment variable 'NODE_ENV': remove it from the Docker Compose file
+    # first").
     environment:
-      NODE_ENV: production
       PORT: "3000"
       # La base vive en el mismo stack: se resuelve por nombre de servicio.
       DB_HOST: mysql
@@ -130,11 +136,12 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-    # Formato MAPA — ver la nota en el `environment` del backend.
-    # El contenedor escucha en 3000 (EXPOSE 3000 + ENV PORT=3000 en su
-    # Dockerfile); el dominio se asigna al servicio desde la UI de Coolify.
-    environment:
-      NODE_ENV: production
+    # Sin bloque `environment`: todo lo que este servicio necesita en runtime ya
+    # está en su imagen (`ENV NODE_ENV=production`, `HOSTNAME=0.0.0.0`,
+    # `PORT=3000`), y `NEXT_PUBLIC_API_URL` se horneó en el build. Declarar
+    # NODE_ENV acá la convertiría en variable gestionada por Coolify, que la
+    # inyecta como ARG en el build y rompe `npm ci` — ver la nota del backend.
+    # El contenedor escucha en 3000; el dominio se asigna desde la UI.
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s
