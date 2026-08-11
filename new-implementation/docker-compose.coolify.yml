@@ -52,21 +52,27 @@ services:
     # accesible desde fuera del VPS — es el gate "MySQL port-not-exposed" de
     # SPEC-CUT-002 §2. El backend la alcanza por el nombre de servicio `mysql`.
     healthcheck:
+      # `$$` = un `$` literal para el shell del contenedor: la contraseña se lee
+      # del entorno del propio MySQL, no se interpola en el compose renderizado
+      # (así no aparece en `docker inspect` ni sufre problemas de comillas).
+      # `-h 127.0.0.1` fuerza TCP a propósito: durante la inicialización del
+      # datadir, MySQL levanta un servidor temporal que NO escucha en TCP, así
+      # que esto reporta "no listo" en vez de dar un falso verde por el socket.
       test:
         [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-u",
-          "root",
-          "-p${MYSQL_ROOT_PASSWORD}",
+          "CMD-SHELL",
+          'mysqladmin ping -h 127.0.0.1 -u root -p"$$MYSQL_ROOT_PASSWORD" --silent',
         ]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      # Ventana amplia PARA EL PRIMER ARRANQUE: con el volumen vacío, MySQL 8
+      # inicializa el datadir antes de aceptar conexiones, y en un VPS modesto
+      # eso pasa del minuto. Con start_period 30s + 5 reintentos (~80s) el deploy
+      # moría en 71s con "dependency failed to start: container mysql is
+      # unhealthy". Ahora la ventana es ~220s; los arranques posteriores siguen
+      # marcando healthy en el primer intento, así que no cuesta nada.
+      retries: 10
+      start_period: 120s
 
   # ── Backend (NestJS) ───────────────────────────────────────────────────────
   backend:
@@ -116,10 +122,12 @@ services:
       # Liveness: no toca la base, para que un parpadeo de MySQL no reinicie el
       # backend. La readiness (`/health/ready`) es para monitoreo, no para esto.
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      # En el PRIMER arranque este contenedor aplica las migraciones TypeORM y
+      # crea el admin antes de escuchar. 40s no alcanzaba.
+      retries: 6
+      start_period: 90s
 
   # ── Frontend (Next.js) ─────────────────────────────────────────────────────
   frontend:
@@ -144,10 +152,10 @@ services:
     # El contenedor escucha en 3000; el dominio se asigna desde la UI.
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 6
+      start_period: 60s
 
 volumes:
   mysql_data:
