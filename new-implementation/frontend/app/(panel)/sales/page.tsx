@@ -178,7 +178,14 @@ export default function SalesPage() {
         isOpen={showPayment}
         onClose={() => setShowPayment(false)}
         onFinished={handleSaleFinished}
-        total={cart.total}
+        // El importe autoritativo en cuanto el pedido existe. `cart.total` lo
+        // calcula el cliente sobre el subtotal agregado; el backend suma el IVA
+        // por ítem y redondea a decimal(10,2), así que difieren. Mientras la
+        // pantalla de éxito era inalcanzable esto no se veía; al hacerla
+        // visible pasaría a AFIRMAR como "total cobrado" un número que no se
+        // cobró. Antes de crear el pedido no hay otra cosa que mostrar, y ahí
+        // `cart.total` es la previsión correcta.
+        total={pendingOrder?.total_amount ?? cart.total}
         onConfirm={handleConfirmPayment}
         isLoading={createSale.isPending || recordPayment.isPending}
       />
