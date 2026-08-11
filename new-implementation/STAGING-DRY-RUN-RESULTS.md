@@ -390,3 +390,72 @@ notificaciones sembradas supervivientes; teléfono de la empresa 1 cambiado a
 `3001234567` por la prueba de `PATCH` propio. Acordado con el operador: se
 borra el volumen de MySQL y se redespliega, de modo que producción arranque
 prístina — posible sin pérdida porque no había ningún dato real.
+
+---
+
+## Addendum 2026-08-11 (2ª pasada, commit `97695db4`) — el veredicto NO-GO se mantiene y se agrava
+
+D1 y D2 quedaron cerrados y verificados en el despliegue: `GET /products`
+devuelve 200 en las tres variantes, la rejilla de productos carga, y el `POST`
+llega a `/sales/orders` sin 404. Aparecieron entonces defectos que los dos
+primeros **tapaban**.
+
+**D5 · `CreateOrderDto` rechazaba toda venta normal** — corregido en `97695db4`.
+`discount_amount` estaba con `@IsPositive()`, y cero no es positivo: una venta
+sin descuento se rechazaba siempre. Y `unit_price` no tenía coerción, mientras
+MySQL entrega DECIMAL como string (`"25000.00"`). Regresión en
+`d5-regression.spec.ts` con el payload real capturado del navegador, verificada
+por mutación (3/4 rojos contra el DTO original, con los mensajes exactos).
+
+**Con eso, §4-3 se ejecuta: la venta se completa en 4 clics** (producto →
+Charge → Card → Confirm) y el carrito se vacía. Pero lo que queda registrado no
+es lo que la caja mostró:
+
+| | La UI mostró | El sistema registró |
+|---|---|---|
+| Total | **$ 25.000** (y el botón cobra `Charge $ 25.000`) | `total_amount = 29750.00` |
+| Estado | venta completada, carrito vaciado | `status = draft` |
+| Pago | tarjeta, confirmada | `payment_status = unpaid`, **0 filas en `payments`** |
+| Stock | — | **50 → 50: no se descontó** |
+
+**D7 · El total de la caja está mal.** `Subtotal 25.000 + IVA 4.750` son 29.750,
+pero la línea `Total` y el botón de cobro dicen 25.000. El backend calcula bien
+(`subtotal + tax_amount`). **Se cobra al cliente $4.750 menos de lo que se
+registra, en cada venta.** Es un defecto de dinero, el más caro de todos los
+encontrados.
+
+**D6 · El método de pago se descarta en silencio.** El carrito manda
+`payment_method` y `payment_status`, pero `CreateOrderDto` no los declara y el
+`ValidationPipe` global (`whitelist: true`) los elimina antes de llegar al
+servicio. Existe `POST /sales/orders/:id/payments`, que el frontend nunca llama.
+Resultado: toda venta nace `draft`/`unpaid` y la tabla `payments` queda vacía.
+
+**D8 · La venta no descuenta inventario.** El stock siguió en 50 tras dos
+pedidos de 1 unidad. `createOrder` valida stock suficiente pero no lo ajusta, y
+`stock_movements` sigue vacía.
+
+### Estado del checklist tras la 2ª pasada
+
+| Item | Antes | Ahora |
+|---|---|---|
+| §4-1 login | ✅ | ✅ |
+| §4-2 catálogo + producto | ❌ | ✅ (rejilla carga; el alta por formulario sigue con D3) |
+| §4-3 venta en ≤4 clics | ❌ bloqueado | ⚠️ **la UI la completa, pero el registro es incorrecto** (D6, D7, D8) |
+| §4-4 cliente real | ⛔ | ⛔ no ejecutado — sin sentido hasta cerrar D6–D8 |
+| §4-5 reportes | ⛔ | ⛔ no ejecutado — informarían totales de pedidos `draft`/`unpaid` |
+
+**§5 no se re-ejecutó**: ninguno de D5–D8 toca RBAC, escalada de privilegios,
+scoping de empresas ni la purga cross-tenant, y los cambios de `97695db4` son de
+validación de DTO. Los resultados de la 1ª pasada siguen vigentes.
+
+### Veredicto tras la 2ª pasada: 🔴 **NO-GO** (sin cambios)
+
+Es peor que el primero, no mejor: entonces el POS no vendía y se notaba. Ahora
+vende, parece funcionar, y deja mal el dinero, el estado del pedido y el
+inventario. Un despliegue con D7 vivo pierde $4.750 por cada venta de $29.750
+sin que nadie lo vea hasta cuadrar caja.
+
+D6, D7 y D8 no son correcciones de una línea como D1/D2/D5: hay que decidir el
+flujo de pago (¿el `create` acepta el pago, o el frontend llama al endpoint de
+pagos?), quién calcula el total mostrado, y dónde se descuenta el stock. Eso es
+diseño, y le corresponde al operador antes de tocar código.
