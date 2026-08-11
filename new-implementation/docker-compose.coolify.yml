@@ -16,11 +16,22 @@
 # Coolify auto-detecta cada `${VARIABLE}` de este archivo y la ofrece en la
 # pestaña Environment Variables del recurso. Ver DEPLOYMENT-COOLIFY.md.
 #
-# ⚠️ Los `context:` de abajo son relativos al PROJECT DIRECTORY de compose, que
-# Coolify toma del campo "Base directory" del recurso. Tiene que ser
-# `/new-implementation`. Si queda en `/`, `./backend` apunta a la raíz del repo
-# y el build muere con:
-#   unable to prepare context: path "/artifacts/<id>/backend" not found
+# ⚠️ DOS COSAS QUE PARECEN ERRORES DE ESTILO Y NO LO SON. Verificadas contra
+# despliegues reales; cambiarlas rompe el build:
+#
+# 1. Los `context:` llevan el prefijo `./new-implementation/` aunque este archivo
+#    ya viva ahí. Compose resuelve las rutas relativas contra el PROJECT
+#    DIRECTORY, y Coolify lo fija siempre en la raíz del repo
+#    (`--project-directory /artifacts/<id>`) sin importar el "Base directory".
+#    Con `./backend` el build muere con:
+#      unable to prepare context: path "/artifacts/<id>/backend" not found
+#    Consecuencia: para validar en local hay que pararse en la raíz del repo:
+#      docker compose --project-directory . -f new-implementation/docker-compose.coolify.yml config
+#
+# 2. Los `environment:` van en formato MAPA (`CLAVE: valor`), nunca en lista
+#    (`- CLAVE=valor`). Coolify reprocesa ese bloque y una secuencia le llega con
+#    claves enteras:
+#      Error: non-string key in services.frontend.environment: 0
 
 services:
   # ── MySQL ──────────────────────────────────────────────────────────────────
@@ -57,41 +68,41 @@ services:
   # ── Backend (NestJS) ───────────────────────────────────────────────────────
   backend:
     build:
-      context: ./backend
+      context: ./new-implementation/backend
       dockerfile: Dockerfile
       target: production
     restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
+    # Formato MAPA, no lista. Coolify reprocesa este bloque y una secuencia le
+    # llega con claves enteras: `non-string key in services.<svc>.environment: 0`.
     environment:
-      # Dominio del backend. Coolify lo asigna a este servicio en el puerto 3000.
-      - SERVICE_FQDN_BACKEND_3000
-      - NODE_ENV=production
-      - PORT=3000
+      NODE_ENV: production
+      PORT: "3000"
       # La base vive en el mismo stack: se resuelve por nombre de servicio.
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_USERNAME=${DB_USERNAME:-pos_user}
-      - DB_PASSWORD=${DB_PASSWORD:?falta DB_PASSWORD}
-      - DB_NAME=${DB_NAME:-pos_db}
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: ${DB_USERNAME:-pos_user}
+      DB_PASSWORD: ${DB_PASSWORD:?falta DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-pos_db}
       # El esquema lo crean las migraciones TypeORM al arrancar.
-      - DB_RUN_MIGRATIONS=true
-      - JWT_SECRET=${JWT_SECRET:?falta JWT_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:?falta JWT_REFRESH_SECRET}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
+      DB_RUN_MIGRATIONS: "true"
+      JWT_SECRET: ${JWT_SECRET:?falta JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?falta JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       # Origen del frontend. Sin esto el backend NO arranca en producción.
-      - CORS_ORIGINS=${CORS_ORIGINS:?falta CORS_ORIGINS}
+      CORS_ORIGINS: ${CORS_ORIGINS:?falta CORS_ORIGINS}
       # Primer admin: sin estas dos, la base queda sin usuarios y nadie entra.
       # No rompen el arranque si faltan — de ahí el `:?`, que sí lo hace.
-      - BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:?falta BOOTSTRAP_ADMIN_EMAIL}
-      - BOOTSTRAP_ADMIN_PASSWORD=${BOOTSTRAP_ADMIN_PASSWORD:?falta BOOTSTRAP_ADMIN_PASSWORD}
-      - BOOTSTRAP_ADMIN_NAME=${BOOTSTRAP_ADMIN_NAME:-Administrator}
-      - BOOTSTRAP_COMPANY_NAME=${BOOTSTRAP_COMPANY_NAME:-Mi Empresa}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-      - RATE_LIMIT_TTL=${RATE_LIMIT_TTL:-60}
-      - RATE_LIMIT_MAX=${RATE_LIMIT_MAX:-100}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:?falta BOOTSTRAP_ADMIN_EMAIL}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?falta BOOTSTRAP_ADMIN_PASSWORD}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Administrator}
+      BOOTSTRAP_COMPANY_NAME: ${BOOTSTRAP_COMPANY_NAME:-Mi Empresa}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RATE_LIMIT_TTL: ${RATE_LIMIT_TTL:-60}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
     healthcheck:
       # Liveness: no toca la base, para que un parpadeo de MySQL no reinicie el
       # backend. La readiness (`/health/ready`) es para monitoreo, no para esto.
@@ -104,7 +115,7 @@ services:
   # ── Frontend (Next.js) ─────────────────────────────────────────────────────
   frontend:
     build:
-      context: ./frontend
+      context: ./new-implementation/frontend
       dockerfile: Dockerfile
       target: production
       args:
@@ -116,11 +127,11 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    # Formato MAPA — ver la nota en el `environment` del backend.
+    # El contenedor escucha en 3000 (EXPOSE 3000 + ENV PORT=3000 en su
+    # Dockerfile); el dominio se asigna al servicio desde la UI de Coolify.
     environment:
-      # Dominio del frontend. El contenedor escucha en 3000 (EXPOSE 3000 +
-      # ENV PORT=3000 en frontend/Dockerfile).
-      - SERVICE_FQDN_FRONTEND_3000
-      - NODE_ENV=production
+      NODE_ENV: production
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
       interval: 30s

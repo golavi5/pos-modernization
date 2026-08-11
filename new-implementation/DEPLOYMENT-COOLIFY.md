@@ -24,11 +24,11 @@ publica puertos al host: el proxy llega por la red interna del stack.
 > stack. Por eso `backend` y `frontend` pueden escuchar **los dos** en 3000 sin
 > chocar entre sí ni con lo que ya corra en el VPS.
 >
-> Si aun así querés mover el backend a otro puerto interno, son tres cambios
-> coordinados: `PORT` en el `environment`, el `healthcheck` de ese servicio, y el
-> nombre de la variable mágica (`SERVICE_FQDN_BACKEND_3001`, que lleva el puerto
-> en el nombre). No hace falta tocar el `Dockerfile`: `EXPOSE` es documentación y
-> el `healthcheck` del compose pisa al de la imagen.
+> Si aun así querés mover el backend a otro puerto interno, son dos cambios
+> coordinados — `PORT` en su `environment` y el `healthcheck` de ese servicio —
+> más actualizar el puerto en el campo *Domains* de Coolify. No hace falta tocar
+> el `Dockerfile`: `EXPOSE` es documentación y el `healthcheck` del compose pisa
+> al de la imagen.
 
 ---
 
@@ -77,29 +77,27 @@ En Coolify: **New Resource → Public Repository** (o Private, si aplica)
 | Base directory | `/new-implementation` |
 | Docker Compose location | `docker-compose.coolify.yml` |
 
-> 🚨 **Estos dos campos son la causa nº 1 de que el deploy falle.** Los dos.
->
-> **La ruta del compose es relativa al Base directory** — va sin repetir el
-> prefijo `new-implementation/`. Y el Base directory tiene que ser
-> `/new-implementation`, no `/`: Coolify lo usa como `--project-directory` de
-> `docker compose`, y **Compose resuelve las rutas relativas contra el
-> project-directory, no contra la ubicación del archivo compose**. Con el Base
-> directory en `/`, el `context: ./backend` del compose apunta a
-> `<raíz-del-repo>/backend`, que no existe:
+> 🚨 Comprobá que el archivo sea **`docker-compose.coolify.yml`**. Si en el log
+> aparece `-f .../docker-compose.yml`, está construyendo el de desarrollo:
+> aunque el build funcione, el resultado publica MySQL al host y hornea
+> `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000` en el frontend.
+
+> **Sobre el "Base directory": Coolify lo usa para encontrar el compose, pero
+> NO para el `--project-directory`.** Comprobado en el log de un deploy real: con
+> Base directory en `/new-implementation`, Coolify igual invoca
+> `--project-directory /artifacts/<id>` (la raíz del repo) y sólo el `-f` lleva
+> el prefijo. Como Compose resuelve las rutas relativas contra el
+> project-directory, **los `context:` del compose están escritos relativos a la
+> raíz** (`./new-implementation/backend`). Por eso el archivo se ve "redundante"
+> y no hay que corregirlo: si le quitás el prefijo, el build muere con
 >
 > ```
 > Error: unable to prepare context: path "/artifacts/<id>/backend" not found
 > ```
 >
-> El mismo fallo se anuncia antes, en forma de warning fácil de descartar —
+> Ese fallo se anuncia antes como un warning fácil de descartar —
 > `Dockerfile not found for service backend at backend/Dockerfile, skipping ARG
-> injection`. Si ves esa línea, el Base directory está mal: el build continúa un
-> rato más y muere en el contexto.
->
-> Y comprobá que el archivo sea **`docker-compose.coolify.yml`**. Si Coolify
-> arranca con `-f .../docker-compose.yml` está construyendo el de desarrollo:
-> aunque el build funcione, el resultado publica MySQL al host y hornea
-> `NEXT_PUBLIC_API_URL=http://127.0.0.1:3000` en el frontend.
+> injection`. No es inocuo: es este error avisando.
 
 Coolify parsea el archivo y detecta los tres servicios (`mysql`, `backend`,
 `frontend`) y **todas** las variables `${...}` que aparecen en él, que quedan
@@ -179,10 +177,15 @@ separado:
 | `backend` | `https://api.tu-dominio.com` | 3000 |
 | `mysql` | *(ninguno)* | — |
 
-El compose declara `SERVICE_FQDN_FRONTEND_3000` y `SERVICE_FQDN_BACKEND_3000`,
-las variables mágicas con las que Coolify asocia dominio ↔ servicio ↔ puerto. Si
-tenés un wildcard configurado, Coolify genera los dominios solo; si querés los
-tuyos, ponelos en el campo *Domains* del servicio correspondiente.
+Los dominios se asignan en el campo **Domains** de cada servicio, desde la UI.
+
+> El compose **no** declara las variables mágicas `SERVICE_FQDN_*`. Se probaron y
+> se quitaron: en el bloque `environment` hay que escribirlas como nombre suelto
+> (`- SERVICE_FQDN_FRONTEND_3000`), lo que obliga al formato lista, y Coolify
+> rechaza ese formato al reprocesar el archivo — ver el aviso del Paso 1 sobre
+> `non-string key`. Asignar el dominio desde la UI hace lo mismo y no depende de
+> esa sintaxis. Las mágicas sirven sobre todo para generar subdominios
+> automáticos contra un wildcard; acá los dominios son propios (`api.` / `app.`).
 
 > **`mysql` no lleva dominio y no debe publicar puertos.** Si en algún momento le
 > agregás un `ports:`, quedaría accesible desde fuera del VPS, saltándose el
@@ -475,18 +478,32 @@ docker restart <nombre>
 
 ### `unable to prepare context: path ".../backend" not found`
 
-El **Base directory** está en `/` en vez de `/new-implementation`. Coolify lo
-pasa como `--project-directory`, y Compose resuelve `context: ./backend` contra
-eso, no contra la carpeta del archivo compose. Comprobado:
+Alguien le quitó el prefijo `./new-implementation/` a un `context:` del compose
+por parecer redundante. No lo es: Coolify invoca `--project-directory` en la
+**raíz del repo** aunque el Base directory apunte a `/new-implementation`, y
+Compose resuelve las rutas relativas contra el project-directory, no contra la
+carpeta del archivo. Verificalo replicando el comando:
 
-```
---project-directory <raíz>              → context: <raíz>/backend              ❌
---project-directory <raíz>/new-implementation → context: .../new-implementation/backend  ✅
+```bash
+# como lo llama Coolify — las dos rutas deben existir
+docker compose --project-directory . \
+  -f new-implementation/docker-compose.coolify.yml config | grep context:
 ```
 
 Aviso temprano del mismo problema, unas líneas antes en el log:
 `Dockerfile not found for service backend at backend/Dockerfile, skipping ARG
 injection`. No es inocuo — es este error anunciándose.
+
+### `non-string key in services.<servicio>.environment: 0`
+
+Ese bloque `environment` está en formato lista (`- CLAVE=valor`). Coolify
+reprocesa el compose y una secuencia le llega con claves enteras — el `0` del
+mensaje es el índice del primer elemento. Pasalo a formato mapa
+(`CLAVE: valor`), que es como están los tres servicios.
+
+Ojo con las variables mágicas `SERVICE_FQDN_*`: se escriben como nombre suelto,
+lo que **obliga** al formato lista y reintroduce este error. Por eso el compose
+no las usa y los dominios se asignan desde la UI.
 
 ### El log muestra `-f .../docker-compose.yml`
 
