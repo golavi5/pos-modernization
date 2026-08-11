@@ -99,9 +99,18 @@ export default function SalesPage() {
     // se limpia si también resuelve — si falla, el pedido queda creado y
     // pendiente de cobro, así que la caja debe poder reintentar el pago sin
     // perder lo ya ingresado.
+    //
+    // `amount` viene de `order.total_amount` (la respuesta de creación), NO
+    // de `cart.total`: el backend calcula el IVA por ítem y redondea a
+    // decimal(10,2), mientras `cart.total` lo calcula sobre el subtotal
+    // agregado. Son dos leyes de redondeo distintas — enviar `cart.total`
+    // puede quedar por debajo del total autoritativo y dejar el pedido en
+    // `partially_paid` sin que la caja se entere (o por encima y que el
+    // backend rechace el pago con 400). `order.total_amount` es la misma
+    // cifra que el backend usa como techo y como umbral de "pagado".
     await paymentsApi.record(order.id, {
       payment_method: paymentMethod,
-      amount: cart.total,
+      amount: order.total_amount,
     });
     setShowPayment(false);
     setCart(EMPTY_CART);
