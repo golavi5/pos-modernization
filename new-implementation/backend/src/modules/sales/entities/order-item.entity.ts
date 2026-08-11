@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { Order } from './order.entity';
 import { Product } from '../../products/entities/product.entity';
+import { numericTransformer } from '../../../common/column-numeric.transformer';
 
 @Entity('order_items')
 export class OrderItem {
@@ -22,10 +23,10 @@ export class OrderItem {
   @Column({ type: 'int' })
   quantity: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unit_price' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unit_price', transformer: numericTransformer })
   unit_price: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, transformer: numericTransformer })
   subtotal: number;
 
   @Column({
@@ -34,10 +35,11 @@ export class OrderItem {
     scale: 2,
     default: 0,
     name: 'tax_amount',
+    transformer: numericTransformer,
   })
   tax_amount: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, transformer: numericTransformer })
   total: number;
 
   @ManyToOne(() => Order, (order) => order.order_items)

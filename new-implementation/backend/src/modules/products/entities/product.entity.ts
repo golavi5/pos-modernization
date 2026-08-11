@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
 import { IsUUID, IsString, IsNumber, IsBoolean, IsOptional, Min, Max, IsUrl } from 'class-validator';
 import { OrderItem } from '../../sales/entities/order-item.entity';
+import { numericTransformer } from '../../../common/column-numeric.transformer';
 
 @Entity('products')
 export class Product {
@@ -34,12 +35,12 @@ export class Product {
   @IsUUID()
   category_id?: string;
 
-  @Column({ name: 'price', type: 'decimal', precision: 10, scale: 2 })
+  @Column({ name: 'price', type: 'decimal', precision: 10, scale: 2, transformer: numericTransformer })
   @IsNumber()
   @Min(0)
   price: number;
 
-  @Column({ name: 'cost', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({ name: 'cost', type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: numericTransformer })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -55,7 +56,7 @@ export class Product {
   @Min(0)
   reorder_level: number;
 
-  @Column({ name: 'tax_rate', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ name: 'tax_rate', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: numericTransformer })
   @IsNumber()
   @Min(0)
   @Max(100)

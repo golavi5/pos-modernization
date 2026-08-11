@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { Order } from './order.entity';
+import { numericTransformer } from '../../../common/column-numeric.transformer';
 
 export enum PaymentMethod {
   CASH = 'cash',
@@ -37,7 +38,7 @@ export class Payment {
   })
   payment_method: PaymentMethod;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, transformer: numericTransformer })
   amount: number;
 
   @Column({

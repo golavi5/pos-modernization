@@ -12,6 +12,7 @@ import { User } from '../../auth/entities/user.entity';
 import { Company } from '../../companies/entities/company.entity';
 import { OrderItem } from './order-item.entity';
 import { Payment } from './payment.entity';
+import { numericTransformer } from '../../../common/column-numeric.transformer';
 
 export enum OrderStatus {
   DRAFT = 'draft',
@@ -57,7 +58,7 @@ export class Order {
   })
   status: OrderStatus;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, transformer: numericTransformer })
   subtotal: number;
 
   @Column({
@@ -66,6 +67,7 @@ export class Order {
     scale: 2,
     default: 0,
     name: 'tax_amount',
+    transformer: numericTransformer,
   })
   tax_amount: number;
 
@@ -75,10 +77,11 @@ export class Order {
     scale: 2,
     default: 0,
     name: 'discount_amount',
+    transformer: numericTransformer,
   })
   discount_amount: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'total_amount' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'total_amount', transformer: numericTransformer })
   total_amount: number;
 
   @Column({
