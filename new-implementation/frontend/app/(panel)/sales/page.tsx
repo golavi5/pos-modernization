@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ProductSearch } from '@/components/sales/ProductSearch';
 import { SalesCart } from '@/components/sales/SalesCart';
 import { PaymentModal } from '@/components/sales/PaymentModal';
-import { useCreateSale } from '@/hooks/useSales';
-import { paymentsApi } from '@/lib/api/payments';
+import { useCreateSale, useRecordPayment } from '@/hooks/useSales';
 import type { Product } from '@/types/product';
-import type { CartItem, Cart } from '@/types/sale';
+import type { CartItem, Cart, PendingOrder } from '@/types/sale';
 
 const TAX_RATE = 0.19;
 
@@ -22,7 +21,20 @@ const EMPTY_CART: Cart = {
 export default function SalesPage() {
   const [cart, setCart] = useState<Cart>(EMPTY_CART);
   const [showPayment, setShowPayment] = useState(false);
+  // El pedido ya creado para ESTE carrito, mientras su pago sigue pendiente.
+  // Ver `PendingOrder` en `types/sale.ts` para por qué existe.
+  const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null);
   const createSale = useCreateSale();
+  const recordPayment = useRecordPayment();
+
+  // Todo cambio del carrito invalida el pedido pendiente: un pedido creado
+  // corresponde a un carrito concreto y lleva su propio `total_amount`.
+  // Reintentar contra él después de añadir o quitar un ítem cobraría el total
+  // viejo por una compra distinta.
+  const applyCart = (next: Cart) => {
+    setCart(next);
+    setPendingOrder(null);
+  };
 
   const recalc = (items: CartItem[], discount = cart.discount): Cart => {
     const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
@@ -57,7 +69,7 @@ export default function SalesPage() {
         },
       ];
     }
-    setCart(recalc(newItems));
+    applyCart(recalc(newItems));
   };
 
   const handleUpdateQuantity = (productId: string, quantity: number) => {
@@ -67,54 +79,75 @@ export default function SalesPage() {
         ? { ...i, quantity, subtotal: quantity * i.unit_price }
         : i
     );
-    setCart(recalc(newItems));
+    applyCart(recalc(newItems));
   };
 
   const handleRemoveItem = (productId: string) => {
     const newItems = cart.items.filter((i) => i.product_id !== productId);
-    setCart(recalc(newItems));
+    applyCart(recalc(newItems));
   };
 
   const handleSelectCustomer = (customer: { id: string; name: string } | undefined) => {
-    setCart({ ...cart, customer_id: customer?.id, customer_name: customer?.name });
+    applyCart({ ...cart, customer_id: customer?.id, customer_name: customer?.name });
   };
 
   const handleConfirmPayment = async (paymentMethod: string) => {
-    const order = await createSale.mutateAsync({
-      customer_id: cart.customer_id,
-      items: cart.items.map((i) => ({
-        product_id: i.product_id,
-        quantity: i.quantity,
-        unit_price: i.unit_price,
-        discount: i.discount ?? 0,
-        tax_rate: i.tax_rate ?? TAX_RATE * 100,
-      })),
-      payment_method: paymentMethod,
-      payment_status: 'paid',
-      discount_amount: cart.discount,
-    });
     // Crear el pedido no lo cobra: el backend lo deja `draft`/`unpaid` hasta
-    // que llega el pago. Esta segunda llamada es la que CIERRA la venta
-    // (mueve el pedido a `completed` y descuenta inventario). El carrito solo
-    // se limpia si también resuelve — si falla, el pedido queda creado y
-    // pendiente de cobro, así que la caja debe poder reintentar el pago sin
-    // perder lo ya ingresado.
+    // que llega el pago. La segunda llamada es la que CIERRA la venta (mueve
+    // el pedido a `completed` y descuenta inventario).
     //
-    // `amount` viene de `order.total_amount` (la respuesta de creación), NO
-    // de `cart.total`: el backend calcula el IVA por ítem y redondea a
-    // decimal(10,2), mientras `cart.total` lo calcula sobre el subtotal
-    // agregado. Son dos leyes de redondeo distintas — enviar `cart.total`
-    // puede quedar por debajo del total autoritativo y dejar el pedido en
-    // `partially_paid` sin que la caja se entere (o por encima y que el
-    // backend rechace el pago con 400). `order.total_amount` es la misma
-    // cifra que el backend usa como techo y como umbral de "pagado".
-    await paymentsApi.record(order.id, {
-      payment_method: paymentMethod,
-      amount: order.total_amount,
+    // Si esa segunda llamada falla, el pedido YA EXISTE y queda pendiente de
+    // cobro. El reintento del cajero re-entra por aquí desde arriba, así que
+    // sin este `pendingOrder` volvía a crear un pedido: cliente cobrado dos
+    // veces, stock descontado dos veces y un `draft` huérfano. La guarda de
+    // exactamente-una-vez del backend es POR PEDIDO y no lo habría frenado,
+    // porque son dos pedidos distintos. El caso peor es el timeout en el que
+    // el pago sí llegó.
+    let order = pendingOrder;
+
+    if (!order) {
+      const created = await createSale.mutateAsync({
+        customer_id: cart.customer_id,
+        items: cart.items.map((i) => ({
+          product_id: i.product_id,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          discount: i.discount ?? 0,
+          tax_rate: i.tax_rate ?? TAX_RATE * 100,
+        })),
+        payment_method: paymentMethod,
+        payment_status: 'paid',
+        discount_amount: cart.discount,
+      });
+      order = { id: created.id, total_amount: created.total_amount };
+      setPendingOrder(order);
+    }
+
+    // `amount` viene de `order.total_amount` (la respuesta de creación, que el
+    // reintento conserva en `pendingOrder`), NO de `cart.total`: el backend
+    // calcula el IVA por ítem y redondea a decimal(10,2), mientras
+    // `cart.total` lo calcula sobre el subtotal agregado. Son dos leyes de
+    // redondeo distintas — enviar `cart.total` puede quedar por debajo del
+    // total autoritativo y dejar el pedido en `partially_paid` sin que la caja
+    // se entere (o por encima y que el backend rechace el pago con 400).
+    await recordPayment.mutateAsync({
+      orderId: order.id,
+      data: { payment_method: paymentMethod, amount: order.total_amount },
     });
+
+    // Ni se cierra el modal ni se vacía el carrito aquí. Cerrarlo desmontaba
+    // `PaymentModal` en el mismo tick en que éste intentaba renderizar su
+    // `status === 'success'` (la guarda `if (!isOpen) return null` corta
+    // antes), así que la pantalla de confirmación NUNCA se pintaba. Y vaciar
+    // el carrito ahora dejaría esa pantalla mostrando $0, porque su `total`
+    // sale del carrito. Ambas cosas las dispara ya `onFinished`.
+  };
+
+  const handleSaleFinished = useCallback(() => {
     setShowPayment(false);
     setCart(EMPTY_CART);
-  };
+    setPendingOrder(null);
+  }, []);
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -136,7 +169,7 @@ export default function SalesPage() {
           onUpdateQuantity={handleUpdateQuantity}
           onRemoveItem={handleRemoveItem}
           onSelectCustomer={handleSelectCustomer}
-          onClearCart={() => setCart(EMPTY_CART)}
+          onClearCart={() => applyCart(EMPTY_CART)}
           onCheckout={() => setShowPayment(true)}
         />
       </div>
@@ -144,9 +177,10 @@ export default function SalesPage() {
       <PaymentModal
         isOpen={showPayment}
         onClose={() => setShowPayment(false)}
+        onFinished={handleSaleFinished}
         total={cart.total}
         onConfirm={handleConfirmPayment}
-        isLoading={createSale.isPending}
+        isLoading={createSale.isPending || recordPayment.isPending}
       />
     </div>
   );

@@ -164,20 +164,68 @@ test.describe('Sale golden path', () => {
     // `partially_paid`.
     expect(paymentResponse.status()).toBe(201);
 
-    // NOT asserting on `[data-testid="payment-success"]` here: it is
-    // currently unreachable regardless of backend outcome.
-    // `handleConfirmPayment` (page.tsx) calls `setShowPayment(false)`
-    // synchronously right after this same await resolves, which unmounts
-    // `PaymentModal` (`if (!isOpen) return null` runs before the `status
-    // === 'success'` branch) before its own `setStatus('success')` can ever
-    // paint. Verified by running every payment-completing spec in this file
-    // against a live stack: the backend consistently answers 201/201 and
-    // the DB shows the order reaching `completed` with stock deducted, yet
-    // none of them ever see `payment-success` render. Predates this task
-    // (same shape since e7f3478a, "feat(sales): split-pane layout…") —
-    // filed as a separate finding, not fixed here. Assert on the side
-    // effect that does fire reliably: the cart clears and the cobrar button
-    // goes back to disabled.
-    await expect(page.locator('[data-testid="cobrar-button"]')).toBeDisabled();
+    // The confirmation screen is now reachable: the page no longer closes the
+    // modal out from under it. The cart is NOT cleared here any more — it has
+    // to survive so the success screen can show the amount charged — so assert
+    // on the screen itself rather than on a cleared cart.
+    await expect(page.locator('[data-testid="payment-success"]')).toBeVisible({ timeout: 8000 });
+  });
+
+  test('a retry after a failed payment reuses the same order instead of creating a second one', async ({
+    page,
+  }) => {
+    // Regression guard for the double-charge. Closing a sale is two calls and
+    // only the second one charges. When the second failed, `handleConfirm`
+    // painted the error and re-enabled the button, and the cashier's retry
+    // re-entered `handleConfirmPayment` FROM THE TOP: a brand new order, a
+    // brand new payment, stock deducted twice. The backend's exactly-once
+    // guard is per order, so two distinct orders sail straight past it — the
+    // worst case being a timeout on a payment that did land.
+    //
+    // The approved design (§4 of the checkout-integrity design spec) says the
+    // opposite: the order stays `draft`/`unpaid` and "la caja puede reintentar
+    // contra el mismo pedido".
+    const orderCreations: string[] = [];
+    page.on('request', (req) => {
+      if (req.method() === 'POST' && /\/sales\/orders$/.test(req.url())) {
+        orderCreations.push(req.url());
+      }
+    });
+
+    // Fail the FIRST payment attempt at the network level (a real timeout /
+    // connection drop, which is the scenario that made this dangerous), then
+    // let the retry through to the real backend.
+    let paymentAttempts = 0;
+    await page.route('**/sales/orders/*/payments', async (route) => {
+      paymentAttempts += 1;
+      if (paymentAttempts === 1) {
+        await route.abort('failed');
+        return;
+      }
+      await route.continue();
+    });
+
+    await page.waitForSelector('[data-testid="product-card"]:not([disabled])');
+    await page.click('[data-testid="product-card"]:not([disabled])');
+    await page.click('[data-testid="cobrar-button"]');
+    await page.locator('button').filter({ hasText: /\$100k/ }).click();
+    await expect(page.locator('text=Cambio')).toBeVisible();
+
+    // First attempt: the order is created, the payment blows up.
+    await page.click('[data-testid="confirm-payment-button"]');
+    await expect(page.locator('[data-testid="payment-error"]')).toBeVisible({ timeout: 8000 });
+    // The modal stays open with the cart intact so the caja can retry.
+    await expect(page.locator('[data-testid="confirm-payment-button"]')).toBeEnabled();
+    expect(paymentAttempts).toBe(1);
+    expect(orderCreations).toHaveLength(1);
+
+    // Retry: this must go straight to the payment endpoint.
+    await page.click('[data-testid="confirm-payment-button"]');
+    await expect(page.locator('[data-testid="payment-success"]')).toBeVisible({ timeout: 8000 });
+
+    expect(paymentAttempts).toBe(2);
+    // The assertion this test exists for: still ONE order across the failure
+    // and the retry. Before the fix this was 2.
+    expect(orderCreations).toHaveLength(1);
   });
 });

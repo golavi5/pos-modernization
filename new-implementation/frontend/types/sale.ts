@@ -102,3 +102,23 @@ export interface RecordPaymentDto {
   amount: number;
   notes?: string;
 }
+
+/**
+ * El pedido ya creado para el carrito actual, mientras su pago sigue pendiente.
+ *
+ * El cierre de venta son dos llamadas y sólo la segunda cobra. Si la segunda
+ * falla, el pedido queda `draft`/`unpaid` y la caja debe reintentar CONTRA ESE
+ * MISMO PEDIDO: re-crearlo cobraría dos veces y descontaría stock dos veces (la
+ * guarda de exactamente-una-vez del backend es por pedido, así que dos pedidos
+ * distintos no la disparan).
+ *
+ * `total_amount` viaja con el id porque el reintento ya no tiene a mano la
+ * respuesta de creación, y `cart.total` NO es sustituto: el backend calcula el
+ * IVA por ítem y lo redondea a `decimal(10,2)`, el carrito lo calcula sobre el
+ * subtotal agregado. Mandar el del carrito deja el pedido `partially_paid` sin
+ * que la caja se entere.
+ */
+export interface PendingOrder {
+  id: string;
+  total_amount: number;
+}

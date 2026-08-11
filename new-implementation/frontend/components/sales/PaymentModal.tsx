@@ -11,7 +11,17 @@ import { cn, formatCOP } from '@/lib/utils';
 
 interface PaymentModalProps {
   isOpen: boolean;
+  /**
+   * Salir del cobro sin cobrar ("volver al carrito"). NO cierra la venta: el
+   * carrito debe sobrevivir intacto para que la caja pueda editarlo.
+   */
   onClose: () => void;
+  /**
+   * La venta terminó y la caja pide una nueva. Es la única señal para vaciar el
+   * carrito: hacerlo en `onConfirm` mataba el total que esta misma pantalla de
+   * éxito muestra, y hacerlo en `onClose` lo mataría al volver al carrito.
+   */
+  onFinished: () => void;
   total: number;
   onConfirm: (paymentMethod: string, notes?: string) => Promise<void> | void;
   isLoading?: boolean;
@@ -25,6 +35,7 @@ const QUICK_AMOUNTS = [10000, 20000, 50000, 100000];
 export function PaymentModal({
   isOpen,
   onClose,
+  onFinished,
   total,
   onConfirm,
   isLoading,
@@ -56,8 +67,8 @@ export function PaymentModal({
     setStatus('payment');
     setCashReceived('');
     setCountdown(5);
-    onClose();
-  }, [onClose]);
+    onFinished();
+  }, [onFinished]);
 
   const handleConfirm = useCallback(async () => {
     if (!canConfirm || isLoading || submitting) return;
@@ -187,7 +198,12 @@ export function PaymentModal({
           )}
 
           {confirmError && (
-            <p className="text-destructive text-xs text-center">{confirmError}</p>
+            <p
+              className="text-destructive text-xs text-center"
+              data-testid="payment-error"
+            >
+              {confirmError}
+            </p>
           )}
 
           {/* Confirm button */}
