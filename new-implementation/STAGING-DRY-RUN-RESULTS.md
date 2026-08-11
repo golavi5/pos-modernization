@@ -459,3 +459,65 @@ D6, D7 y D8 no son correcciones de una línea como D1/D2/D5: hay que decidir el
 flujo de pago (¿el `create` acepta el pago, o el frontend llama al endpoint de
 pagos?), quién calcula el total mostrado, y dónde se descuenta el stock. Eso es
 diseño, y le corresponde al operador antes de tocar código.
+
+---
+
+## Addendum 2026-08-11 (3ª pasada, commit `b11a971b`) — D6, D7 y D8 cerrados
+
+Implementado según `POS-BACK-003` (5 tareas, cada una con revisión independiente
+y verificación por mutación). Verificado contra el despliegue real, no solo en
+tests.
+
+**Cableado del transformer** — lo único que un unitario no podía demostrar:
+`GET /products` devuelve `price`, `cost` y `tax_rate` como **números**, no como
+strings.
+
+**§4-3, venta completa en navegador real** (producto → Charge → Card → Confirm):
+
+| | 2ª pasada | 3ª pasada |
+|---|---|---|
+| Total en la caja | `$ 25.000` | **`$ 29.750`** |
+| `total_amount` registrado | `29750.00` | `29750.00` — **coinciden** |
+| `status` | `draft` | **`completed`** |
+| `payment_status` | `unpaid` | **`paid`** |
+| filas en `payments` | 0 | **1** (`card`, `29750.00`, `completed`) |
+| stock `DRY001` | 50 → 50 | **50 → 49** |
+| `stock_movements` | vacía | **`OUT` cant=1**, con `reference_id` al pedido |
+| bodegas | 0 | **1**, creada bajo demanda |
+
+Pedido de referencia: `ORD2026081100003`.
+
+### Lo que las revisiones encontraron y los tests no habrían encontrado
+
+**Doble descuento por la puerta de `confirmed`.** El plan especificaba la guarda
+como "no estaba `completed` antes". Pero `sales.service.ts` **ya descontaba
+stock** al pasar un pedido a `CONFIRMED`, y `CONFIRMED → COMPLETED` es
+transición válida: la secuencia *confirmar → cobrar* descontaba dos veces. El
+invariante correcto no es un estado sino "este pedido no ha descontado
+todavía". Anclado en el estado de la fila **bloqueada**, que cubre las dos vías
+productoras — anclarlo en la ausencia de un movimiento previo, como se propuso
+primero, **no habría detectado el bug**: `deductStock` descuenta sin dejar
+rastro.
+
+**El importe se calculaba en el cliente.** La caja enviaba su propio total (IVA
+sobre el subtotal agregado) mientras el backend lo suma por ítem. Al divergir por
+redondeo, el pedido quedaba `partially_paid`: sin cerrar, sin descontar stock, y
+**con la caja mostrando éxito**. Ahora se envía `order.total_amount`, la única
+fuente de verdad.
+
+### Abierto
+
+- **La pantalla de confirmación nunca se pinta.** `handleConfirmPayment` cierra
+  el modal en el mismo tick en que éste intenta renderizar su estado de éxito.
+  La venta **sí** se cierra (verificado por tráfico de red y por la base), pero
+  el cajero no ve confirmación, y 3 specs e2e preexistentes quedan en rojo.
+  **Preexistente**, no introducido por este trabajo.
+- El bloqueo pesimista no está ejercitado contra MySQL bajo concurrencia real.
+- `refundPayment` no puede devolver stock de una venta descontada por la vía
+  `confirmed`, porque esa vía no deja rastro. Asimetría heredada.
+- §4-4 (cliente real con búsqueda por nombre) y §4-5 (reportes) siguen **sin
+  ejecutar**.
+
+**El veredicto de `SPEC-CUT-002` sigue siendo del operador.** Estos tres
+defectos ya no lo bloquean, pero §4 no está completo y §6 (backup/rollback) no
+se ha ensayado.
