@@ -17,7 +17,7 @@ interface PaymentModalProps {
   isLoading?: boolean;
 }
 
-type PaymentMethod = 'cash' | 'card' | 'mixed';
+type PaymentMethod = 'cash' | 'card';
 type ModalStatus = 'payment' | 'success';
 
 const QUICK_AMOUNTS = [10000, 20000, 50000, 100000];
@@ -36,6 +36,12 @@ export function PaymentModal({
   const [status, setStatus] = useState<ModalStatus>('payment');
   const [countdown, setCountdown] = useState(5);
   const [confirmError, setConfirmError] = useState<string | null>(null);
+  // `isLoading` sólo cubre la primera llamada (crear el pedido). `onConfirm`
+  // sigue en curso mientras registra el pago que cierra la venta, así que sin
+  // este flag propio el botón y el atajo Enter quedaban libres en esa ventana
+  // y un segundo click/Enter reenviaba `handleConfirm` desde cero: pedido y
+  // pago duplicados.
+  const [submitting, setSubmitting] = useState(false);
   const overlayRef = useFocusTrap<HTMLDivElement>(isOpen && status === 'payment');
 
   const received = parseFloat(cashReceived) || 0;
@@ -54,16 +60,19 @@ export function PaymentModal({
   }, [onClose]);
 
   const handleConfirm = useCallback(async () => {
-    if (!canConfirm || isLoading) return;
+    if (!canConfirm || isLoading || submitting) return;
     setConfirmError(null);
+    setSubmitting(true);
     try {
       await onConfirm(method);
       setStatus('success');
       setCountdown(5);
     } catch (err) {
       setConfirmError(err instanceof Error ? err.message : t('payment.error'));
+    } finally {
+      setSubmitting(false);
     }
-  }, [canConfirm, isLoading, method, onConfirm, t]);
+  }, [canConfirm, isLoading, submitting, method, onConfirm, t]);
 
   // Enter key → confirm
   useEffect(() => {
@@ -93,6 +102,7 @@ export function PaymentModal({
       setCashReceived('');
       setMethod('cash');
       setConfirmError(null);
+      setSubmitting(false);
     }
   }, [isOpen]);
 
@@ -140,8 +150,10 @@ export function PaymentModal({
           </div>
 
           {/* Method tabs */}
+          {/* "Mixed" (varios pagos por pedido) está fuera de alcance: el endpoint lo
+              soporta, la UI no. Se oculta en vez de mandar un pago único y mentir. */}
           <div className="flex gap-1 bg-muted rounded-lg p-1">
-            {(['cash', 'card', 'mixed'] as PaymentMethod[]).map((m) => (
+            {(['cash', 'card'] as PaymentMethod[]).map((m) => (
               <button
                 key={m}
                 onClick={() => handleMethodChange(m)}
@@ -152,7 +164,7 @@ export function PaymentModal({
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                {m === 'cash' ? `💵 ${t('cash')}` : m === 'card' ? `💳 ${t('card')}` : `🔀 ${t('payment.mixed')}`}
+                {m === 'cash' ? `💵 ${t('cash')}` : `💳 ${t('card')}`}
               </button>
             ))}
           </div>
@@ -174,12 +186,6 @@ export function PaymentModal({
             </div>
           )}
 
-          {method === 'mixed' && (
-            <div className="text-center py-10 text-muted-foreground">
-              <p className="text-xs">{t('payment.mixedComingSoon')}</p>
-            </div>
-          )}
-
           {confirmError && (
             <p className="text-destructive text-xs text-center">{confirmError}</p>
           )}
@@ -187,12 +193,12 @@ export function PaymentModal({
           {/* Confirm button */}
           <Button
             onClick={handleConfirm}
-            disabled={!canConfirm || isLoading}
+            disabled={!canConfirm || isLoading || submitting}
             size="lg"
             className="w-full h-12 font-bold"
             data-testid="confirm-payment-button"
           >
-            {isLoading ? (
+            {isLoading || submitting ? (
               tCommon('processing')
             ) : (
               <>

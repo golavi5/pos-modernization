@@ -5,6 +5,7 @@ import { ProductSearch } from '@/components/sales/ProductSearch';
 import { SalesCart } from '@/components/sales/SalesCart';
 import { PaymentModal } from '@/components/sales/PaymentModal';
 import { useCreateSale } from '@/hooks/useSales';
+import { paymentsApi } from '@/lib/api/payments';
 import type { Product } from '@/types/product';
 import type { CartItem, Cart } from '@/types/sale';
 
@@ -79,7 +80,7 @@ export default function SalesPage() {
   };
 
   const handleConfirmPayment = async (paymentMethod: string) => {
-    await createSale.mutateAsync({
+    const order = await createSale.mutateAsync({
       customer_id: cart.customer_id,
       items: cart.items.map((i) => ({
         product_id: i.product_id,
@@ -91,6 +92,16 @@ export default function SalesPage() {
       payment_method: paymentMethod,
       payment_status: 'paid',
       discount_amount: cart.discount,
+    });
+    // Crear el pedido no lo cobra: el backend lo deja `draft`/`unpaid` hasta
+    // que llega el pago. Esta segunda llamada es la que CIERRA la venta
+    // (mueve el pedido a `completed` y descuenta inventario). El carrito solo
+    // se limpia si también resuelve — si falla, el pedido queda creado y
+    // pendiente de cobro, así que la caja debe poder reintentar el pago sin
+    // perder lo ya ingresado.
+    await paymentsApi.record(order.id, {
+      payment_method: paymentMethod,
+      amount: cart.total,
     });
     setShowPayment(false);
     setCart(EMPTY_CART);
