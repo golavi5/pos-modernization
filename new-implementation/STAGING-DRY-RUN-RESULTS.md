@@ -255,3 +255,138 @@ interactive paths (D–G) require a pty and are the hand-rehearsal recorded here
 > Not rehearsed: a `down()` that throws **mid-way**. MySQL auto-commits DDL, so
 > that leaves the schema half-reverted with the ledger row intact — unrecoverable
 > by script (§5 routes it to B1, exit code `2`).
+
+---
+
+# Dry-run §4/§5 sobre Coolify — 2026-08-11 · veredicto 🔴 **NO-GO**
+
+**Instancia:** `facturame_app_modern` en el VPS `10.0.50.20` (Coolify, stack
+compose completo), expuesta por Cloudflare Tunnel en
+`facturame.automatizate.dev` / `facturame-api.automatizate.dev`.
+Commit desplegado: `a826c31c`.
+
+> ⚠️ **Esto NO es el staging que pide `SPEC-CUT-002` §1** ("a real Coolify
+> **staging** instance"). Es el propio destino de go-live, corrido mientras la
+> base estaba vacía (1 empresa + 1 admin de bootstrap, cero productos, ventas,
+> clientes y notificaciones). Se eligió así deliberadamente: prueba el binario
+> que de verdad se va a usar. Pero el §4 de CUT-002 ("Only after GO: production
+> cutover scheduled separately") presupone dos entornos, y aquí hay uno.
+
+**Método por item** — el criterio de CUT-002 pide "real browser, not curl":
+navegador real (Playwright, Chromium) para §4 y para los redirects/nav de §5;
+`curl` para las aserciones de código HTTP de §5, que son de API por
+construcción. Se indica en cada fila.
+
+**Condiciones sembradas** (la API no permite crearlas):
+1. Usuario `admin2@dryrun.local` en la empresa 2 — `usersService.create()` usa
+   siempre `currentUser.company_id`, así que **no existe camino de API para crear
+   un usuario en otra empresa**. Insertado en MySQL reusando el `password_hash`
+   de `admin1` (misma contraseña).
+2. 7 notificaciones con `createdAt` retrasado (45 y 60 días) en ambas empresas,
+   más controles recientes y no-leídas. El sistema se creó hoy: sin sembrar, la
+   purga de >30 días no se puede ejercitar.
+
+## §4 Smoke — core flow · 🔴 **FALLA (bloqueante)**
+
+| # | Item | Método | Resultado |
+|---|------|--------|-----------|
+| 1 | Login → `/dashboard` | navegador | ✅ `admin1@dryrun.local` aterriza en `/dashboard` |
+| 2 | Crear categoría + producto | navegador | ❌ el formulario devuelve **400**. Creado después por API con payload a mano |
+| 3 | Completar una venta en ≤4 clics | navegador | ❌ **BLOQUEANTE** — la caja carga pero **sin rejilla de productos**; carrito vacío y `💳 Charge` deshabilitado |
+| 4 | Adjuntar cliente real + búsqueda por nombre | — | ⛔ **NO EJECUTADO** — inalcanzable, depende de (3) |
+| 5 | Reportes reflejan la venta | — | ⛔ **NO EJECUTADO** — inalcanzable, depende de (3) |
+
+**Pass gate ("all of the above succeed with no 5xx"): NO CUMPLIDO.** No hubo
+ningún 5xx — los fallos son 400 y 404, que el gate literalmente no menciona.
+El gate necesita reescribirse: un 400 en el catálogo impide vender igual que un 500.
+
+## §5 Smoke — security · ✅ **PASA todo lo ejecutable**
+
+| Item | Método | Resultado |
+|------|--------|-----------|
+| RBAC: nav del cajero | navegador | ✅ solo `/sales`, `/dashboard`, `/products`, `/customers`; **Users y Settings ocultos** |
+| RBAC: `/users` y `/settings` redirigen | navegador | ✅ ambos → `/dashboard` |
+| RBAC: `/sales` alcanzable por cajero | navegador | ✅ carga |
+| RBAC: backend 403 | curl | ✅ `/users`, `/users/roles/list`, `/companies`, `/settings`, `DELETE /notifications/admin/clean-old` → **403** |
+| Escalada: `POST /companies` como admin | curl | ✅ **403** |
+| Escalada: `GET /users/roles/list` oculta `superadmin` | curl | ✅ devuelve 5 roles, sin `superadmin` |
+| Escalada: `PATCH /users/:id/roles` con `superadmin` | curl | ✅ **403** `You cannot assign an elevated role.` |
+| Scoping: `GET /companies` como admin E1 | curl | ✅ exactamente 1 fila (`Automatizate`); ni nombre ni `tax_id` de E2 |
+| Scoping: `GET /companies/<E2>` | curl | ✅ **404** (no 403) |
+| Scoping: `PATCH /companies/<E2>` | curl | ✅ **404** y la fila de E2 **sin cambios** (`DryRun Empresa Dos \| 900888777-1`) |
+| Scoping: `GET`/`PATCH` propia | curl | ✅ **200** / **200** |
+| Scoping: `GET /companies` como superadmin | curl | ✅ **ambas** empresas |
+| Purga cross-tenant | curl + SQL | ✅ `{"deleted":2}` — borró solo las 2 viejas-leídas de E1; sobreviven su no-leída y su reciente, y **las 3 de E2 intactas** |
+| **Extra:** crear producto declarando `company_id` ajeno | curl | ✅ **401** `Cannot create product for another company` |
+| Aislamiento en reports/customers | — | ⛔ **NO EJECUTADO** — requiere crear datos por UI, bloqueado por §4 |
+
+**Pass gate: cumplido en los caminos ejecutados**, con la laguna explícita de
+reports/customers.
+
+## Defectos encontrados
+
+**D1 · `GET /products` devuelve 400 SIEMPRE — bloqueante.**
+`dto/product-query.dto.ts`:
+```ts
+@IsOptional()
+@Transform(({ value }) => value === 'true')
+@IsString()
+is_active?: boolean = true;
+```
+`@Transform` lo convierte a booleano y `@IsString()` lo rechaza. El valor por
+defecto (`= true`) hace que `@IsOptional()` no salve el caso: incluso
+`GET /products` sin parámetros falla con `["is_active must be a string"]`.
+**Consecuencia: el catálogo nunca carga, así que el POS no puede vender.**
+
+**D2 · Todo `lib/api/sales.ts` apunta a rutas que no existen — bloqueante.**
+
+| Frontend | Backend real | |
+|---|---|---|
+| `POST /sales` | `POST /sales/orders` | 404 |
+| `GET /sales?…` | `GET /sales/orders` | 404 |
+| `GET /sales/:id` | `GET /sales/orders/:id` | 404 |
+| `PATCH /sales/:id` | `PATCH /sales/orders/:id/status` | 404 |
+| `PATCH /sales/:id/cancel` | `DELETE /sales/orders/:id` | 404 |
+| `GET /sales/stats` | `GET /sales/reports/summary` | 404 |
+| `GET /sales/today` | `GET /sales/reports/daily` | 404 |
+
+Los widgets de ventas del dashboard y "Recent sales" salen vacíos por esto, no
+por falta de datos.
+
+**D3 · `POST /products` exige campos que el cliente no debería mandar.**
+`company_id` y `created_by` son obligatorios en el DTO; el resto del código los
+toma del JWT (`usersService.create(currentUser.company_id, …)`). **No es un
+agujero de seguridad** — el servicio rechaza un `company_id` ajeno con 401 —
+pero rompe el formulario de la UI. Además el regex de SKU `/^[A-Z0-9]+$/`
+rechaza guiones, mientras el placeholder del propio campo es `PRD-001`.
+
+**D4 · Cosméticos.** `favicon.ico` → 404. El pie del modal de producto queda
+fuera del viewport en pantallas de ~720 px de alto y nada scrollea. La UI sale
+en inglés aunque `SPEC-FRONT-002` fija `es` como locale por defecto.
+
+## Veredicto
+
+**Recomendación: 🔴 NO-GO.** La infraestructura está sana — TLS, CORS, túnel,
+migraciones, bootstrap, RBAC y aislamiento multi-tenant pasan todos. Pero
+**el sistema no puede registrar una venta**, que es su función. D1 y D2 son
+correcciones de pocas líneas y no hay nada de arquitectura que rehacer;
+requieren un despliegue nuevo y volver a correr §4.
+
+`SPEC-CUT-002` §4 pide "Go/No-Go recorded (date + operator)". El operador es
+Gandhi Olavi, no quien ejecutó estas pruebas:
+
+| | |
+|---|---|
+| Ejecutado por | Claude Opus 5 (sesión asistida), 2026-08-11 |
+| Recomendación | **NO-GO** — D1 y D2 bloquean el flujo de venta |
+| **Operador (firma)** | _pendiente_ |
+| **Fecha de firma** | _pendiente_ |
+
+## Datos de prueba creados
+
+Empresa `DryRun Empresa Dos` (`087d4938-…`); usuarios `admin1@dryrun.local`,
+`cajero1@dryrun.local`, `admin2@dryrun.local`; producto `DRY001`; 5
+notificaciones sembradas supervivientes; teléfono de la empresa 1 cambiado a
+`3001234567` por la prueba de `PATCH` propio. Acordado con el operador: se
+borra el volumen de MySQL y se redespliega, de modo que producción arranque
+prístina — posible sin pérdida porque no había ningún dato real.
