@@ -54,12 +54,17 @@ export class PaymentsService {
       throw new BadRequestException('Payment amount must be greater than 0');
     }
 
-    // Calculate total paid
-    const totalPaid = (order.payments || []).reduce(
-      (sum, p) => sum + Number(p.amount),
-      0,
-    );
-    const remainingBalance = Number(order.total_amount) - totalPaid;
+    // Los ítems salen de ESTA lectura: la relectura bloqueante de dentro de la
+    // transacción omite `relations` a propósito, así que su `order_items`
+    // vendría vacío y no se descontaría nada.
+    const items = order.order_items ?? [];
+
+    // Chequeo rápido para fallar antes de abrir transacción. El autoritativo es
+    // el de dentro, que recalcula sobre filas bloqueadas.
+    const totalPaidSoFar = (order.payments || [])
+      .filter((p) => p.status !== PaymentStatus.REFUNDED)
+      .reduce((sum, p) => sum + Number(p.amount), 0);
+    const remainingBalance = Number(order.total_amount) - totalPaidSoFar;
 
     if (dto.amount > remainingBalance) {
       throw new BadRequestException(
@@ -67,11 +72,38 @@ export class PaymentsService {
       );
     }
 
-    // Se calcula ANTES de tocar el pedido: la guarda del descuento cuelga de la
-    // TRANSICIÓN a completed, no del estado final.
-    const wasCompleted = order.status === OrderStatus.COMPLETED;
-
     const savedPayment = await this.dataSource.transaction(async (manager) => {
+      // Lectura BLOQUEANTE del pedido: serializa los pagos concurrentes sobre el
+      // mismo pedido y, en InnoDB, devuelve la última fila comprometida — no el
+      // snapshot REPEATABLE READ. Todo lo que decide el descuento se calcula a
+      // partir de aquí, no de la lectura de fuera, que puede estar rancia.
+      const locked = await manager.findOne(Order, {
+        where: { id: orderId, company_id: user.company_id },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!locked) {
+        throw new NotFoundException(`Order with ID ${orderId} not found`);
+      }
+
+      // Saldo recalculado DENTRO de la transacción: dos pagos totales
+      // simultáneos ya no pueden pasar los dos la validación. Los reembolsados
+      // no cuentan (si no, tras un reembolso el saldo nunca se recupera y el
+      // pedido no se puede volver a cerrar).
+      const priorPayments =
+        (await manager.find(Payment, { where: { order_id: orderId } })) ?? [];
+      const totalPaid = priorPayments
+        .filter((p) => p.status !== PaymentStatus.REFUNDED)
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+
+      if (dto.amount > Number(locked.total_amount) - totalPaid) {
+        throw new BadRequestException(
+          `Payment amount ${dto.amount} exceeds remaining balance ${
+            Number(locked.total_amount) - totalPaid
+          }`,
+        );
+      }
+
       const payment = manager.create(Payment, {
         order_id: orderId,
         payment_method: dto.payment_method,
@@ -83,28 +115,39 @@ export class PaymentsService {
       const saved = await manager.save(Payment, payment);
 
       const newTotalPaid = totalPaid + dto.amount;
-      if (newTotalPaid >= order.total_amount) {
-        order.payment_status = OrderPaymentStatus.PAID;
+      if (newTotalPaid >= Number(locked.total_amount)) {
+        locked.payment_status = OrderPaymentStatus.PAID;
       } else if (newTotalPaid > 0) {
-        order.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
+        locked.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
       }
 
-      // La guarda es la TRANSICIÓN a completed, no el estado: así un reintento
-      // de la caja tras un timeout, o un segundo pago, no vuelven a descontar.
+      // El invariante es "el stock se descuenta EXACTAMENTE UNA VEZ por
+      // pedido", y hay DOS productores del descuento:
+      //   - `SalesService.updateOrderStatus` al pasar a CONFIRMED
+      //     (`productsService.deductStock`), que no deja rastro en
+      //     `stock_movements`;
+      //   - esta misma función al cerrar la venta.
+      // Por eso la guarda mira el estado de la fila BLOQUEADA: `confirmed` y
+      // `completed` son los dos estados que sólo se alcanzan tras un descuento.
+      // Colgarla de `!wasCompleted` (o de un rastro en `stock_movements`) dejaba
+      // pasar el doble descuento vía `confirmed`.
+      const alreadyDeducted =
+        locked.status === OrderStatus.CONFIRMED ||
+        locked.status === OrderStatus.COMPLETED;
       const becomesCompleted =
-        !wasCompleted && order.payment_status === OrderPaymentStatus.PAID;
+        locked.payment_status === OrderPaymentStatus.PAID;
 
-      if (becomesCompleted) {
+      if (becomesCompleted && !alreadyDeducted) {
         const locationId = await this.locations.ensureDefaultLocation(
-          order.company_id,
+          locked.company_id,
           manager,
         );
 
-        for (const item of order.order_items ?? []) {
+        for (const item of items) {
           // Bloqueo pesimista: entre crear el pedido y cobrarlo, otra caja pudo
           // llevarse la última unidad. Revalidamos dentro de la transacción.
           const product = await manager.findOne(Product, {
-            where: { id: item.product_id, company_id: order.company_id },
+            where: { id: item.product_id, company_id: locked.company_id },
             lock: { mode: 'pessimistic_write' },
           });
           if (!product) {
@@ -124,24 +167,28 @@ export class PaymentsService {
           await manager.insert(
             StockMovement,
             manager.create(StockMovement, {
-              company_id: order.company_id,
+              company_id: locked.company_id,
               product_id: item.product_id,
               location_id: locationId,
               movement_type: MovementType.OUT,
               quantity: item.quantity,
-              reference_id: order.id,
-              notes: `Venta ${order.order_number}`,
+              reference_id: locked.id,
+              notes: `Venta ${locked.order_number}`,
               created_by: user.id,
             }),
           );
         }
-
-        // Se marca completado sólo cuando todo el inventario se descontó sin
-        // incidencias: si el stock falla, el pedido no queda como vendido.
-        order.status = OrderStatus.COMPLETED;
       }
 
-      await manager.save(Order, order);
+      if (becomesCompleted) {
+        // Se marca completado sólo cuando todo el inventario se descontó sin
+        // incidencias: si el stock falla, el pedido no queda como vendido.
+        locked.status = OrderStatus.COMPLETED;
+      }
+
+      // Se guarda la entidad bloqueada, que se leyó SIN `relations`: así el
+      // `save` no arrastra en cascada `order_items` ni `payments`.
+      await manager.save(Order, locked);
       return saved;
     });
 
@@ -189,28 +236,105 @@ export class PaymentsService {
       throw new BadRequestException('Payment is already refunded');
     }
 
-    payment.status = PaymentStatus.REFUNDED;
-    const updatedPayment = await this.paymentRepository.save(payment);
-
-    // Update order payment status
     const order = payment.order;
-    const remainingPayments = await this.paymentRepository.find({
-      where: { order_id: order.id },
+
+    const updatedPayment = await this.dataSource.transaction(async (manager) => {
+      payment.status = PaymentStatus.REFUNDED;
+      const refunded = await manager.save(Payment, payment);
+
+      // Update order payment status
+      const remainingPayments =
+        (await manager.find(Payment, { where: { order_id: order.id } })) ?? [];
+
+      const totalPaid = remainingPayments
+        .filter((p) => p.status !== PaymentStatus.REFUNDED)
+        .reduce((sum, p) => sum + Number(p.amount), 0);
+
+      if (totalPaid <= 0) {
+        order.payment_status = OrderPaymentStatus.UNPAID;
+      } else if (totalPaid < Number(order.total_amount)) {
+        order.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
+      } else {
+        order.payment_status = OrderPaymentStatus.PAID;
+      }
+
+      // Un reembolso que deja de cubrir el total tiene que deshacer el cierre:
+      // si no, el pedido se queda clavado en `completed` y el stock, corto.
+      if (
+        order.status === OrderStatus.COMPLETED &&
+        order.payment_status !== OrderPaymentStatus.PAID
+      ) {
+        // Los movimientos SON el registro de lo que nos llevamos. Se devuelve el
+        // NETO (OUT − RETURN) por producto, no la suma de los OUT: un pedido
+        // puede haber pasado ya por un ciclo cobro → reembolso → nuevo cobro, y
+        // sumar los OUT a pelo devolvería el doble. Que no haya ningún
+        // movimiento significa que el descuento no lo hizo esta vía sino la de
+        // `confirmed`, que no deja rastro y que no nos toca revertir.
+        // `reference_id` es un varchar suelto, sin FK ni unicidad: se acota por
+        // `company_id` como todas las demás lecturas de este servicio.
+        const movements =
+          (await manager.find(StockMovement, {
+            where: { reference_id: order.id, company_id: order.company_id },
+          })) ?? [];
+
+        const netByProduct = new Map<
+          string,
+          { quantity: number; location_id: string }
+        >();
+        for (const movement of movements) {
+          const entry = netByProduct.get(movement.product_id) ?? {
+            quantity: 0,
+            location_id: movement.location_id,
+          };
+          if (movement.movement_type === MovementType.OUT) {
+            entry.quantity += movement.quantity;
+          } else if (movement.movement_type === MovementType.RETURN) {
+            entry.quantity -= movement.quantity;
+          }
+          netByProduct.set(movement.product_id, entry);
+        }
+
+        for (const [productId, entry] of netByProduct) {
+          if (entry.quantity <= 0) {
+            continue;
+          }
+
+          const product = await manager.findOne(Product, {
+            where: { id: productId, company_id: order.company_id },
+            lock: { mode: 'pessimistic_write' },
+          });
+          if (!product) {
+            continue;
+          }
+
+          product.stock_quantity += entry.quantity;
+          await manager.save(Product, product);
+
+          await manager.insert(
+            StockMovement,
+            manager.create(StockMovement, {
+              company_id: order.company_id,
+              product_id: productId,
+              location_id: entry.location_id,
+              movement_type: MovementType.RETURN,
+              quantity: entry.quantity,
+              reference_id: order.id,
+              notes: `Reembolso ${order.order_number}`,
+              created_by: user.id,
+            }),
+          );
+        }
+
+        // Con rastro devolvimos el stock, así que el pedido vuelve a estar
+        // pendiente de cobro y SIN descontar. Sin rastro el stock sigue
+        // descontado por la vía `confirmed`, y `confirmed` es justo eso.
+        order.status =
+          movements.length > 0 ? OrderStatus.PENDING : OrderStatus.CONFIRMED;
+      }
+
+      await manager.save(Order, order);
+      return refunded;
     });
-
-    const totalPaid = remainingPayments
-      .filter((p) => p.status !== PaymentStatus.REFUNDED)
-      .reduce((sum, p) => sum + Number(p.amount), 0);
-
-    if (totalPaid <= 0) {
-      order.payment_status = OrderPaymentStatus.UNPAID;
-    } else if (totalPaid < Number(order.total_amount)) {
-      order.payment_status = OrderPaymentStatus.PARTIALLY_PAID;
-    } else {
-      order.payment_status = OrderPaymentStatus.PAID;
-    }
-
-    await this.orderRepository.save(order);
 
     this.logger.log(`Refunded payment ${paymentId} for order ${order.order_number}`);
 

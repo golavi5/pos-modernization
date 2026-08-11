@@ -38,7 +38,14 @@ describe('PaymentsService', () => {
       create: (_entity: unknown, obj: unknown) => obj,
       save: (entity: unknown, obj: any) =>
         entity === Payment ? paymentRepoMock.save(obj) : orderRepoMock.save(obj),
-      findOne: jest.fn(),
+      // La relectura bloqueante del pedido y el recálculo del saldo ocurren
+      // dentro de la transacción: delegan en los mismos mocks.
+      findOne: async (entity: unknown, opts: unknown) =>
+        entity === Payment
+          ? paymentRepoMock.findOne(opts)
+          : orderRepoMock.findOne(opts),
+      find: async (entity: unknown, opts: unknown) =>
+        ((entity === Payment ? await paymentRepoMock.find(opts) : []) ?? []),
       insert: jest.fn(),
     };
 
