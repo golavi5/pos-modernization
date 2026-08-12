@@ -1194,11 +1194,17 @@ Esperado: PASS, incluidos los tres tests preexistentes de `payments-checkout` (p
 
 - [ ] **Step 5: Verificación por mutación**
 
-1. Quita el `&& !canSellWithoutStock(product, policy)` → *"sin bandera, sigue rechazando"* debe ponerse **rojo**.
+1. Quita el `&& !canSellWithoutStock(product, policy)` → deben ponerse **rojos** los tres tests que esperan que la bandera **permita** la venta (*"con la bandera del producto, descuenta…"*, *"marca la nota del movimiento"*, *"con la bandera en null, hereda del global encendido"*).
 2. Deja la nota siempre como `Venta ${locked.order_number}` → *"marca la nota del movimiento"* debe ponerse **rojo**.
 3. Deja la nota siempre marcada → *"una venta CON existencias deja la nota sin marcar"* debe ponerse **rojo**.
 
 Restaura tras cada una y cita los tres.
+
+> Corregido durante la ejecución: la mutación 1 decía que el test que se pone rojo es
+> *"sin bandera, sigue rechazando"*. No lo hace. Quitar la cláusula deja `if (oversold)`,
+> que es **más estricto**, y ese test —bandera en `false`, stock corto— ya lanzaba antes y
+> sigue lanzando. Nunca dependió de la cláusula que se quita. Los que sí caen son los que
+> esperan que la venta se permita.
 
 - [ ] **Step 6: Commitea**
 
@@ -1317,7 +1323,9 @@ Esperado: todo verde.
 
 - [ ] **Step 5: Verificación por mutación**
 
-Quita el `&& !canSellWithoutStock(product, policy)` → *"sin bandera, sigue rechazando"* debe ponerse **rojo**. Restaura y cítalo.
+Quita el `&& !canSellWithoutStock(product, policy)` → deben ponerse **rojos** *"con la bandera, descuenta y deja el stock negativo"* y *"con la bandera en null, hereda del global encendido"*. Restaura y cítalos.
+
+> Misma corrección que en la Tarea 6: quitar la cláusula deja `if (product.stock_quantity < quantity)`, que es más estricto, así que *"sin bandera, sigue rechazando"* sigue **verde** — ya lanzaba antes. Los que caen son los que esperan que la venta se permita.
 
 - [ ] **Step 6: Commitea**
 
