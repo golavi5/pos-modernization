@@ -299,6 +299,28 @@ describe('SalesService', () => {
 
       await expect(service.createOrder(dto, mockUser)).resolves.toBeDefined();
     });
+
+    it('resuelve la política una sola vez, no por ítem', async () => {
+      // dto propio con 3 ítems: si getOversellPolicy se moviera dentro del
+      // bucle, esta aserción pasaría a fallar con 3 llamadas en vez de 1.
+      // SettingsService.getSettings crea y persiste la fila de settings en
+      // el primer acceso, así que resolverla por ítem convertiría un pedido
+      // en N upserts.
+      const multiItemDto = {
+        items: [
+          { product_id: 'p1', quantity: 3, unit_price: 1000, tax_rate: 19 },
+          { product_id: 'p2', quantity: 1, unit_price: 500, tax_rate: 19 },
+          { product_id: 'p3', quantity: 2, unit_price: 750, tax_rate: 19 },
+        ],
+      } as any;
+
+      jest.spyOn(productsService, 'findOne').mockImplementation(async (id: string) =>
+        ({ ...productWith(true), id, stock_quantity: 0 }) as any,
+      );
+
+      await expect(service.createOrder(multiItemDto, mockUser)).resolves.toBeDefined();
+      expect(productsService.getOversellPolicy).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('updateOrderStatus', () => {
