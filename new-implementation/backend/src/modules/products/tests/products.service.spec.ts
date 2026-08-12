@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { ProductsService } from '../products.service';
 import { Product } from '../entities/product.entity';
 import { User } from '../../auth/entities/user.entity';
-import { NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('ProductsService', () => {
   let service: ProductsService;
@@ -161,7 +161,7 @@ describe('ProductsService', () => {
       );
     });
 
-    it('should throw UnauthorizedException if company_id mismatch', async () => {
+    it('creates the product under the JWT company_id even if the body carries a different one', async () => {
       const createProductDto = {
         name: 'New Product',
         sku: 'NEW001',
@@ -173,11 +173,21 @@ describe('ProductsService', () => {
         created_by: mockUser.id,
       };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(undefined); // No SKU conflict
+      const savedProduct = {
+        id: 'new-product-id',
+        ...createProductDto,
+        created_at: new Date(),
+        updated_at: new Date(),
+      } as Product;
 
-      await expect(service.create(createProductDto, mockUser)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      jest.spyOn(repository, 'findOne').mockResolvedValue(undefined); // No SKU conflict
+      jest.spyOn(repository, 'create').mockImplementation((d: any) => ({ ...savedProduct, ...d }));
+      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
+
+      const result = await service.create(createProductDto, mockUser);
+
+      expect(result.company_id).toBe(mockUser.company_id);
+      expect(result.company_id).not.toBe('different-company-id');
     });
   });
 
@@ -269,12 +279,46 @@ describe('ProductsService', () => {
 
     it('should throw NotFoundException if product not found', async () => {
       const productId = 'non-existent-id';
-      
+
       jest.spyOn(repository, 'findOne').mockResolvedValue(undefined);
 
       await expect(service.remove(productId, mockUser)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('create', () => {
+    beforeEach(() => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(repository, 'create').mockImplementation((d: any) => d as any);
+      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
+    });
+
+    const dto = () => ({
+      name: 'Café',
+      sku: 'PRD-001',
+      price: 1000,
+      stock_quantity: 5,
+      tax_rate: 19,
+    }) as any;
+
+    it('toma company_id y created_by del usuario del JWT', async () => {
+      const created = await service.create(dto(), mockUser);
+
+      expect(created.company_id).toBe('company-uuid');
+      expect(created.created_by).toBe('user-uuid');
+    });
+
+    it('un company_id ajeno en el body no crea producto en esa empresa', async () => {
+      // Escenario: el ValidationPipe no descartó el campo (pipe mal configurado,
+      // o una llamada interna que se salta el pipe). El servicio no debe fiarse.
+      const hostile = { ...dto(), company_id: 'otra-empresa' };
+
+      const created = await service.create(hostile, mockUser);
+
+      expect(created.company_id).toBe('company-uuid');
+      expect(created.company_id).not.toBe('otra-empresa');
     });
   });
 });

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, ILike } from 'typeorm';
 import { Product } from './entities/product.entity';
@@ -84,13 +84,13 @@ export class ProductsService {
       }
     }
     
-    // Ensure the company_id in the DTO matches the user's company_id
-    if (createProductDto.company_id !== user.company_id) {
-      throw new UnauthorizedException('Cannot create product for another company');
-    }
-    
+    // `company_id` y `created_by` salen SIEMPRE del JWT, nunca del cliente, y se
+    // asignan DESPUÉS del spread: si el body trae un `company_id` que el
+    // ValidationPipe no descartó, aquí queda sobrescrito. Sin esta línea la
+    // columna NOT NULL se quedaría sin valor y fallaría en el insert.
     const product = this.productRepository.create({
       ...createProductDto,
+      company_id: user.company_id,
       created_by: user.id,
     });
     
