@@ -334,6 +334,20 @@ describe('ProductsService', () => {
       } as any);
 
       expect(result.data.map((p: any) => p.can_sell_without_stock)).toEqual([true, false, true]);
+      // getSettings crea y persiste la fila si la empresa no tiene ninguna: una
+      // resolución por producto convertiría GET /products en N upserts.
+      expect(settingsService.getSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('findOneForApi resuelve la bandera igual que findAll, incluso cuando el producto la anula (272 legados)', async () => {
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: true } as any);
+      const entity = { id: '1', company_id: 'company-uuid', allow_sale_without_stock: false } as any;
+      jest.spyOn(repository, 'findOne').mockResolvedValue(entity);
+
+      const result = await service.findOneForApi('1', mockUser);
+
+      expect(result.can_sell_without_stock).toBe(false);
     });
 
     it('findOne sigue devolviendo la entidad, sin el campo resuelto', async () => {
