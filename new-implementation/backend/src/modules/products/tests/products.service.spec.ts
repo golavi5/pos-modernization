@@ -104,6 +104,20 @@ describe('ProductsService', () => {
   });
 
   describe('create', () => {
+    beforeEach(() => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(repository, 'create').mockImplementation((d: any) => d as any);
+      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
+    });
+
+    const dto = () => ({
+      name: 'Café',
+      sku: 'PRD-001',
+      price: 1000,
+      stock_quantity: 5,
+      tax_rate: 19,
+    }) as any;
+
     it('should create a new product successfully', async () => {
       const createProductDto = {
         name: 'New Product',
@@ -122,13 +136,13 @@ describe('ProductsService', () => {
         created_at: new Date(),
         updated_at: new Date(),
       } as Product;
-      
+
       jest.spyOn(repository, 'findOne').mockResolvedValue(undefined); // No existing product with same SKU
       jest.spyOn(repository, 'create').mockReturnValue(savedProduct);
       jest.spyOn(repository, 'save').mockResolvedValue(savedProduct);
 
       const result = await service.create(createProductDto, mockUser);
-      
+
       expect(result).toEqual(savedProduct);
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { sku: createProductDto.sku, company_id: mockUser.company_id },
@@ -153,7 +167,7 @@ describe('ProductsService', () => {
         created_at: new Date(),
         updated_at: new Date(),
       } as Product;
-      
+
       jest.spyOn(repository, 'findOne').mockResolvedValue(existingProduct);
 
       await expect(service.create(createProductDto, mockUser)).rejects.toThrow(
@@ -173,21 +187,30 @@ describe('ProductsService', () => {
         created_by: mockUser.id,
       };
 
-      const savedProduct = {
-        id: 'new-product-id',
-        ...createProductDto,
-        created_at: new Date(),
-        updated_at: new Date(),
-      } as Product;
-
-      jest.spyOn(repository, 'findOne').mockResolvedValue(undefined); // No SKU conflict
-      jest.spyOn(repository, 'create').mockImplementation((d: any) => ({ ...savedProduct, ...d }));
-      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
-
+      // Uses the beforeEach's pass-through find/create/save: no SKU conflict,
+      // and the persisted shape is whatever the service handed the repository.
       const result = await service.create(createProductDto, mockUser);
 
       expect(result.company_id).toBe(mockUser.company_id);
       expect(result.company_id).not.toBe('different-company-id');
+    });
+
+    it('toma company_id y created_by del usuario del JWT', async () => {
+      const created = await service.create(dto(), mockUser);
+
+      expect(created.company_id).toBe('company-uuid');
+      expect(created.created_by).toBe('user-uuid');
+    });
+
+    it('un company_id ajeno en el body no crea producto en esa empresa', async () => {
+      // Escenario: el ValidationPipe no descartó el campo (pipe mal configurado,
+      // o una llamada interna que se salta el pipe). El servicio no debe fiarse.
+      const hostile = { ...dto(), company_id: 'otra-empresa' };
+
+      const created = await service.create(hostile, mockUser);
+
+      expect(created.company_id).toBe('company-uuid');
+      expect(created.company_id).not.toBe('otra-empresa');
     });
   });
 
@@ -285,40 +308,6 @@ describe('ProductsService', () => {
       await expect(service.remove(productId, mockUser)).rejects.toThrow(
         NotFoundException,
       );
-    });
-  });
-
-  describe('create', () => {
-    beforeEach(() => {
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-      jest.spyOn(repository, 'create').mockImplementation((d: any) => d as any);
-      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
-    });
-
-    const dto = () => ({
-      name: 'Café',
-      sku: 'PRD-001',
-      price: 1000,
-      stock_quantity: 5,
-      tax_rate: 19,
-    }) as any;
-
-    it('toma company_id y created_by del usuario del JWT', async () => {
-      const created = await service.create(dto(), mockUser);
-
-      expect(created.company_id).toBe('company-uuid');
-      expect(created.created_by).toBe('user-uuid');
-    });
-
-    it('un company_id ajeno en el body no crea producto en esa empresa', async () => {
-      // Escenario: el ValidationPipe no descartó el campo (pipe mal configurado,
-      // o una llamada interna que se salta el pipe). El servicio no debe fiarse.
-      const hostile = { ...dto(), company_id: 'otra-empresa' };
-
-      const created = await service.create(hostile, mockUser);
-
-      expect(created.company_id).toBe('company-uuid');
-      expect(created.company_id).not.toBe('otra-empresa');
     });
   });
 });
