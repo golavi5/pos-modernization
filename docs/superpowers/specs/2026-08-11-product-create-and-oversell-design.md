@@ -70,7 +70,35 @@ del dump, contando la columna 16 (`EsFactSinExistencia`) y la 9 (`CantFisica`).
   el formulario no expone el campo;
 - **`sku`** gana `@Transform` (trim + `toUpperCase`) y el regex pasa a
   `/^[A-Z0-9][A-Z0-9._-]*$/`;
-- **entra `allow_sale_without_stock?: boolean | null`** (§2).
+- **entra `allow_sale_without_stock?: boolean | null`** (§2);
+- **los opcionales de texto normalizan `''` a `undefined`** (`barcode`,
+  `image_url`, `description`) — ver abajo.
+
+### Dos blockers más que la spec no lista, medidos
+
+`SPEC-BACK-004` §1 recoge el 400 tal como se observó en el dry-run, pero ese
+payload tenía código de barras e imagen rellenos. Validando el DTO actual contra
+lo que el formulario manda **con esos campos vacíos**, que es el caso normal,
+aparecen dos errores más:
+
+```
+barcode    must be longer than or equal to 1 characters
+image_url  must be a URL address
+```
+
+Causa: `@IsOptional()` de class-validator solo ignora `null` y `undefined`, no
+`''`. El formulario inicializa `barcode: ''` e `image_url: ''`
+(`ProductForm.tsx:43-53`) y `lib/api/products.ts` los manda tal cual, sin
+limpiar. **Arreglar solo los tres defectos conocidos dejaría el formulario
+igual de roto**, con un 400 distinto.
+
+Se corrige en el DTO, no en el formulario: la API no debe rechazar `""` en un
+campo opcional venga de donde venga.
+
+```ts
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  typeof value === 'string' && value.trim() === '' ? undefined : value;
+```
 
 ### Por qué el regex y no el placeholder
 
@@ -207,7 +235,10 @@ actualiza para que el contrato declarado no mienta.
 
 ### Las dos guardas de la caja, y el bug que arrastran
 
-`app/(panel)/sales/page.tsx:46,51` pasan a mirar `can_sell_without_stock`. De
+Son **tres** guardas, no dos: además de `page.tsx:46,51`,
+`components/sales/ProductSearch.tsx:79-83` calcula `outOfStock` y pone
+`disabled` en la tarjeta, así que un producto sin existencias hoy ni siquiera se
+puede pulsar. Las tres pasan a mirar `can_sell_without_stock`. De
 paso corrigen un defecto vivo: la condición actual es `stock_quantity === 0`,
 que **no bloquea los negativos**. Con 7.809 productos ya en negativo, hoy se
 añaden al carrito y revientan con 400 en el backend. La comparación pasa a
