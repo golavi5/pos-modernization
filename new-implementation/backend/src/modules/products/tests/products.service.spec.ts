@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { ProductsService } from '../products.service';
 import { Product } from '../entities/product.entity';
 import { User } from '../../auth/entities/user.entity';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { SettingsService } from '../../settings/services/settings.service';
 
 describe('ProductsService', () => {
@@ -368,6 +368,51 @@ describe('ProductsService', () => {
 
       await expect(service.getOversellPolicy('company-uuid'))
         .resolves.toEqual({ allowNegativeStock: true });
+    });
+  });
+
+  describe('deductStock — venta sin existencias', () => {
+    const productWith = (flag: boolean | null, stock = 1) => ({
+      id: 'p1', company_id: 'company-uuid', name: 'Café',
+      stock_quantity: stock, allow_sale_without_stock: flag,
+    }) as any;
+
+    beforeEach(() => {
+      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: false } as any);
+    });
+
+    it('sin bandera, sigue rechazando por stock insuficiente', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(false));
+
+      await expect(service.deductStock('p1', 3, mockUser)).rejects.toThrow(BadRequestException);
+    });
+
+    it('con la bandera, descuenta y deja el stock negativo', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(true));
+
+      const result = await service.deductStock('p1', 3, mockUser);
+
+      expect(result.stock_quantity).toBe(-2);
+    });
+
+    it('con la bandera en null, hereda del global encendido', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(null));
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: true } as any);
+
+      const result = await service.deductStock('p1', 3, mockUser);
+
+      expect(result.stock_quantity).toBe(-2);
+    });
+
+    it('resuelve la politica una sola vez por llamada', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(true));
+
+      await service.deductStock('p1', 3, mockUser);
+
+      expect(settingsService.getSettings).toHaveBeenCalledTimes(1);
     });
   });
 });
