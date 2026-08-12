@@ -994,7 +994,15 @@ Esperado: PASS, incluidos los tests preexistentes de stock insuficiente.
 
 - [ ] **Step 5: Verificación por mutación**
 
-Quita el `&& !canSellWithoutStock(product, policy)`: *"acepta si la bandera del producto lo permite"* debe ponerse **rojo**. Luego invierte la condición a `|| canSellWithoutStock(...)`: *"rechaza si el producto no puede venderse"* debe ponerse **rojo**. Restaura y cita ambos.
+Quita el `&& !canSellWithoutStock(product, policy)`: *"acepta si la bandera del producto lo permite"* debe ponerse **rojo**.
+
+Luego, para el caso contrario, **quita la negación** — `product.stock_quantity < item.quantity && canSellWithoutStock(product, policy)`: *"rechaza si el producto no puede venderse"* debe ponerse **rojo**. Restaura y cita ambos.
+
+> Corregido durante la ejecución: la primera redacción de este paso decía "invierte la
+> condición a `|| canSellWithoutStock(...)`", y esa mutación **no discrimina nada**. Con el
+> stock corto (`A` = true) y la bandera en `false` (`B` = false), `A || B` sigue siendo
+> cierto, la guarda sigue lanzando y el test sigue verde. Una mutación que no puede poner
+> rojo el test que dice comprobar es peor que ninguna: da por verificado lo que no lo está.
 
 - [ ] **Step 6: Commitea**
 
