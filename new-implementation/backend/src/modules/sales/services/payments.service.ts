@@ -20,6 +20,8 @@ import {
   MovementType,
 } from '../../inventory/entities/stock-movement.entity';
 import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
+import { ProductsService } from '../../products/products.service';
+import { canSellWithoutStock } from '../../products/can-sell-without-stock';
 
 @Injectable()
 export class PaymentsService {
@@ -32,6 +34,7 @@ export class PaymentsService {
     private readonly paymentRepository: Repository<Payment>,
     private readonly dataSource: DataSource,
     private readonly locations: InventoryLocationsService,
+    private readonly productsService: ProductsService,
   ) {}
 
   async recordPayment(
@@ -143,6 +146,16 @@ export class PaymentsService {
           manager,
         );
 
+        // Se resuelve UNA vez, fuera del bucle: es una lectura de configuración
+        // (va contra `settingsRepo`, no contra `manager`) y no cambia por ítem.
+        // `getSettings` puede crear la fila de settings si la empresa no tiene
+        // una; esa escritura no la revierte un rollback de este cobro, pero es
+        // una fila de configuración idempotente, no parte del asiento de
+        // inventario.
+        const policy = await this.productsService.getOversellPolicy(
+          locked.company_id,
+        );
+
         for (const item of items) {
           // Bloqueo pesimista: entre crear el pedido y cobrarlo, otra caja pudo
           // llevarse la última unidad. Revalidamos dentro de la transacción.
@@ -155,7 +168,10 @@ export class PaymentsService {
               `Product ${item.product_id} not found`,
             );
           }
-          if (product.stock_quantity < item.quantity) {
+          // El bloqueo pesimista sigue siendo necesario aunque se permita la
+          // sobreventa: es lo que serializa el descuento entre dos cajas.
+          const oversold = product.stock_quantity < item.quantity;
+          if (oversold && !canSellWithoutStock(product, policy)) {
             throw new BadRequestException(
               `Insufficient stock for ${product.name}. Available: ${product.stock_quantity}, required: ${item.quantity}`,
             );
@@ -173,7 +189,12 @@ export class PaymentsService {
               movement_type: MovementType.OUT,
               quantity: item.quantity,
               reference_id: locked.id,
-              notes: `Venta ${locked.order_number}`,
+              // Mismo OUT y misma cantidad: los informes que agrupan por tipo
+              // no se enteran. La nota es lo único que distingue la sobreventa,
+              // y con ella queda el rastro de CUÁNDO el inventario se fue a negativo.
+              notes: oversold
+                ? `Venta ${locked.order_number} (sin existencias)`
+                : `Venta ${locked.order_number}`,
               created_by: user.id,
             }),
           );

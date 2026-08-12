@@ -7,6 +7,7 @@ import { Payment, PaymentStatus, PaymentMethod } from '../entities/payment.entit
 import { Order, PaymentStatus as OrderPaymentStatus } from '../entities/order.entity';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
+import { ProductsService } from '../../products/products.service';
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -69,6 +70,11 @@ describe('PaymentsService', () => {
         {
           provide: InventoryLocationsService,
           useValue: { ensureDefaultLocation: jest.fn(async () => 'loc1') },
+        },
+        {
+          // Este spec no ejercita la sobreventa: mantiene la política por defecto.
+          provide: ProductsService,
+          useValue: { getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: false })) },
         },
       ],
     }).compile();
