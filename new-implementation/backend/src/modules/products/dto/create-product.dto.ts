@@ -10,7 +10,7 @@ import {
  * normal— devuelve 400. Se normaliza aquí, en el límite de la API, no en el
  * formulario: la API no debe rechazar `""` en un campo opcional venga de donde venga.
  */
-const emptyToUndefined = ({ value }: { value: unknown }) =>
+export const emptyToUndefined = ({ value }: { value: unknown }) =>
   typeof value === 'string' && value.trim() === '' ? undefined : value;
 
 export class CreateProductDto {

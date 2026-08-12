@@ -1,4 +1,6 @@
+import { Transform } from 'class-transformer';
 import { IsString, IsOptional, IsNumber, Min, Max, IsBoolean, IsUrl, IsUUID, Length, Matches } from 'class-validator';
+import { emptyToUndefined } from './create-product.dto';
 
 export class UpdateProductDto {
   @IsOptional()
@@ -10,15 +12,19 @@ export class UpdateProductDto {
   @IsString()
   description?: string;
 
+  // Ver `create-product.dto.ts`: mismo relajamiento, mismo motivo — el
+  // placeholder de la UI es `PRD-001` y el patrón viejo lo rechazaba.
   @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   @IsString()
   @Length(1, 100)
-  @Matches(/^[A-Z0-9]+$/, { 
-    message: 'SKU must contain only uppercase letters and numbers' 
+  @Matches(/^[A-Z0-9][A-Z0-9._-]*$/, {
+    message: 'SKU must contain only letters, numbers, dots, dashes and underscores',
   })
   sku?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   @Length(1, 100)
   barcode?: string;
@@ -64,6 +70,7 @@ export class UpdateProductDto {
   allow_sale_without_stock?: boolean | null;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsUrl()
   image_url?: string;
 }
