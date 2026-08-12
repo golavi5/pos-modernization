@@ -53,6 +53,7 @@ describe('SalesService', () => {
           useValue: {
             findOne: jest.fn(),
             deductStock: jest.fn(),
+            getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: false })),
           },
         },
       ],
@@ -251,6 +252,52 @@ describe('SalesService', () => {
           payment_status: PaymentStatus.UNPAID,
         }),
       );
+    });
+  });
+
+  describe('createOrder — venta sin existencias', () => {
+    const dto = {
+      items: [{ product_id: 'p1', quantity: 3, unit_price: 1000, tax_rate: 19 }],
+    } as any;
+
+    const productWith = (flag: boolean | null) => ({
+      id: 'p1', name: 'Café', company_id: 1, stock_quantity: 0,
+      price: 1000, tax_rate: 19, allow_sale_without_stock: flag,
+    }) as any;
+
+    beforeEach(() => {
+      jest.spyOn(orderRepository, 'save').mockImplementation(async (o: any) => ({ ...o, id: 'o1' }));
+      jest.spyOn(orderItemRepository, 'save').mockImplementation(async (i: any) => i);
+      jest.spyOn(service, 'getOrderById').mockResolvedValue({ id: 'o1' } as any);
+      jest.spyOn(orderRepository, 'findAndCount').mockResolvedValue([[], 0]);
+    });
+
+    it('rechaza si el producto no puede venderse sin existencias', async () => {
+      jest.spyOn(productsService, 'findOne').mockResolvedValue(productWith(false));
+
+      await expect(service.createOrder(dto, mockUser)).rejects.toThrow(BadRequestException);
+    });
+
+    it('acepta si la bandera del producto lo permite, con el global apagado', async () => {
+      jest.spyOn(productsService, 'findOne').mockResolvedValue(productWith(true));
+
+      await expect(service.createOrder(dto, mockUser)).resolves.toBeDefined();
+    });
+
+    it('con la bandera en null, hereda del global encendido', async () => {
+      jest.spyOn(productsService, 'findOne').mockResolvedValue(productWith(null));
+      jest.spyOn(productsService, 'getOversellPolicy')
+        .mockResolvedValue({ allowNegativeStock: true });
+
+      await expect(service.createOrder(dto, mockUser)).resolves.toBeDefined();
+    });
+
+    it('un producto ya en negativo se puede vender si la bandera lo permite', async () => {
+      // 7.809 productos del catálogo legado llegan con stock negativo.
+      jest.spyOn(productsService, 'findOne')
+        .mockResolvedValue({ ...productWith(true), stock_quantity: -4 });
+
+      await expect(service.createOrder(dto, mockUser)).resolves.toBeDefined();
     });
   });
 
