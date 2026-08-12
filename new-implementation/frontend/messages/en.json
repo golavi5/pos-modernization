@@ -209,7 +209,9 @@
     "cartSubtotal": "Subtotal",
     "cartTax": "VAT (19%)",
     "cartDiscount": "Discount",
-    "clearCartConfirm": "Clear the cart?"
+    "clearCartConfirm": "Clear the cart?",
+    "oversellNoticeOne": "1 item is being sold without stock",
+    "oversellNoticeMany": "{count} items are being sold without stock"
   },
   "products": {
     "title": "Products",

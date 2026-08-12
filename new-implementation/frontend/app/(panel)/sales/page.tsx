@@ -43,12 +43,16 @@ export default function SalesPage() {
   };
 
   const handleAddProduct = (product: Product) => {
-    if (product.stock_quantity === 0) return;
+    const canOversell = product.can_sell_without_stock ?? false;
+    // `<= 0`, no `=== 0`: 7.809 productos migrados llegan con stock negativo y
+    // la comparación estricta no los bloqueaba — se añadían al carrito y el
+    // backend devolvía 400 al cobrar.
+    if (!canOversell && product.stock_quantity <= 0) return;
     const existing = cart.items.find((i) => i.product_id === product.id);
     let newItems: CartItem[];
 
     if (existing) {
-      if (existing.quantity >= product.stock_quantity) return;
+      if (!canOversell && existing.quantity >= product.stock_quantity) return;
       newItems = cart.items.map((i) =>
         i.product_id === product.id
           ? { ...i, quantity: i.quantity + 1, subtotal: (i.quantity + 1) * i.unit_price }
@@ -65,6 +69,7 @@ export default function SalesPage() {
           tax_rate: product.tax_rate ?? TAX_RATE * 100,
           subtotal: product.price,
           stock_quantity: product.stock_quantity,
+          sold_without_stock: product.stock_quantity <= 0,
           image_url: product.image_url,
         },
       ];

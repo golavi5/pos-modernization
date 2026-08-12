@@ -209,7 +209,9 @@
     "cartSubtotal": "Subtotal",
     "cartTax": "IVA (19%)",
     "cartDiscount": "Descuento",
-    "clearCartConfirm": "¿Limpiar el carrito?"
+    "clearCartConfirm": "¿Limpiar el carrito?",
+    "oversellNoticeOne": "1 artículo se vende sin existencias",
+    "oversellNoticeMany": "{count} artículos se venden sin existencias"
   },
   "products": {
     "title": "Productos",

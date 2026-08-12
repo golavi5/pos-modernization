@@ -39,6 +39,7 @@ export function SalesCart({
   const t = useTranslations('sales');
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
+  const oversellCount = items.filter((i) => i.sold_without_stock).length;
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -101,6 +102,7 @@ export function SalesCart({
               </button>
             </div>
             <p className="text-xs font-bold text-foreground w-14 text-right shrink-0">
+              {item.sold_without_stock && <span className="text-amber-500 mr-1">⚠</span>}
               {formatCOP(item.subtotal)}
             </p>
             <button
@@ -128,6 +130,13 @@ export function SalesCart({
             <span>{t('cartDiscount')}</span>
             <span>-{formatCOP(discount)}</span>
           </div>
+        )}
+        {oversellCount > 0 && (
+          <p className="text-xs font-medium text-amber-600 dark:text-amber-500">
+            {oversellCount === 1
+              ? t('oversellNoticeOne')
+              : t('oversellNoticeMany', { count: oversellCount })}
+          </p>
         )}
         <div className="flex justify-between text-base font-bold text-foreground pt-1 border-t border-border">
           <span>{tCommon('total')}</span>

@@ -83,6 +83,7 @@ export interface CartItem extends SaleItem {
   product_id: string;
   product_name: string;
   stock_quantity: number;
+  sold_without_stock?: boolean;
   image_url?: string;
 }
 
