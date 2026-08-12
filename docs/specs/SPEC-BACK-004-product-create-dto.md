@@ -113,13 +113,12 @@ Diseño completo en
 
 ## 5. Fuera de alcance
 
-**La categoría del formulario, que se pierde en silencio.** `ProductForm` manda
+**La categoría del formulario, que se pierde en silencio** — ítem propio en
+[`SPEC-BACK-005`](SPEC-BACK-005-product-category-binding.md). `ProductForm` manda
 `category` (un nombre en texto libre) mientras el DTO declara `category_id` con
-`@IsUUID()`. Como `category` no lleva decoradores, `whitelist: true` la descarta
-**sin error**: se puede crear un producto, elegir categoría, y la categoría
-desaparece sin aviso. Arreglarlo exige un selector contra
-`GET /products/categories`, que es otra tarea. Anotado aquí para que cerrar D3
-no lo tape.
+`@IsUUID()`; como `category` no lleva decoradores, `whitelist: true` la descarta
+**sin error**. La verificación de D3 pasa en verde con este defecto vivo, así
+que queda anotado para que cerrar D3 no lo tape.
 
 `inventory/services/stock.service.ts` y el libro de `warehouse_locations`.
 Verificado que dejarlo fuera no bloquea la venta sin existencias:

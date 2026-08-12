@@ -1433,9 +1433,9 @@ con 400 al cobrar."
 > `category` no lleva decoradores, `whitelist: true` la descarta **sin error**.
 > Consecuencia: tras la Tarea 1 el operador puede crear un producto, elegir
 > categoría, y la categoría desaparece sin que nada avise. **La Tarea 12 pasaría
-> igual**, D3 cerraría, y esto reaparecería después como regresión. Está anotado
-> en `SPEC-BACK-004` §5 como ítem propio: cablear `category` → `category_id`
-> exige un selector contra `GET /products/categories`, que es otra tarea.
+> igual**, D3 cerraría, y esto reaparecería después como regresión. Tiene spec
+> propia: **`SPEC-BACK-005`** (`docs/specs/SPEC-BACK-005-product-category-binding.md`).
+> **No lo arregles en esta tarea.**
 
 - [ ] **Step 1: Añade las cadenas i18n**
 
