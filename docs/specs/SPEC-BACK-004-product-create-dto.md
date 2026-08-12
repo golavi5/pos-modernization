@@ -1,6 +1,6 @@
 # M2 — Alta de producto desde la UI (D3) + venta sin existencias
 
-**Status**: DRAFT — 2026-08-11. Único item rojo del dry-run firmado con GO ([acta](../../new-implementation/STAGING-DRY-RUN-RESULTS.md)); aceptado como fast-follow porque no toca el camino de venta, y es el primero de la siguiente iteración.
+**Status**: APPROVED — 2026-08-11. Diseño aprobado y escrito en [2026-08-11-product-create-and-oversell-design.md](../superpowers/specs/2026-08-11-product-create-and-oversell-design.md); nada implementado todavía. Único item rojo del dry-run firmado con GO ([acta](../../new-implementation/STAGING-DRY-RUN-RESULTS.md)); aceptado como fast-follow porque no toca el camino de venta, y es el primero de la siguiente iteración.
 
 **Owner**: gandhi
 **Created**: 2026-08-11
@@ -46,12 +46,21 @@ o que contradicen a la propia UI:
 
 - [ ] Un producto se crea desde el formulario de la UI, sin payload a mano.
 - [ ] `company_id` y `created_by` salen del JWT; el DTO ya no los pide.
-- [ ] Sigue devolviendo 401 al intentar crear en otra empresa (no perder la
-      guarda existente — test de regresión).
+- [ ] Un `company_id` ajeno en el body **no crea producto en esa empresa**: el
+      producto nace en la empresa del JWT.
 - [ ] `reorder_level` es opcional con defecto, o el formulario lo expone.
 - [ ] El regex de SKU acepta lo que el placeholder promete, o el placeholder
       cambia. Una de las dos, no ambas.
 - [ ] `STAGING-DRY-RUN.md` §4-2 en verde, en navegador real.
+
+> **El criterio del 401 se corrigió el 2026-08-11.** Decía "sigue devolviendo
+> 401 al intentar crear en otra empresa (test de regresión)". Es intestable tal
+> como estaba escrito: `main.ts:56` usa `ValidationPipe({ whitelist: true })`
+> sin `forbidNonWhitelisted`, así que al quitar `company_id` del DTO el campo se
+> descarta en silencio y `createProductDto.company_id !== user.company_id` nunca
+> puede dispararse — la guarda queda muerta. Se sustituye por su invariante
+> real, que es más fuerte porque no depende de que el atacante mande el campo.
+> Detalle en el design doc §1.
 
 ## 4. Venta sin existencias (añadido 2026-08-11)
 
@@ -75,12 +84,32 @@ o decir explícitamente cuál queda fuera:
 Más el frontend: `app/(panel)/sales/page.tsx` bloquea añadir al carrito por
 `stock_quantity === 0` y por `quantity >= stock_quantity`.
 
-### Decisiones pendientes (no asumir)
+### Decisiones (cerradas 2026-08-11)
 
-- ¿Bandera por producto como el legado, ajuste global, o ambas con precedencia?
-- ¿El stock puede quedar negativo, o se queda en cero?
-- ¿La caja avisa al cajero de que está vendiendo sin existencias?
-- ¿Qué se escribe en `stock_movements` al vender algo que no existe?
+Diseño completo en
+[2026-08-11-product-create-and-oversell-design.md](../superpowers/specs/2026-08-11-product-create-and-oversell-design.md).
+
+- **Precedencia:** `producto.allow_sale_without_stock ?? settings.allowNegativeStock`.
+  Columna nueva tri-estado (`NULL` = heredar). Reproduce el legado: los 272
+  productos con `EsFactSinExistencia = 0` siguen bloqueados aunque el global
+  esté encendido.
+- **Negativo, no suelo en cero.** 7.809 filas legadas (25,8 %) ya tienen
+  `CantFisica` negativa y la migración la preserva a propósito; un suelo en cero
+  contradiría datos ya migrados.
+- **Aviso al cajero:** distintivo visible, sin bloquear ni pedir confirmación
+  (el 99,1 % del catálogo está habilitado; un diálogo sería fatiga de alertas).
+- **`stock_movements`:** mismo `OUT`, con la nota marcada
+  `Venta <order_number> (sin existencias)`. Sin `MovementType` nuevo.
+- **El interruptor global ya existe, ya está en la UI y hoy no hace nada.**
+  `settings.allowNegativeStock` se renderiza en `/settings` y ningún punto de
+  validación lo lee. Su default se unifica en `false` (el DDL dice `DEFAULT 1`,
+  el servicio escribe `false`) y se resetea a `0` en las filas existentes: hoy
+  el valor guardado no expresa intención, y al cablearlo pasa a ser carga viva.
+- **`stock.service.ts` queda fuera de alcance**, con motivo: es el otro libro de
+  inventario, ya roto por `capacity: 0`. Ver §5.
+- **SKU:** se relaja el regex a `/^[A-Z0-9][A-Z0-9._-]*$/` con normalización a
+  mayúsculas. Los 30.276 SKUs legados son `[A-Z0-9]+` puro, así que ninguno se
+  invalida.
 
 ## 5. Fuera de alcance
 
