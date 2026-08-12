@@ -10,7 +10,9 @@
 
 **Diseño aprobado:** `docs/superpowers/specs/2026-08-11-product-create-and-oversell-design.md`
 **Spec:** `docs/specs/SPEC-BACK-004-product-create-dto.md`
-**Rama:** `back-004-product-create-and-oversell` (ya creada, con el commit del diseño)
+**Rama:** `back-004-product-create-and-oversell` — existe **solo en `origin`** y apunta al
+mismo commit que `main` (el diseño ya está en `main`). No hay rama local: empieza con
+`git checkout -b back-004-product-create-and-oversell origin/back-004-product-create-and-oversell`.
 
 ## Global Constraints
 
@@ -22,6 +24,11 @@
 - **i18n:** toda cadena visible va en `messages/es.json` **y** `messages/en.json`, con paridad. Comprobación: `node scripts/smoke/i18n-parity.cjs && node scripts/smoke/i18n-lint.cjs` desde `frontend/`.
 - **No dispares despliegues.** Los redespliegues en Coolify los hace Gandhi; pídeselos.
 - **Nunca edites `new-implementation/database/schema.sql`.** El esquema lo poseen las migraciones de TypeORM.
+- **Las cifras del catálogo legado (30.276 / 30.004 / 272 / 7.809) vienen del doc de
+  diseño, no de una consulta hecha en este árbol: `info/bd_ex.sql` NO está aquí.**
+  Van en comentarios y mensajes de commit porque explican *por qué* el diseño es así,
+  pero no las cites como comprobadas hasta que la Tarea 10 pueda correr contra el dump.
+  Una de ellas es carga viva: ver la Tarea 10, Step 1.
 - **Convención de commits:** `feat(...)`, `fix(...)`, `test(...)`, `docs(...)`. Sin `Closes POS-BACK-004` en los commits — esa keyword va **una sola vez**, en el cuerpo del PR final (Tarea 12).
 
 ## Estructura de ficheros
@@ -39,7 +46,7 @@
 - `src/modules/products/products.service.ts` (T2, T4, T7), `products.module.ts` (T4)
 - `src/modules/settings/entities/settings.entity.ts` (T3)
 - `src/modules/sales/services/sales.service.ts` (T5), `services/payments.service.ts` (T6), `sales.module.ts` (T6)
-- Tests existentes: `products/tests/products.service.spec.ts`, `sales/tests/sales.service.spec.ts`, `sales/tests/payments-checkout.service.spec.ts`
+- Tests existentes: `products/tests/products.service.spec.ts`, `products/tests/products.controller.spec.ts`, `sales/tests/sales.service.spec.ts`, `sales/tests/payments-checkout.service.spec.ts`
 
 **Frontend — se modifican:**
 - `types/product.ts` (T8)
@@ -391,7 +398,15 @@ Quita `UnauthorizedException` del `import` de `@nestjs/common` **solo si** ya no
 cd new-implementation/backend && npx jest --testPathPattern "products.service"
 ```
 
-Esperado: PASS, incluidos los tests que ya existían en el fichero. Si alguno de los previos esperaba el `UnauthorizedException`, **actualízalo** al invariante nuevo y déjalo anotado en el reporte — no lo borres sin más.
+Esperado: PASS, incluidos los tests que ya existían en el fichero.
+
+**Uno de los previos SÍ espera el `UnauthorizedException`** — no es hipotético:
+`products.service.spec.ts:164`, *"should throw UnauthorizedException if company_id
+mismatch"*, que construye un DTO con `company_id: 'different-company-id'`. Reescríbelo
+al invariante nuevo (mismo escenario, pero la aserción pasa a ser que el producto nace
+en `mockUser.company_id`) en vez de borrarlo, y anótalo en el reporte. Al hacerlo, el
+`UnauthorizedException` del `import` de `@nestjs/common` en la línea 7 del spec se queda
+huérfano: quítalo o `lint:ci` lo marcará.
 
 - [ ] **Step 5: Verificación por mutación**
 
@@ -469,6 +484,12 @@ Importa `IsBoolean` si no está. En `src/modules/products/dto/product-response.d
   @IsBoolean()
   can_sell_without_stock: boolean;
 ```
+
+> `ProductResponseDto` **no se aplica en runtime**: no hay `ClassSerializerInterceptor`
+> en `main.ts`, y el controlador solo lo usa como anotación de tipo de retorno. Esto que
+> añades es documentación del contrato, no un filtro — `can_sell_without_stock` llega al
+> cliente porque el servicio lo pone, no porque el DTO lo exponga. No inviertas en él más
+> de lo que cuestan estas ocho líneas.
 
 - [ ] **Step 3: Unifica el default de `allowNegativeStock`**
 
@@ -550,6 +571,7 @@ escribia false, y el interruptor pasa de inerte a carga viva."
 - Modify: `new-implementation/backend/src/modules/products/products.module.ts`
 - Modify: `new-implementation/backend/src/modules/products/products.controller.ts`
 - Test: `new-implementation/backend/src/modules/products/tests/products.service.spec.ts`
+- Test: `new-implementation/backend/src/modules/products/tests/products.controller.spec.ts` (**se rompe por dos vías; ver Step 9**)
 
 **Interfaces:**
 - Consumes: `Product.allow_sale_without_stock` (T3), `SettingsService.getSettings(companyId)` (ya existe, `SettingsModule` ya lo exporta).
@@ -557,8 +579,16 @@ escribia false, y el interruptor pasa de inerte a carga viva."
   - `export interface OversellPolicy { allowNegativeStock: boolean }`
   - `export interface OversellSubject { allow_sale_without_stock?: boolean | null }`
   - `export function canSellWithoutStock(product: OversellSubject, policy: OversellPolicy): boolean`
+  - `export type ProductWithOversell = Product & { can_sell_without_stock: boolean }` — vive en `products.service.ts`, no en el fichero de la regla, para que la regla siga sin importar la entidad.
   - `ProductsService.getOversellPolicy(companyId: string): Promise<OversellPolicy>`
   - Las respuestas de `GET /products`, `GET /products/:id`, `POST /products` y `PUT /products/:id` incluyen `can_sell_without_stock: boolean`.
+
+**Efecto secundario que hay que conocer antes de cablear:** `SettingsService.getSettings`
+**crea y persiste** la fila de settings si la empresa no tiene ninguna. Con esto,
+`getOversellPolicy` convierte `GET /products` en un camino que puede escribir en la
+primera lectura. No se cambia aquí —es el comportamiento que ya tiene el módulo de
+settings—, pero llama a `getOversellPolicy` **una sola vez por petición** y no una por
+producto. En la Tarea 6 tiene además una consecuencia propia; está anotada allí.
 
 **Por qué el campo va resuelto desde el backend:** `GET /settings` es `@Roles('admin','manager')`, así que un cajero no puede leer `allowNegativeStock`. Resolver en el frontend obligaría a ampliar esos permisos y exponer a la caja la configuración de pagos, fidelización y empresa.
 
@@ -747,12 +777,28 @@ import {
 
   /**
    * Añade la bandera YA RESUELTA a un producto de salida. Se resuelve en el
-   * backend porque `GET /settings` es admin/manager: un cajero no puede leer el
-   * ajuste global, así que la caja no puede resolverla por su cuenta.
+   * backend porque `GET /settings` es `@Roles('admin','manager')`
+   * (`settings.controller.ts:27`): un cajero no puede leer el ajuste global,
+   * así que la caja no puede resolverla por su cuenta.
    */
-  private withOversellFlag(product: Product, policy: OversellPolicy) {
+  private withOversellFlag(
+    product: Product,
+    policy: OversellPolicy,
+  ): ProductWithOversell {
     return { ...product, can_sell_without_stock: canSellWithoutStock(product, policy) };
   }
+```
+
+con el tipo declarado arriba, junto a los imports:
+
+```ts
+/**
+ * La entidad más la bandera resuelta. Es un tipo con nombre a propósito: sin él
+ * el tipo de retorno de `findAll` queda inferido como anónimo y los
+ * `mockResolvedValue(...)` de los specs del controlador dejan de type-checkear
+ * con un error que no dice nada.
+ */
+export type ProductWithOversell = Product & { can_sell_without_stock: boolean };
 ```
 
 En `findAll`, después de obtener `[products, total]`:
@@ -785,13 +831,41 @@ En `create` y `update`, envuelve el valor devuelto:
 
 En `products.module.ts`, añade `SettingsModule` a `imports` (`import { SettingsModule } from '../settings/settings.module';`). En `products.controller.ts`, el handler `findOne` pasa a llamar `this.productsService.findOneForApi(id, user)`.
 
-- [ ] **Step 9: Corre los tests y comprueba que pasan**
+- [ ] **Step 9: Arregla los tres tests preexistentes que este cambio rompe**
+
+No son sorpresas: están localizados. Arréglalos **antes** de correr la suite, y anota
+los tres en el reporte.
+
+1. **`products.service.spec.ts:56`** — `expect(result.data).toEqual(mockProducts)`. Se
+   pone rojo por la propiedad extra, no por el constructor. Pasa a
+   `expect(result.data).toEqual(mockProducts.map((p) => ({ ...p, can_sell_without_stock: false })))`
+   — con `false` porque el mock por defecto de `getSettings` devuelve
+   `allowNegativeStock: false` y los productos del fixture no traen bandera.
+
+2. **`products.controller.spec.ts:16-25`** — el mock de `ProductsService` no tiene
+   `findOneForApi`, así que *"should return a product"* revienta con `TypeError` en
+   cuanto el controlador deja de llamar a `findOne`. Añade `findOneForApi: jest.fn()`
+   al `useValue` y cambia el `jest.spyOn(service, 'findOne')` y el
+   `expect(service.findOne).toHaveBeenCalledWith(...)` de ese test a `findOneForApi`.
+
+3. **`products.controller.spec.ts:44-48`** — `jest.spyOn(service, 'findAll')
+   .mockResolvedValue({ data: [] as Product[], meta: … })` deja de type-checkear:
+   `Product` no es asignable a `ProductWithOversell`, le falta la propiedad. Y ts-jest
+   type-checkea, así que esto tumba el fichero entero, no un test.
+   `data: [] as ProductWithOversell[]` lo resuelve.
+
+`sales.service.spec.ts` **no** se rompe por el constructor: mockea `ProductsService` con
+`useValue`, no con la clase real. Lo que sí necesita es el método nuevo en ese mock, y
+eso lo hace la Tarea 5.
+
+- [ ] **Step 9b: Corre la suite entera**
 
 ```bash
 cd new-implementation/backend && npm test
 ```
 
-Esperado: toda la suite en verde. Si algún test de `sales.service.spec.ts` o del controlador rompe por el constructor nuevo de `ProductsService`, añade el proveedor mock de `SettingsService` allí también.
+Esperado: toda la suite en verde. Si aparece cualquier OTRA rotura por el constructor
+nuevo de `ProductsService`, añade el proveedor mock de `SettingsService` allí también.
 
 - [ ] **Step 10: Verificación por mutación**
 
@@ -943,7 +1017,14 @@ git commit -m "feat(sales): createOrder respeta la bandera de venta sin existenc
 
 **Contexto crítico:** esta es la revalidación **dentro de la transacción, con bloqueo pesimista**, que añadió `SPEC-BACK-003`. Entre crear el pedido y cobrarlo otra caja pudo llevarse la última unidad, así que la comprobación tiene que seguir existiendo — lo que cambia es que ahora la bandera puede levantarla. **No toques la guarda de exactamente-una-vez** (`alreadyDeducted`): es la que impide el doble descuento por la vía `confirmed`, y tiene su propio comentario explicando por qué mira el estado de la fila bloqueada.
 
-`PaymentsService` **no** inyecta hoy `ProductsService`; hay que añadirlo como quinto argumento del constructor. `SalesModule` ya importa `ProductsModule`, así que la inyección resuelve. **Actualiza el `new PaymentsService(...)` de `payments-checkout.service.spec.ts:51-56`**, que instancia el servicio a mano.
+`PaymentsService` **no** inyecta hoy `ProductsService`; hay que añadirlo como quinto argumento del constructor. `SalesModule` ya importa `ProductsModule`, así que la inyección resuelve.
+
+**`payments-checkout.service.spec.ts` instancia el servicio a mano en DOS sitios, no en uno.** Hay que tocar los dos:
+
+- `:50-55`, en `describe('recordPayment — cierre de venta')` — el que usan los tests nuevos.
+- `:195-200`, en `describe('refundPayment — deshacer el cierre de venta')` — **este es el que se olvida y el que más duele.** `refundPayment` no usa `productsService`, así que la tentación es dejarlo; pero ts-jest type-checkea, y un `new PaymentsService(...)` con cuatro argumentos donde el constructor pide cinco es `error TS2554` → **el fichero entero deja de compilar y caen los 12 tests de pagos**, incluidos los preexistentes que el Step 4 dice que deben seguir verdes. Basta con pasarle `{} as any` como quinto argumento y un comentario de una línea diciendo que el reembolso no consulta la política.
+
+**Y la política se lee FUERA de la transacción.** `getOversellPolicy` va contra `settingsRepo`, no contra el `manager` del `dataSource.transaction`. Es correcto para leer, pero recuerda que `getSettings` puede *crear* la fila de settings (ver Tarea 4): esa escritura no la revierte un rollback del cobro. Se acepta — es una fila de configuración idempotente, no parte del asiento de inventario — pero que no te sorprenda al depurar.
 
 - [ ] **Step 1: Escribe el test que falla**
 
@@ -963,7 +1044,17 @@ En `payments-checkout.service.spec.ts`, añade al `beforeEach` un quinto argumen
     );
 ```
 
-y declara `let productsService: any;` arriba con las demás. Luego el `describe` nuevo:
+y declara `let productsService: any;` arriba con las demás. En el `beforeEach` del
+`describe('refundPayment …')`, el de la línea ~195, añade el quinto argumento sin más:
+
+```ts
+      { ensureDefaultLocation: jest.fn(async () => 'loc1') } as any,
+      // refundPayment no consulta la política de sobreventa; está aquí porque el
+      // constructor lo pide.
+      {} as any,
+```
+
+Luego el `describe` nuevo:
 
 ```ts
   describe('venta sin existencias', () => {
@@ -1425,7 +1516,11 @@ con 400 al cobrar."
 - Consumes: `CreateProductDto.allow_sale_without_stock` (T8), y el DTO del backend que lo acepta (T1).
 - Produces: nada.
 
-`ProductFormFields` está cerca del límite de 200 líneas del repo. Si al añadir el bloque lo supera, extrae el `<select>` a un componente hermano pequeño (`AllowSaleWithoutStockField.tsx`) en la misma carpeta, en vez de dejar crecer el fichero.
+**La extracción no es condicional: es segura.** `ProductFormFields.tsx` está hoy en 185
+líneas y el bloque del selector son ~23, así que el fichero acabaría en ~208 y rompería
+el límite de 200 del repo. Crea directamente `components/products/AllowSaleWithoutStockField.tsx`
+con el `<select>` y consúmelo desde `ProductFormFields`; no escribas primero el bloque
+en línea para luego medirlo.
 
 > **Defecto adyacente, nombrado y NO arreglado aquí: la categoría se pierde en
 > silencio.** El formulario manda `category: ''` — un nombre en texto libre —
@@ -1472,9 +1567,11 @@ En `ProductForm.tsx`, añade `allow_sale_without_stock: null,` al `useState` ini
 
 y el tipo de `onChange` en `ProductFormFieldsProps` igual.
 
-- [ ] **Step 3: Añade el selector**
+- [ ] **Step 3: Añade el selector, en su propio componente**
 
-En `ProductFormFields.tsx`, junto al campo de `stock_quantity`:
+Crea `components/products/AllowSaleWithoutStockField.tsx` con este cuerpo (recibe
+`formData`, `onChange` y `t` por props, igual que `ProductFormFields`) y móntalo en
+`ProductFormFields.tsx` junto al campo de `stock_quantity`:
 
 ```tsx
       <div>
@@ -1508,10 +1605,10 @@ En `ProductFormFields.tsx`, junto al campo de `stock_quantity`:
 cd new-implementation/frontend
 npx tsc --noEmit && npm run lint
 node scripts/smoke/i18n-parity.cjs && node scripts/smoke/i18n-lint.cjs
-wc -l components/products/ProductFormFields.tsx
+wc -l components/products/ProductFormFields.tsx components/products/AllowSaleWithoutStockField.tsx
 ```
 
-Esperado: limpio, y el fichero por debajo de 200 líneas (si no, extrae según la nota de arriba).
+Esperado: limpio, y **los dos** ficheros por debajo de 200 líneas.
 
 - [ ] **Step 5: Commitea**
 
@@ -1543,8 +1640,18 @@ En `migration/src/rules/products.rule.ts`, en el array `fields`, junto a la lín
     // hay que preservarla. `verify: 'ignore'` como en `EsActivo`: con 'exact' el
     // 1 del tinyint legado compararía contra el `true` del booleano y redderá el parity.
     { from: 'EsFactSinExistencia', to: 'allow_sale_without_stock',
-      transform: (v) => !!Number(v), verify: 'ignore' },
+      transform: (v) => (v == null ? null : !!Number(v)), verify: 'ignore' },
 ```
+
+> **Por qué `v == null ? null : …` y no `!!Number(v)` a secas.** La columna de destino es
+> tri-estado y `!!Number(null)` da `false`, que aquí NO significa "sin dato" sino
+> "prohibido vender sin existencias, aunque el global esté encendido" — la decisión más
+> restrictiva que el modelo admite, tomada por defecto sobre filas que nunca la
+> expresaron. El diseño dice que 30.004 + 272 = 30.276 cubre la tabla entera y por tanto
+> no hay NULLs, pero **esa cifra no se ha comprobado en este árbol** (`info/bd_ex.sql` no
+> está). Mapear NULL a NULL hace que la cuestión deje de importar: si el diseño acierta,
+> la rama no se toma nunca; si se equivocó, los productos sin dato heredan del global en
+> vez de quedar bloqueados en silencio.
 
 - [ ] **Step 2: Corre la suite de migración**
 
@@ -1556,7 +1663,13 @@ cd new-implementation/migration && npm install && npm test
 
 Esperado: verde. Si falla por "column not found", falta correr las migraciones contra la base de prueba: revisa que la nueva `AddOversellFlags` esté en `dist/`.
 
-- [ ] **Step 3: Re-corre el parity contra el dump real**
+- [ ] **Step 3: Re-corre el parity contra el dump real — CONDICIONAL**
+
+> **Comprueba primero que el dump existe: `ls info/bd_ex.sql`.** En el árbol donde se
+> revisó este plan el directorio `info/` **no existe**, así que este paso no era
+> ejecutable. Si sigue sin estar, **no lo marques ni lo des por bueno**: pídele el dump a
+> Gandhi, deja el paso abierto en el reporte, y sigue con la Tarea 11. Un `verify` que no
+> se corrió no es un `verify` verde.
 
 ```bash
 cd new-implementation/migration
@@ -1570,14 +1683,24 @@ Esperado: `verify` sale con 0. Comprueba además, con una consulta directa a la 
 
 ```sql
 SELECT allow_sale_without_stock, COUNT(*) FROM products GROUP BY 1;
--- esperado: 1 -> 30004, 0 -> 272   (el dump tiene 30.276 filas en `inventarios`)
+-- esperado: 1 -> 30004, 0 -> 272, y NINGUNA fila con NULL
+--   (el diseño afirma 30.276 filas en `inventarios`; esta consulta es la PRIMERA
+--    comprobación real de esa cifra — trátala como medición, no como confirmación)
 ```
 
-Si el reparto no cuadra, **para y repórtalo**: significa que el transformer o la columna nullable no se comportan como se diseñó.
+Si el reparto no cuadra, **para y repórtalo**: significa que el transformer o la columna
+nullable no se comportan como se diseñó. Si aparecen NULLs, no es un fallo del código
+—el transform los mapea a propósito— sino que la premisa del diseño era falsa: dilo, y
+corrige la cifra en la spec y en el comentario del entity.
 
-- [ ] **Step 4: Actualiza el registro de verificación de MIGR-001**
+- [ ] **Step 4: Actualiza el registro de verificación de MIGR-001 — solo si el Step 3 se corrió**
 
 Actualiza el `**Status**:` de `docs/specs/SPEC-MIGR-001-*.md` con la fecha del re-run y el resultado. Un informe verde solo prueba la revisión que lo produjo, así que cita la fecha y el commit.
+
+Si el Step 3 quedó abierto por falta de dump, **no toques esa línea de estado**: escribir
+una fecha de re-run que no ocurrió es exactamente el fallo que la convención de
+`**Status**:` existe para impedir. Deja el hueco anotado en el reporte de la tarea y en
+la cola del `**Status**` de BACK-004 (Tarea 12, Step 6).
 
 - [ ] **Step 5: Commitea**
 
@@ -1614,10 +1737,14 @@ npm run build
 ```bash
 cd new-implementation/frontend
 npx tsc --noEmit
-npm run lint:ci 2>/dev/null || npm run lint
+npm run lint:ci
 node scripts/smoke/i18n-parity.cjs && node scripts/smoke/i18n-lint.cjs
 npm run build
 ```
+
+> `lint:ci` **existe** en `frontend/package.json` (`eslint --ext .ts,.tsx … --max-warnings 0`).
+> Nada de `|| npm run lint` como red: ese fallback es `next lint`, que muta el árbol, y
+> un paso de verificación que arregla lo que debía denunciar reporta verde mintiendo.
 
 - [ ] **Step 3: Reporta el resultado con las cifras**
 
@@ -1625,8 +1752,16 @@ Di cuántos tests corrieron y cuántos pasaron, sobre **todo** el árbol, no sob
 
 - [ ] **Step 4: Commitea lo que haya cambiado**
 
+**Nunca `git add -A` en este repo.** `new-implementation/backend/node_modules` está
+**trackeado** (33.972 ficheros, no ignorado), así que cualquier churn ahí —el que deja un
+`npm install`, el que deja el `pretest` de la Tarea 10— entra al PR y lo vuelve
+irrevisable. Añade rutas explícitas y revisa el `git status` antes:
+
 ```bash
-git add -A && git commit -m "chore: puertas de CI verdes tras POS-BACK-004"
+cd /home/gor/devs/pos-modernization
+git status --short           # míralo: nada de node_modules debe aparecer staged
+git add new-implementation/backend/src new-implementation/frontend new-implementation/migration/src
+git commit -m "chore: puertas de CI verdes tras POS-BACK-004"
 ```
 
 ---
