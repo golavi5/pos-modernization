@@ -61,6 +61,23 @@ export class ProductResponseDto {
 
   @Expose()
   @IsOptional()
+  @IsBoolean()
+  allow_sale_without_stock?: boolean | null;
+
+  /**
+   * Resuelto por el backend: `allow_sale_without_stock ?? settings.allowNegativeStock`.
+   * Opcional en el tipo, no en el contrato: la T3 solo añade la columna; el
+   * servicio no lo calcula hasta la T4, y hasta entonces el controlador
+   * devuelve la entidad tal cual. Marcarlo requerido aquí rompe `tsc` en
+   * `products.controller.ts` porque `Product` no tiene esta propiedad todavía.
+   */
+  @Expose()
+  @IsOptional()
+  @IsBoolean()
+  can_sell_without_stock?: boolean;
+
+  @Expose()
+  @IsOptional()
   @IsUrl()
   image_url?: string;
 

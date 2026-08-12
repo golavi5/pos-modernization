@@ -56,6 +56,18 @@ export class Product {
   @Min(0)
   reorder_level: number;
 
+  /**
+   * Tri-estado. `null` = heredar de `settings.allowNegativeStock`.
+   * El legado tiene el equivalente por producto (`inventarios.EsFactSinExistencia`):
+   * 30.004 de 30.276 productos lo traen a 1 y los 272 restantes, activos, a 0.
+   * Esa lista de excepciones viva es lo que justifica una columna por producto
+   * y no solo un ajuste global.
+   */
+  @Column({ name: 'allow_sale_without_stock', type: 'boolean', nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  allow_sale_without_stock?: boolean | null;
+
   @Column({ name: 'tax_rate', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: numericTransformer })
   @IsNumber()
   @Min(0)

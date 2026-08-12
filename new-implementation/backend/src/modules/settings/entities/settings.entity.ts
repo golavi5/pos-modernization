@@ -77,7 +77,10 @@ export class Settings {
   @Column({ default: true })
   trackInventory: boolean;
 
-  @Column({ default: true })
+  // Default `false`: encender la sobreventa global tiene que ser un acto
+  // deliberado del operador. El catálogo legado no lo necesita — llega con la
+  // bandera por producto puesta.
+  @Column({ default: false })
   allowNegativeStock: boolean;
 
   @Column('int', { default: 5 })

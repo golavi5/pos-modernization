@@ -57,6 +57,12 @@ export class UpdateProductDto {
   @IsBoolean()
   is_active?: boolean;
 
+  // Tri-estado: `null` significa "heredar de settings.allowNegativeStock".
+  // Ver `can-sell-without-stock.ts`.
+  @IsOptional()
+  @IsBoolean()
+  allow_sale_without_stock?: boolean | null;
+
   @IsOptional()
   @IsUrl()
   image_url?: string;
