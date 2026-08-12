@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsController } from '../products.controller';
-import { ProductsService } from '../products.service';
-import { Product } from '../entities/product.entity';
+import { ProductsService, ProductWithOversell } from '../products.service';
 import { User } from '../../auth/entities/user.entity';
 
 describe('ProductsController', () => {
@@ -18,6 +17,7 @@ describe('ProductsController', () => {
           useValue: {
             findAll: jest.fn(),
             findOne: jest.fn(),
+            findOneForApi: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
             remove: jest.fn(),
@@ -43,7 +43,7 @@ describe('ProductsController', () => {
     it('should return paginated products', async () => {
       const query = { offset: 0, limit: 10 };
       const expectedResult = {
-        data: [] as Product[],
+        data: [] as ProductWithOversell[],
         meta: { total: 0, offset: 0, limit: 10, hasMore: false },
       };
       
@@ -67,16 +67,17 @@ describe('ProductsController', () => {
         price: 10,
         stock_quantity: 5,
         is_active: true,
+        can_sell_without_stock: false,
         created_at: new Date(),
         updated_at: new Date(),
-      } as Product;
-      
-      jest.spyOn(service, 'findOne').mockResolvedValue(expectedProduct);
+      } as ProductWithOversell;
+
+      jest.spyOn(service, 'findOneForApi').mockResolvedValue(expectedProduct);
 
       const result = await controller.findOne(productId, mockUser);
-      
+
       expect(result).toEqual(expectedProduct);
-      expect(service.findOne).toHaveBeenCalledWith(productId, mockUser);
+      expect(service.findOneForApi).toHaveBeenCalledWith(productId, mockUser);
     });
   });
 
@@ -96,10 +97,11 @@ describe('ProductsController', () => {
       const expectedProduct = {
         id: 'new-product-id',
         ...createProductDto,
+        can_sell_without_stock: false,
         created_at: new Date(),
         updated_at: new Date(),
-      } as Product;
-      
+      } as ProductWithOversell;
+
       jest.spyOn(service, 'create').mockResolvedValue(expectedProduct);
 
       const result = await controller.create(createProductDto, mockUser);
@@ -126,10 +128,11 @@ describe('ProductsController', () => {
         reorder_level: 2,
         tax_rate: 19,
         company_id: mockUser.company_id,
+        can_sell_without_stock: false,
         created_at: new Date(),
         updated_at: new Date(),
-      } as Product;
-      
+      } as ProductWithOversell;
+
       jest.spyOn(service, 'update').mockResolvedValue(expectedProduct);
 
       const result = await controller.update(productId, updateProductDto, mockUser);

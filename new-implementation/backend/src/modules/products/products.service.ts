@@ -6,13 +6,46 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { User } from '../auth/entities/user.entity';
+import { SettingsService } from '../settings/services/settings.service';
+import {
+  canSellWithoutStock,
+  OversellPolicy,
+} from './can-sell-without-stock';
+
+/**
+ * La entidad más la bandera resuelta. Es un tipo con nombre a propósito: sin él
+ * el tipo de retorno de `findAll` queda inferido como anónimo y los
+ * `mockResolvedValue(...)` de los specs del controlador dejan de type-checkear
+ * con un error que no dice nada.
+ */
+export type ProductWithOversell = Product & { can_sell_without_stock: boolean };
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    private readonly settingsService: SettingsService,
   ) {}
+
+  /** El ajuste de empresa que sirve de defecto a la bandera por producto. */
+  async getOversellPolicy(companyId: string): Promise<OversellPolicy> {
+    const settings = await this.settingsService.getSettings(companyId);
+    return { allowNegativeStock: settings.allowNegativeStock };
+  }
+
+  /**
+   * Añade la bandera YA RESUELTA a un producto de salida. Se resuelve en el
+   * backend porque `GET /settings` es `@Roles('admin','manager')`
+   * (`settings.controller.ts:27`): un cajero no puede leer el ajuste global,
+   * así que la caja no puede resolverla por su cuenta.
+   */
+  private withOversellFlag(
+    product: Product,
+    policy: OversellPolicy,
+  ): ProductWithOversell {
+    return { ...product, can_sell_without_stock: canSellWithoutStock(product, policy) };
+  }
 
   async findAll(user: User, query: ProductQueryDto) {
     const { offset = 0, limit = 10, search, category_id, sort, order, is_active } = query;
@@ -40,8 +73,10 @@ export class ProductsService {
       order: { [sort]: order },
     });
 
+    const policy = await this.getOversellPolicy(user.company_id);
+
     return {
-      data: products,
+      data: products.map((p) => this.withOversellFlag(p, policy)),
       meta: {
         total,
         offset,
@@ -61,6 +96,12 @@ export class ProductsService {
     }
 
     return product;
+  }
+
+  /** `findOne` para la API: la entidad más la bandera resuelta. */
+  async findOneForApi(id: string, user: User): Promise<ProductWithOversell> {
+    const product = await this.findOne(id, user);
+    return this.withOversellFlag(product, await this.getOversellPolicy(user.company_id));
   }
 
   async create(createProductDto: CreateProductDto, user: User) {
@@ -93,8 +134,9 @@ export class ProductsService {
       company_id: user.company_id,
       created_by: user.id,
     });
-    
-    return await this.productRepository.save(product);
+
+    const saved = await this.productRepository.save(product);
+    return this.withOversellFlag(saved, await this.getOversellPolicy(user.company_id));
   }
 
   async update(id: string, updateProductDto: UpdateProductDto, user: User) {
@@ -129,7 +171,8 @@ export class ProductsService {
     }
 
     Object.assign(product, updateProductDto);
-    return await this.productRepository.save(product);
+    const saved = await this.productRepository.save(product);
+    return this.withOversellFlag(saved, await this.getOversellPolicy(user.company_id));
   }
 
   async remove(id: string, user: User) {
