@@ -155,7 +155,7 @@ describe('CreateProductDto', () => {
 });
 ```
 
-> Nota sobre el último test: `plainToInstance` **no** descarta las propiedades no declaradas; quien las descarta es el `ValidationPipe` con `whitelist: true`. Por eso el test comprueba `undefined` sobre una instancia creada con `excludeExtraneousValues` implícito **no** activo — si al ejecutarlo ves que `dto.company_id` vale el UUID, cambia esa aserción por `plainToInstance(CreateProductDto, payload, { excludeExtraneousValues: false })` y verifica en su lugar que `validateSync(..., { whitelist: true, forbidNonWhitelisted: true })` **no** reporta `company_id` como no permitido. Lo que se está probando es que el DTO ya no lo exige.
+> El último test está verificado contra el comportamiento real de class-validator, no supuesto: `validateSync(obj, { whitelist: true })` **borra del objeto, en sitio**, toda propiedad sin decoradores de validación, y solo reporta error en las que sí los tienen. Medido con el DTO actual: `bogus` desaparece, mientras `company_id` —que hoy lleva `@IsUUID()`— sobrevive y da error. Quitado del DTO se queda sin decoradores, así que pasa a descartarse. La aserción es correcta tal como está: **no la debilites**.
 
 - [ ] **Step 2: Corre el test y comprueba que falla**
 
@@ -875,7 +875,7 @@ Añade a `src/modules/sales/tests/sales.service.spec.ts`. Amplía primero el moc
   });
 ```
 
-Si `getOrderById` o el número de pedido dan problemas con los mocks, ajusta los espías **sin** relajar las cuatro aserciones de arriba y anota el ajuste.
+`generateOrderNumber` no está mockeado y consulta el repositorio de pedidos; por eso el `beforeEach` espía `findAndCount`. Si aun así falla por ahí, **mockea `generateOrderNumber` con `jest.spyOn(service as any, 'generateOrderNumber').mockResolvedValue('ORD1')`** y sigue. Las cuatro aserciones de arriba no se tocan: si una de ellas estorba, para y dilo.
 
 - [ ] **Step 2: Corre el test y comprueba que falla**
 
@@ -1427,6 +1427,16 @@ con 400 al cobrar."
 
 `ProductFormFields` está cerca del límite de 200 líneas del repo. Si al añadir el bloque lo supera, extrae el `<select>` a un componente hermano pequeño (`AllowSaleWithoutStockField.tsx`) en la misma carpeta, en vez de dejar crecer el fichero.
 
+> **Defecto adyacente, nombrado y NO arreglado aquí: la categoría se pierde en
+> silencio.** El formulario manda `category: ''` — un nombre en texto libre —
+> mientras el DTO del backend declara `category_id` con `@IsUUID()`. Como
+> `category` no lleva decoradores, `whitelist: true` la descarta **sin error**.
+> Consecuencia: tras la Tarea 1 el operador puede crear un producto, elegir
+> categoría, y la categoría desaparece sin que nada avise. **La Tarea 12 pasaría
+> igual**, D3 cerraría, y esto reaparecería después como regresión. Está anotado
+> en `SPEC-BACK-004` §5 como ítem propio: cablear `category` → `category_id`
+> exige un selector contra `GET /products/categories`, que es otra tarea.
+
 - [ ] **Step 1: Añade las cadenas i18n**
 
 En `messages/es.json`, sección `products`:
@@ -1654,11 +1664,9 @@ Con el formulario en blanco salvo nombre, SKU `prd-001` en minúscula, precio y 
 3. Enciende *Permitir stock negativo* en `/settings` y recarga: la tarjeta **sigue** deshabilitada. Eso es la precedencia funcionando.
 4. Con un tercer producto en *Heredar*, la tarjeta **sí** se habilita con el global encendido.
 
-- [ ] **Step 5: Anota el resultado y cierra los specs**
+- [ ] **Step 5: Anota el resultado del dry-run y abre el PR**
 
-Escribe el resultado en `STAGING-DRY-RUN-RESULTS.md` (D3 en verde, con fecha). Actualiza `**Status**:` de `SPEC-BACK-004` a `DONE — <fecha> (PR #N)` con lo que quedó abierto: los huecos documentados (`deductStock` sin `stock_movements`, `checkReorderLevels` con sobrevendidos, la divergencia de los dos libros de inventario).
-
-- [ ] **Step 6: Abre el PR**
+Escribe el resultado en `STAGING-DRY-RUN-RESULTS.md` (D3 en verde, con fecha).
 
 Rama `back-004-product-create-and-oversell` → `main`. El cuerpo del PR lleva **una sola vez** la keyword de cierre:
 
@@ -1668,6 +1676,20 @@ Closes POS-BACK-004
 
 Sin ella el issue no se cierra; nombrar el id sin keyword no lo promueve. Pídele el merge a Gandhi: los commits entran a `main` sin PR ni checks, pero no se aprovecha eso.
 
+- [ ] **Step 6: DESPUÉS del merge, escribe la línea de estado**
+
+**El orden importa.** El merge con `Closes POS-BACK-004` hace que Kairos reescriba solo el `**Status**` de `SPEC-BACK-004` a DONE. Si escribes tú la línea con su cola de evidencia *antes* del merge y Kairos reescribe la línea entera, la cola se pierde — y la cola es justamente lo que la convención existe para conservar. Escríbela después, sobre lo que Kairos haya dejado:
+
+```
+**Status**: DONE — <fecha> (PR #N). D3 cerrado y verificado en navegador contra
+el despliegue; venta sin existencias de punta a punta. Abiertos: deductStock no
+escribe stock_movements; checkReorderLevels marca como stock bajo permanente
+todo producto sobrevendido; la categoría del formulario se descarta en silencio
+(§5); divergencia de los dos libros de inventario (SPEC-BACK-003).
+```
+
+El guard de Kairos es monotónico: DONE no se puede retroceder, así que no hay riesgo de pisarla en el otro sentido.
+
 ---
 
 ## Notas para quien ejecute
@@ -1675,7 +1697,8 @@ Sin ella el issue no se cierra; nombrar el id sin keyword no lo promueve. Pídel
 **Orden y paralelismo.** T1→T2 son secuenciales. T3 es independiente de T1/T2 y puede ir en paralelo. T4 depende de T3. T5, T6 y T7 dependen de T4 y son independientes entre sí. T8 depende de T4; T9 depende de T1 y T8. T10 depende de T3. T11 y T12 van al final, en ese orden.
 
 **Lo que NO hay que arreglar de paso**, aunque lo veas y duela:
-- `inventory/services/stock.service.ts` y el libro de `warehouse_locations.current_stock` — es el otro libro de inventario, ya roto por `capacity: 0`, y es un ítem propio y mayor.
+- `inventory/services/stock.service.ts` y el libro de `warehouse_locations.current_stock` — es el otro libro de inventario, ya roto por `capacity: 0`, y es un ítem propio y mayor. Verificado que dejarlo fuera no abre ningún agujero: **`deductStockOnOrder` no tiene ni un solo llamador** (solo `inventory.controller` inyecta `StockService`, para los endpoints de ajuste), así que el camino de venta nunca lo alcanza.
+- El campo `category` del formulario, que se pierde en silencio — ver la nota de la Tarea 9.
 - `deductStock` sin `stock_movements`.
 - `checkReorderLevels` y `StockBadge` marcando como stock bajo permanente todo producto sobrevendido — ya pasa hoy con los 7.809 negativos migrados.
 - La guarda de exactamente-una-vez de `PaymentsService` (`alreadyDeducted`).

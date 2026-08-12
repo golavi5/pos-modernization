@@ -113,6 +113,19 @@ Diseño completo en
 
 ## 5. Fuera de alcance
 
+**La categoría del formulario, que se pierde en silencio.** `ProductForm` manda
+`category` (un nombre en texto libre) mientras el DTO declara `category_id` con
+`@IsUUID()`. Como `category` no lleva decoradores, `whitelist: true` la descarta
+**sin error**: se puede crear un producto, elegir categoría, y la categoría
+desaparece sin aviso. Arreglarlo exige un selector contra
+`GET /products/categories`, que es otra tarea. Anotado aquí para que cerrar D3
+no lo tape.
+
+`inventory/services/stock.service.ts` y el libro de `warehouse_locations`.
+Verificado que dejarlo fuera no bloquea la venta sin existencias:
+`deductStockOnOrder` no tiene ni un solo llamador — el camino de venta nunca lo
+alcanza.
+
 El resto de defectos del catálogo, si los hubiera. Y la **divergencia entre los
 dos libros de inventario** (`products.stock_quantity` vs
 `warehouse_locations.current_stock`, con la ubicación auto-creada en
