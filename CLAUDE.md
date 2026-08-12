@@ -4,9 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-POS Modernization — a full-stack Point of Sale system replacing legacy .NET desktop/web apps with a modern stack. All active work lives in `new-implementation/`. The `legacy-implementations/` and `prototypes/` directories are read-only references.
+POS Modernization — a full-stack Point of Sale system replacing legacy .NET desktop/web apps with a modern stack. All active work lives in `new-implementation/`; specs and plans live in `docs/`.
 
 **Stack:** Next.js 14 (App Router) + NestJS 10 + MySQL 8.0, containerized via Docker.
+
+> `backend/node_modules` is **committed to git** (~34k tracked files) and is
+> incomplete — a fresh worktree cannot run the backend suite without `npm ci`.
+> Budget for that before trusting a green or red result from one.
 
 ---
 
@@ -18,7 +22,8 @@ cd new-implementation
 cp .env.example .env                      # root MySQL creds for the compose db (gitignored)
 cp backend/.env.example backend/.env      # then fill real DB_PASSWORD/JWT_*/CORS_ORIGINS + BOOTSTRAP_ADMIN_*
 cp frontend/.env.local.example frontend/.env.local   # optional
-docker compose up -d          # starts MySQL (port 3308), backend (3000), frontend (3001)
+docker compose up -d          # MySQL 3308, backend 3000, frontend 3001 — override any of them
+                              # with MYSQL_HOST_PORT / BACKEND_HOST_PORT / FRONTEND_HOST_PORT
 docker compose down
 docker compose logs -f backend
 ```
@@ -39,7 +44,11 @@ npm run start:dev             # watch mode
 npm run build
 npm run test                  # Jest unit tests
 npm run test:cov
-npm run lint
+npm run lint                  # eslint --fix — MUTATES files
+npm run lint:ci               # what CI runs; non-mutating
+npm run lint:budget           # `any` cap: 117 of 146 files (scripts/any-budget.cjs)
+npm run migration:generate    # wraps the TypeORM CLI against src/database/data-source.ts
+npm run migration:run:prod    # compiled dist path; also migration:show:prod, migration:revert-one:prod
 ```
 
 ### Frontend (Next.js)
@@ -51,6 +60,7 @@ npm run lint
 npm run test:e2e              # Playwright (headless) — specs in `frontend/tests/e2e/`
 npm run test:e2e:ui           # Playwright UI mode
 npm run test:e2e:headed
+node scripts/smoke/i18n-parity.cjs && node scripts/smoke/i18n-lint.cjs   # required CI check
 ```
 
 > Playwright base URL defaults to `http://localhost:3000`. Set `BASE_URL` env var to override.
@@ -76,13 +86,14 @@ pos-modernization/
 ├── new-implementation/       # All active code
 │   ├── frontend/             # Next.js 14
 │   ├── backend/              # NestJS 10
-│   ├── database/             # schema.sql (MySQL init)
+│   ├── database/             # historical schema.sql + docs — NOT the schema source
 │   ├── migration/            # M4 legacy parity CLI (standalone)
 │   └── docker-compose.yml
-├── documentation/
-├── prototypes/               # read-only
-└── legacy-implementations/   # read-only (.NET)
+└── docs/                     # specs/ (Kairos-synced) + superpowers/
 ```
+
+The legacy .NET apps are **not** in this repo — only the legacy MySQL dump, at
+`info/bd_ex.sql` (untracked, real customer data; consumed by the migration CLI).
 
 ### Backend (`new-implementation/backend/src/`)
 
@@ -100,12 +111,20 @@ NestJS module-per-domain pattern:
 | `modules/users` | User CRUD (admin) |
 | `modules/notifications` | In-app notifications |
 | `modules/settings` | App configuration |
+| `modules/bootstrap` | First admin + system roles seeded on boot |
 
 Each module owns its own `entities/`, `dto/`, `controllers/`, `services/`.
 
 **Auth flow:** Local strategy (email/password → bcrypt) → JWT access token (1h) + refresh token (7d). JWT strategy guards all protected routes. Multi-tenancy via `company_id` column on all tenant-scoped entities.
 
-**Database:** TypeORM with `synchronize: true` in development only. In production, schema is applied from `database/schema.sql`. UUID primary keys (char 36). Soft deletes for compliance.
+**Database:** the **entities are the source of truth**, and the schema is owned by
+TypeORM migrations (`backend/src/database/migrations/`). `database/schema.sql` is
+historical and divergent — never edit it to change the schema. Connection config
+lives in `backend/src/database/data-source.ts`: `synchronize` is on whenever
+`NODE_ENV !== 'production'` (so also under `migration`/`test` — the migration CLI
+defends itself by forcing `synchronize: false` in `migration/src/core/provision.ts`),
+and pending migrations run on boot when `DB_RUN_MIGRATIONS=true` (set in both
+compose files). UUID primary keys (char 36). Soft deletes for compliance.
 
 ### Frontend (`new-implementation/frontend/`)
 
@@ -133,7 +152,7 @@ types/                        # TypeScript interfaces, one file per domain
 messages/                     # i18n: es.json (default), en.json
 ```
 
-**State:** Zustand (`authStore`) persisted to localStorage for auth tokens. Server state via TanStack Query v5 (5-min stale time).
+**State:** Zustand — `authStore` (persisted to localStorage for auth tokens) and `uiStore`. Server state via TanStack Query v5 (5-min stale time).
 
 **API client:** `lib/api/client.ts` — Axios instance with JWT Bearer interceptor and automatic token refresh on 401.
 
@@ -149,12 +168,17 @@ messages/                     # i18n: es.json (default), en.json
 
 Backend env vars (create `new-implementation/backend/.env`):
 ```
-DB_HOST=localhost
-DB_PORT=3306
+DB_HOST=localhost             # `mysql` when the backend runs inside compose
+DB_PORT=3308                  # host → compose MySQL; it is 3306 inside the container
 DB_USERNAME=pos_user
 DB_PASSWORD=...
 DB_NAME=pos_db
 JWT_SECRET=...
+JWT_REFRESH_SECRET=...        # JWT_EXPIRES_IN / JWT_REFRESH_EXPIRES_IN optional
+CORS_ORIGINS=...
+DB_RUN_MIGRATIONS=true        # run pending migrations on boot
+BOOTSTRAP_ADMIN_EMAIL=...     # + BOOTSTRAP_ADMIN_PASSWORD (min 12), BOOTSTRAP_ADMIN_NAME,
+                              #   BOOTSTRAP_COMPANY_NAME
 NODE_ENV=development
 ```
 
@@ -172,7 +196,8 @@ MySQL Docker port is `3308` on the host (maps to 3306 inside).
 - **Schema-Driven Development:** Define TypeScript types in `types/` before implementing features. Zod is available for runtime validation.
 - **Component size:** Max 200 lines per component. Extract logic into hooks or utils when approaching the limit.
 - **Feature structure:** Each domain follows the same pattern in both frontend and backend — don't introduce new patterns without good reason.
-- **TypeORM `synchronize`:** Never enable in production. Schema changes go through `database/schema.sql`.
+- **Schema changes go through migrations** — never `database/schema.sql`, and never by relying on `synchronize`.
+- **CI gates on `main` (4 required checks):** "Backend — test + build", "Frontend — build", "Frontend — i18n checks", "Lint — backend + frontend". Run `lint:ci` in both apps and the two i18n smoke scripts before pushing.
 - **RBAC:** Use decorators from `modules/auth/decorators/` to protect backend routes. Frontend should also guard UI based on user roles from `authStore`.
 
 ---
