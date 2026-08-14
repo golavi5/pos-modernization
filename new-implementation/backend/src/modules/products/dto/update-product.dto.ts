@@ -1,6 +1,19 @@
 import { Transform } from 'class-transformer';
 import { IsString, IsOptional, IsNumber, Min, Max, IsBoolean, IsUrl, IsUUID, Length, Matches } from 'class-validator';
-import { emptyToUndefined } from './create-product.dto';
+
+/**
+ * Distinto de `emptyToUndefined` (create-product.dto.ts) a propósito: en
+ * `update()`, `products.service.ts` hace `Object.assign(product,
+ * updateProductDto)` y TypeORM's `save` trata `undefined` como "no tocar este
+ * campo". Si aquí mapeáramos `''` a `undefined` como en el alta, vaciar el
+ * campo desde el formulario de edición sería un no-op silencioso — antes de
+ * este DTO compartir el transform de creación, `''` daba un 400 (`@Length(1,
+ * 100)`), ruidoso pero correcto. `null` sí es un valor real para TypeORM: lo
+ * escribe. `barcode` e `image_url` son columnas `nullable: true`, así que
+ * NULL es válido en ambas.
+ */
+export const emptyToNull = ({ value }: { value: unknown }) =>
+  typeof value === 'string' && value.trim() === '' ? null : value;
 
 export class UpdateProductDto {
   @IsOptional()
@@ -24,10 +37,10 @@ export class UpdateProductDto {
   sku?: string;
 
   @IsOptional()
-  @Transform(emptyToUndefined)
+  @Transform(emptyToNull)
   @IsString()
   @Length(1, 100)
-  barcode?: string;
+  barcode?: string | null;
 
   @IsOptional()
   @IsUUID()
@@ -70,7 +83,7 @@ export class UpdateProductDto {
   allow_sale_without_stock?: boolean | null;
 
   @IsOptional()
-  @Transform(emptyToUndefined)
+  @Transform(emptyToNull)
   @IsUrl()
-  image_url?: string;
+  image_url?: string | null;
 }
