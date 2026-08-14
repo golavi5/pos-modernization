@@ -24,6 +24,12 @@ export class AddOversellFlags1781700000000 implements MigrationInterface {
     await q.query(
       'ALTER TABLE `settings` MODIFY COLUMN `allowNegativeStock` TINYINT NOT NULL DEFAULT 1',
     );
+    // Esto también es irreversible, y de forma más grave: el DROP se lleva
+    // por delante la bandera de CADA producto, incluidos los ~272 productos
+    // de excepción heredados del legado cuya preservación es la razón de ser
+    // de esta columna. No hay snapshot ni backup implícito de esos valores —
+    // si este `down` corre en producción, esa excepción por producto se
+    // pierde para siempre y hay que reconstruirla a mano desde el legado.
     await q.query(
       'ALTER TABLE `products` DROP COLUMN `allow_sale_without_stock`',
     );
