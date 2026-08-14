@@ -69,7 +69,7 @@ export default function SalesPage() {
           tax_rate: product.tax_rate ?? TAX_RATE * 100,
           subtotal: product.price,
           stock_quantity: product.stock_quantity,
-          sold_without_stock: product.stock_quantity <= 0,
+          can_sell_without_stock: canOversell,
           image_url: product.image_url,
         },
       ];

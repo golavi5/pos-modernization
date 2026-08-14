@@ -39,7 +39,11 @@ export function SalesCart({
   const t = useTranslations('sales');
   const tDashboard = useTranslations('dashboard');
   const tCommon = useTranslations('common');
-  const oversellCount = items.filter((i) => i.sold_without_stock).length;
+  /** Vivo, no congelado: `sold_without_stock` se calculaba al añadir el artículo y no se
+   *  recalculaba al subir la cantidad, así que una línea que pasaba de 3 a 5 sobre un stock
+   *  de 3 no avisaba de nada. */
+  const isOversold = (i: CartItem) => i.quantity > (i.stock_quantity ?? Infinity);
+  const oversellCount = items.filter(isOversold).length;
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -95,14 +99,17 @@ export function SalesCart({
               </span>
               <button
                 onClick={() => onUpdateQuantity(item.product_id, item.quantity + 1)}
-                disabled={item.quantity >= (item.stock_quantity ?? Infinity)}
+                disabled={
+                  !item.can_sell_without_stock &&
+                  item.quantity >= (item.stock_quantity ?? Infinity)
+                }
                 className="w-5 h-5 rounded bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40 transition-colors"
               >
                 <Plus size={10} />
               </button>
             </div>
             <p className="text-xs font-bold text-foreground w-14 text-right shrink-0">
-              {item.sold_without_stock && <span className="text-amber-500 mr-1">⚠</span>}
+              {isOversold(item) && <span className="text-amber-500 mr-1">⚠</span>}
               {formatCOP(item.subtotal)}
             </p>
             <button
