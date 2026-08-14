@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { CreateProductDto } from '@/types/product';
 import type { Translate } from '@/types/i18n';
+import { AllowSaleWithoutStockField } from './AllowSaleWithoutStockField';
 
 interface ProductFormFieldsProps {
   formData: CreateProductDto;
-  onChange: (field: keyof CreateProductDto, value: string | number) => void;
+  onChange: (field: keyof CreateProductDto, value: string | number | boolean | null) => void;
   t: Translate<'products'>;
 }
 
@@ -124,6 +125,7 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
           required
         />
       </div>
+      <AllowSaleWithoutStockField formData={formData} onChange={onChange} t={t} />
       <div>
         <Label htmlFor="min_stock_level">{t('minStock')}</Label>
         <Input
