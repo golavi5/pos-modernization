@@ -4,11 +4,13 @@ import { Repository } from 'typeorm';
 import { ProductsService } from '../products.service';
 import { Product } from '../entities/product.entity';
 import { User } from '../../auth/entities/user.entity';
-import { NotFoundException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { SettingsService } from '../../settings/services/settings.service';
 
 describe('ProductsService', () => {
   let service: ProductsService;
   let repository: Repository<Product>;
+  let settingsService: SettingsService;
   let mockUser: User;
 
   beforeEach(async () => {
@@ -19,12 +21,17 @@ describe('ProductsService', () => {
           provide: getRepositoryToken(Product),
           useClass: Repository,
         },
+        {
+          provide: SettingsService,
+          useValue: { getSettings: jest.fn(async () => ({ allowNegativeStock: false })) },
+        },
       ],
     }).compile();
 
     service = module.get<ProductsService>(ProductsService);
     repository = module.get<Repository<Product>>(getRepositoryToken(Product));
-    
+    settingsService = module.get<SettingsService>(SettingsService);
+
     mockUser = {
       id: 'user-uuid',
       company_id: 'company-uuid',
@@ -55,8 +62,8 @@ describe('ProductsService', () => {
       jest.spyOn(repository, 'findAndCount').mockResolvedValue([mockProducts, 1]);
 
       const result = await service.findAll(mockUser, { offset: 0, limit: 10, is_active: true, sort: 'created_at', order: 'DESC' } as any);
-      
-      expect(result.data).toEqual(mockProducts);
+
+      expect(result.data).toEqual(mockProducts.map((p) => ({ ...p, can_sell_without_stock: false })));
       expect(result.meta.total).toBe(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { company_id: mockUser.company_id, is_active: true },
@@ -104,6 +111,20 @@ describe('ProductsService', () => {
   });
 
   describe('create', () => {
+    beforeEach(() => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
+      jest.spyOn(repository, 'create').mockImplementation((d: any) => d as any);
+      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
+    });
+
+    const dto = () => ({
+      name: 'Café',
+      sku: 'PRD-001',
+      price: 1000,
+      stock_quantity: 5,
+      tax_rate: 19,
+    }) as any;
+
     it('should create a new product successfully', async () => {
       const createProductDto = {
         name: 'New Product',
@@ -122,14 +143,14 @@ describe('ProductsService', () => {
         created_at: new Date(),
         updated_at: new Date(),
       } as Product;
-      
+
       jest.spyOn(repository, 'findOne').mockResolvedValue(undefined); // No existing product with same SKU
       jest.spyOn(repository, 'create').mockReturnValue(savedProduct);
       jest.spyOn(repository, 'save').mockResolvedValue(savedProduct);
 
       const result = await service.create(createProductDto, mockUser);
-      
-      expect(result).toEqual(savedProduct);
+
+      expect(result).toEqual({ ...savedProduct, can_sell_without_stock: false });
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { sku: createProductDto.sku, company_id: mockUser.company_id },
       });
@@ -153,7 +174,7 @@ describe('ProductsService', () => {
         created_at: new Date(),
         updated_at: new Date(),
       } as Product;
-      
+
       jest.spyOn(repository, 'findOne').mockResolvedValue(existingProduct);
 
       await expect(service.create(createProductDto, mockUser)).rejects.toThrow(
@@ -161,7 +182,7 @@ describe('ProductsService', () => {
       );
     });
 
-    it('should throw UnauthorizedException if company_id mismatch', async () => {
+    it('creates the product under the JWT company_id even if the body carries a different one', async () => {
       const createProductDto = {
         name: 'New Product',
         sku: 'NEW001',
@@ -173,11 +194,30 @@ describe('ProductsService', () => {
         created_by: mockUser.id,
       };
 
-      jest.spyOn(repository, 'findOne').mockResolvedValue(undefined); // No SKU conflict
+      // Uses the beforeEach's pass-through find/create/save: no SKU conflict,
+      // and the persisted shape is whatever the service handed the repository.
+      const result = await service.create(createProductDto, mockUser);
 
-      await expect(service.create(createProductDto, mockUser)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      expect(result.company_id).toBe(mockUser.company_id);
+      expect(result.company_id).not.toBe('different-company-id');
+    });
+
+    it('toma company_id y created_by del usuario del JWT', async () => {
+      const created = await service.create(dto(), mockUser);
+
+      expect(created.company_id).toBe('company-uuid');
+      expect(created.created_by).toBe('user-uuid');
+    });
+
+    it('un company_id ajeno en el body no crea producto en esa empresa', async () => {
+      // Escenario: el ValidationPipe no descartó el campo (pipe mal configurado,
+      // o una llamada interna que se salta el pipe). El servicio no debe fiarse.
+      const hostile = { ...dto(), company_id: 'otra-empresa' };
+
+      const created = await service.create(hostile, mockUser);
+
+      expect(created.company_id).toBe('company-uuid');
+      expect(created.company_id).not.toBe('otra-empresa');
     });
   });
 
@@ -213,8 +253,8 @@ describe('ProductsService', () => {
       jest.spyOn(repository, 'save').mockResolvedValue(updatedProduct);
 
       const result = await service.update(productId, updateProductDto, mockUser);
-      
-      expect(result).toEqual(updatedProduct);
+
+      expect(result).toEqual({ ...updatedProduct, can_sell_without_stock: false });
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: productId, company_id: mockUser.company_id },
       });
@@ -269,12 +309,110 @@ describe('ProductsService', () => {
 
     it('should throw NotFoundException if product not found', async () => {
       const productId = 'non-existent-id';
-      
+
       jest.spyOn(repository, 'findOne').mockResolvedValue(undefined);
 
       await expect(service.remove(productId, mockUser)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('can_sell_without_stock en las respuestas', () => {
+    it('findAll resuelve la bandera de cada producto contra el global', async () => {
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: true } as any);
+      const products = [
+        { id: '1', allow_sale_without_stock: null },
+        { id: '2', allow_sale_without_stock: false },
+        { id: '3', allow_sale_without_stock: true },
+      ] as any[];
+      jest.spyOn(repository, 'findAndCount').mockResolvedValue([products, 3]);
+
+      const result = await service.findAll(mockUser, {
+        offset: 0, limit: 10, sort: 'created_at', order: 'DESC',
+      } as any);
+
+      expect(result.data.map((p: any) => p.can_sell_without_stock)).toEqual([true, false, true]);
+      // getSettings crea y persiste la fila si la empresa no tiene ninguna: una
+      // resolución por producto convertiría GET /products en N upserts.
+      expect(settingsService.getSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('findOneForApi resuelve la bandera igual que findAll, incluso cuando el producto la anula (272 legados)', async () => {
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: true } as any);
+      const entity = { id: '1', company_id: 'company-uuid', allow_sale_without_stock: false } as any;
+      jest.spyOn(repository, 'findOne').mockResolvedValue(entity);
+
+      const result = await service.findOneForApi('1', mockUser);
+
+      expect(result.can_sell_without_stock).toBe(false);
+    });
+
+    it('findOne sigue devolviendo la entidad, sin el campo resuelto', async () => {
+      // Lo usan deductStock y SalesService.createOrder, que hacen save() con lo
+      // que devuelve: no puede llevar propiedades que no son columna.
+      const entity = { id: '1', company_id: 'company-uuid', allow_sale_without_stock: null } as any;
+      jest.spyOn(repository, 'findOne').mockResolvedValue(entity);
+
+      const found = await service.findOne('1', mockUser);
+
+      expect(found).toBe(entity);
+      expect('can_sell_without_stock' in found).toBe(false);
+    });
+
+    it('getOversellPolicy lee el ajuste de la empresa', async () => {
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: true } as any);
+
+      await expect(service.getOversellPolicy('company-uuid'))
+        .resolves.toEqual({ allowNegativeStock: true });
+    });
+  });
+
+  describe('deductStock — venta sin existencias', () => {
+    const productWith = (flag: boolean | null, stock = 1) => ({
+      id: 'p1', company_id: 'company-uuid', name: 'Café',
+      stock_quantity: stock, allow_sale_without_stock: flag,
+    }) as any;
+
+    beforeEach(() => {
+      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: false } as any);
+    });
+
+    it('sin bandera, sigue rechazando por stock insuficiente', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(false));
+
+      await expect(service.deductStock('p1', 3, mockUser)).rejects.toThrow(BadRequestException);
+    });
+
+    it('con la bandera, descuenta y deja el stock negativo', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(true));
+
+      const result = await service.deductStock('p1', 3, mockUser);
+
+      expect(result.stock_quantity).toBe(-2);
+    });
+
+    it('con la bandera en null, hereda del global encendido', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(null));
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: true } as any);
+
+      const result = await service.deductStock('p1', 3, mockUser);
+
+      expect(result.stock_quantity).toBe(-2);
+    });
+
+    it('resuelve la politica una sola vez por llamada', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(true));
+
+      await service.deductStock('p1', 3, mockUser);
+
+      expect(settingsService.getSettings).toHaveBeenCalledTimes(1);
     });
   });
 });

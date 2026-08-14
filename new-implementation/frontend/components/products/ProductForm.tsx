@@ -51,6 +51,7 @@ export function ProductForm({
     unit_of_measure: 'unidad',
     tax_rate: 19,
     image_url: '',
+    allow_sale_without_stock: null,
   });
 
   useEffect(() => {
@@ -69,11 +70,15 @@ export function ProductForm({
         unit_of_measure: product.unit_of_measure || 'unidad',
         tax_rate: product.tax_rate || 19,
         image_url: product.image_url || '',
+        allow_sale_without_stock: product.allow_sale_without_stock ?? null,
       });
     }
   }, [product]);
 
-  const handleChange = (field: keyof CreateProductDto, value: string | number) => {
+  const handleChange = (
+    field: keyof CreateProductDto,
+    value: string | number | boolean | null,
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 

@@ -209,7 +209,9 @@
     "cartSubtotal": "Subtotal",
     "cartTax": "VAT (19%)",
     "cartDiscount": "Discount",
-    "clearCartConfirm": "Clear the cart?"
+    "clearCartConfirm": "Clear the cart?",
+    "oversellNoticeOne": "1 item is being sold without stock",
+    "oversellNoticeMany": "{count} items are being sold without stock"
   },
   "products": {
     "title": "Products",
@@ -251,6 +253,10 @@
     "stockQuantity": "Stock quantity *",
     "minStock": "Minimum stock",
     "maxStock": "Maximum stock",
+    "allowSaleWithoutStock": "Sale without stock",
+    "allowSaleWithoutStockInherit": "Inherit from global setting",
+    "allowSaleWithoutStockYes": "Yes, allow",
+    "allowSaleWithoutStockNo": "Do not allow",
     "taxRate": "Tax rate (%)",
     "imageUrl": "Image URL",
     "imageUrlPlaceholder": "https://example.com/image.jpg",

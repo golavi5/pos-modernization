@@ -61,6 +61,18 @@ export class ProductResponseDto {
 
   @Expose()
   @IsOptional()
+  @IsBoolean()
+  allow_sale_without_stock?: boolean | null;
+
+  /**
+   * Resuelto por el backend: `allow_sale_without_stock ?? settings.allowNegativeStock`.
+   */
+  @Expose()
+  @IsBoolean()
+  can_sell_without_stock: boolean;
+
+  @Expose()
+  @IsOptional()
   @IsUrl()
   image_url?: string;
 

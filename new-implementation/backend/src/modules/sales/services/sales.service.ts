@@ -15,6 +15,7 @@ import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 import { OrderQueryDto } from '../dto/order-query.dto';
 import { OrderCalculationService } from './order-calculation.service';
 import { ProductsService } from '../../products/products.service';
+import { canSellWithoutStock } from '../../products/can-sell-without-stock';
 import { User } from '../../auth/entities/user.entity';
 
 @Injectable()
@@ -101,6 +102,7 @@ export class SalesService {
     }
 
     // Check stock availability
+    const policy = await this.productsService.getOversellPolicy(user.company_id);
     for (const item of dto.items) {
       const product = await this.productsService.findOne(item.product_id, user);
       if (!product) {
@@ -108,7 +110,10 @@ export class SalesService {
           `Product with ID ${item.product_id} not found`,
         );
       }
-      if (product.stock_quantity < item.quantity) {
+      if (
+        product.stock_quantity < item.quantity &&
+        !canSellWithoutStock(product, policy)
+      ) {
         throw new BadRequestException(
           `Insufficient stock for product ${product.name}. Available: ${product.stock_quantity}, Requested: ${item.quantity}`,
         );

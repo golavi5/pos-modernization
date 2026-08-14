@@ -13,6 +13,7 @@ describe('recordPayment — cierre de venta', () => {
   let manager: any;
   let locations: any;
   let dataSource: any;
+  let productsService: any;
   let inserted: any[];
   let priorPayments: any[];
   let priorMovements: any[];
@@ -46,12 +47,16 @@ describe('recordPayment — cierre de venta', () => {
     };
     dataSource = { transaction: jest.fn(async (cb: any) => cb(manager)) };
     locations = { ensureDefaultLocation: jest.fn(async () => 'loc1') };
+    productsService = {
+      getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: false })),
+    } as any;
 
     service = new PaymentsService(
       { findOne: jest.fn(async () => order) } as any, // orderRepository
       { save: jest.fn(async (p: any) => p) } as any,  // paymentRepository
       dataSource,
       locations,
+      productsService,
     );
   });
 
@@ -79,6 +84,18 @@ describe('recordPayment — cierre de venta', () => {
     expect(order.status).toBe(OrderStatus.DRAFT);
     expect(product.stock_quantity).toBe(50);
     expect(inserted).toHaveLength(0);
+  });
+
+  // Fix MERGE-BLOCKING: `getOversellPolicy` se resuelve ANTES de abrir la
+  // transacción (usa el `DataSource`, no el `manager`, así que hacerlo dentro
+  // competiría por una segunda conexión del pool mientras la transacción ya
+  // sostiene la suya y un `pessimistic_write`). Un pago parcial nunca entra al
+  // bloque `becomesCompleted && !alreadyDeducted`, así que si la resolución de
+  // la política volviera a vivir ahí dentro, esta llamada NO se produciría.
+  it('pago parcial: igual resuelve la política de sobreventa (se hizo fuera de la transacción)', async () => {
+    await service.recordPayment('o1', { payment_method: 'cash', amount: 10000 } as any, USER);
+
+    expect(productsService.getOversellPolicy).toHaveBeenCalledWith('c1');
   });
 
   it('segundo pago sobre pedido ya completado: NO vuelve a descontar', async () => {
@@ -152,6 +169,74 @@ describe('recordPayment — cierre de venta', () => {
 
     expect(order.status).not.toBe(OrderStatus.COMPLETED);
   });
+
+  describe('venta sin existencias', () => {
+    it('sin bandera, sigue rechazando el cobro por stock insuficiente', async () => {
+      product.stock_quantity = 1;
+      product.allow_sale_without_stock = false;
+
+      await expect(
+        service.recordPayment('o1', { payment_method: 'cash', amount: 29750 } as any, USER),
+      ).rejects.toThrow('Insufficient stock');
+      expect(product.stock_quantity).toBe(1);
+    });
+
+    it('con la bandera del producto, descuenta y deja el stock negativo', async () => {
+      product.stock_quantity = 1;
+      product.allow_sale_without_stock = true;
+
+      await service.recordPayment('o1', { payment_method: 'cash', amount: 29750 } as any, USER);
+
+      expect(product.stock_quantity).toBe(-1);
+      expect(order.status).toBe(OrderStatus.COMPLETED);
+    });
+
+    it('marca la nota del movimiento cuando el stock queda negativo', async () => {
+      product.stock_quantity = 1;
+      product.allow_sale_without_stock = true;
+
+      await service.recordPayment('o1', { payment_method: 'cash', amount: 29750 } as any, USER);
+
+      const mov = inserted.find((i) => i.entity === StockMovement);
+      expect(mov.obj.movement_type).toBe(MovementType.OUT);
+      expect(mov.obj.quantity).toBe(2);
+      expect(mov.obj.notes).toBe('Venta ORD1 (sin existencias)');
+    });
+
+    it('una venta CON existencias deja la nota sin marcar', async () => {
+      product.stock_quantity = 50;
+      product.allow_sale_without_stock = true;
+
+      await service.recordPayment('o1', { payment_method: 'cash', amount: 29750 } as any, USER);
+
+      const mov = inserted.find((i) => i.entity === StockMovement);
+      expect(mov.obj.notes).toBe('Venta ORD1');
+    });
+
+    it('con la bandera en null, hereda del global encendido', async () => {
+      product.stock_quantity = 0;
+      product.allow_sale_without_stock = null;
+      productsService.getOversellPolicy.mockResolvedValue({ allowNegativeStock: true });
+
+      await service.recordPayment('o1', { payment_method: 'cash', amount: 29750 } as any, USER);
+
+      expect(product.stock_quantity).toBe(-2);
+    });
+
+    // La política debe resolverse UNA vez por cobro, no una vez por ítem: si se
+    // moviera dentro del `for`, un pedido con 3 líneas dispararía 3 llamadas.
+    it('resuelve la política de sobreventa una sola vez, aunque el pedido tenga varios ítems', async () => {
+      order.order_items = [
+        { product_id: 'p1', quantity: 1 },
+        { product_id: 'p2', quantity: 1 },
+        { product_id: 'p3', quantity: 1 },
+      ];
+
+      await service.recordPayment('o1', { payment_method: 'cash', amount: 29750 } as any, USER);
+
+      expect(productsService.getOversellPolicy).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 // 🟠 IMPORTANT de la revisión: sin esto, un reembolso dejaba el inventario
@@ -197,6 +282,9 @@ describe('refundPayment — deshacer el cierre de venta', () => {
       { findOne: jest.fn(async () => payment), save: jest.fn(async (p: any) => p), find: jest.fn(async () => priorPayments) } as any,
       { transaction: jest.fn(async (cb: any) => cb(manager)) } as any,
       { ensureDefaultLocation: jest.fn(async () => 'loc1') } as any,
+      // refundPayment no consulta la política de sobreventa; está aquí porque el
+      // constructor lo pide.
+      {} as any,
     );
   });
 

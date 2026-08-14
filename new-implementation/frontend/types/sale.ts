@@ -83,6 +83,9 @@ export interface CartItem extends SaleItem {
   product_id: string;
   product_name: string;
   stock_quantity: number;
+  /** Permiso resuelto por el backend, copiado al añadir. No es estado: no dice si esta
+   *  línea está sobrevendida, dice si se le permite estarlo. */
+  can_sell_without_stock?: boolean;
   image_url?: string;
 }
 

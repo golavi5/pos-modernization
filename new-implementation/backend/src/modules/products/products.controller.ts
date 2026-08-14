@@ -42,7 +42,7 @@ export class ProductsController {
     @Param('id') id: string,
     @CurrentUser() user: User,
   ): Promise<ProductResponseDto> {
-    return await this.productsService.findOne(id, user);
+    return await this.productsService.findOneForApi(id, user);
   }
 
   @Post()

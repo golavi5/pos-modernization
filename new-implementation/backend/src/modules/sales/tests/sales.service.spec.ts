@@ -53,6 +53,7 @@ describe('SalesService', () => {
           useValue: {
             findOne: jest.fn(),
             deductStock: jest.fn(),
+            getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: false })),
           },
         },
       ],
@@ -251,6 +252,74 @@ describe('SalesService', () => {
           payment_status: PaymentStatus.UNPAID,
         }),
       );
+    });
+  });
+
+  describe('createOrder — venta sin existencias', () => {
+    const dto = {
+      items: [{ product_id: 'p1', quantity: 3, unit_price: 1000, tax_rate: 19 }],
+    } as any;
+
+    const productWith = (flag: boolean | null) => ({
+      id: 'p1', name: 'Café', company_id: 1, stock_quantity: 0,
+      price: 1000, tax_rate: 19, allow_sale_without_stock: flag,
+    }) as any;
+
+    beforeEach(() => {
+      jest.spyOn(orderRepository, 'save').mockImplementation(async (o: any) => ({ ...o, id: 'o1' }));
+      jest.spyOn(orderItemRepository, 'save').mockImplementation(async (i: any) => i);
+      jest.spyOn(service, 'getOrderById').mockResolvedValue({ id: 'o1' } as any);
+      jest.spyOn(orderRepository, 'findAndCount').mockResolvedValue([[], 0]);
+    });
+
+    it('rechaza si el producto no puede venderse sin existencias', async () => {
+      jest.spyOn(productsService, 'findOne').mockResolvedValue(productWith(false));
+
+      await expect(service.createOrder(dto, mockUser)).rejects.toThrow(BadRequestException);
+    });
+
+    it('acepta si la bandera del producto lo permite, con el global apagado', async () => {
+      jest.spyOn(productsService, 'findOne').mockResolvedValue(productWith(true));
+
+      await expect(service.createOrder(dto, mockUser)).resolves.toBeDefined();
+    });
+
+    it('con la bandera en null, hereda del global encendido', async () => {
+      jest.spyOn(productsService, 'findOne').mockResolvedValue(productWith(null));
+      jest.spyOn(productsService, 'getOversellPolicy')
+        .mockResolvedValue({ allowNegativeStock: true });
+
+      await expect(service.createOrder(dto, mockUser)).resolves.toBeDefined();
+    });
+
+    it('un producto ya en negativo se puede vender si la bandera lo permite', async () => {
+      // 7.809 productos del catálogo legado llegan con stock negativo.
+      jest.spyOn(productsService, 'findOne')
+        .mockResolvedValue({ ...productWith(true), stock_quantity: -4 });
+
+      await expect(service.createOrder(dto, mockUser)).resolves.toBeDefined();
+    });
+
+    it('resuelve la política una sola vez, no por ítem', async () => {
+      // dto propio con 3 ítems: si getOversellPolicy se moviera dentro del
+      // bucle, esta aserción pasaría a fallar con 3 llamadas en vez de 1.
+      // SettingsService.getSettings crea y persiste la fila de settings en
+      // el primer acceso, así que resolverla por ítem convertiría un pedido
+      // en N upserts.
+      const multiItemDto = {
+        items: [
+          { product_id: 'p1', quantity: 3, unit_price: 1000, tax_rate: 19 },
+          { product_id: 'p2', quantity: 1, unit_price: 500, tax_rate: 19 },
+          { product_id: 'p3', quantity: 2, unit_price: 750, tax_rate: 19 },
+        ],
+      } as any;
+
+      jest.spyOn(productsService, 'findOne').mockImplementation(async (id: string) =>
+        ({ ...productWith(true), id, stock_quantity: 0 }) as any,
+      );
+
+      await expect(service.createOrder(multiItemDto, mockUser)).resolves.toBeDefined();
+      expect(productsService.getOversellPolicy).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -51,5 +51,16 @@ export default {
     { from: 'IdInventario',  to: 'price',         verify: { tolerance: 0.01 },
       transform: (v, c) => clampNum(c.lookups.inventarios_precios?.get(String(v))?.Precio, 0, 99999999.99, 'price') },
     { from: 'EsActivo',      to: 'is_active',     transform: (v) => !!Number(v), verify: 'ignore' },
+    // Sobreventa por producto. `allow_sale_without_stock` es tri-estado: NULL significa
+    // "hereda el switch global de la empresa". Mapeamos NULL a NULL (no a false) porque
+    // `!!Number(null)` daria false, que aqui NO significa "sin dato" sino "prohibido
+    // vender sin existencias aunque el global este encendido" — el valor mas restrictivo
+    // del modelo, aplicado por defecto a filas que nunca lo expresaron. El diseno afirma
+    // que el dump real no trae NULLs en esta columna, pero esa cifra no se ha comprobado
+    // en este arbol; mapear NULL a NULL hace que la cuestion no importe para el codigo.
+    // `verify: 'ignore'` como en `EsActivo`: el legado guarda tinyint (1/0) y el destino
+    // un booleano, así que 'exact' compararía 1 contra true y reddería el parity.
+    { from: 'EsFactSinExistencia', to: 'allow_sale_without_stock',
+      transform: (v) => (v == null ? null : !!Number(v)), verify: 'ignore' },
   ],
 } satisfies Rule;

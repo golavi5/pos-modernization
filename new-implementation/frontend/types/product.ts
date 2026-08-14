@@ -17,6 +17,10 @@ export interface Product {
   tax_rate?: number;
   is_active: boolean;
   image_url?: string;
+  /** Tri-estado por producto; `null` hereda del ajuste global de la empresa. */
+  allow_sale_without_stock?: boolean | null;
+  /** Resuelto por el backend. La caja no puede resolverlo: GET /settings es admin/manager. */
+  can_sell_without_stock?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +48,7 @@ export interface CreateProductDto {
   unit_of_measure?: string;
   tax_rate?: number;
   image_url?: string;
+  allow_sale_without_stock?: boolean | null;
 }
 
 export interface UpdateProductDto {
@@ -63,6 +68,7 @@ export interface UpdateProductDto {
   tax_rate?: number;
   is_active?: boolean;
   image_url?: string;
+  allow_sale_without_stock?: boolean | null;
 }
 
 export interface ProductQueryParams {

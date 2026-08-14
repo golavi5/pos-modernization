@@ -209,7 +209,9 @@
     "cartSubtotal": "Subtotal",
     "cartTax": "IVA (19%)",
     "cartDiscount": "Descuento",
-    "clearCartConfirm": "¿Limpiar el carrito?"
+    "clearCartConfirm": "¿Limpiar el carrito?",
+    "oversellNoticeOne": "1 artículo se vende sin existencias",
+    "oversellNoticeMany": "{count} artículos se venden sin existencias"
   },
   "products": {
     "title": "Productos",
@@ -251,6 +253,10 @@
     "stockQuantity": "Cantidad en stock *",
     "minStock": "Stock mínimo",
     "maxStock": "Stock máximo",
+    "allowSaleWithoutStock": "Venta sin existencias",
+    "allowSaleWithoutStockInherit": "Heredar del ajuste global",
+    "allowSaleWithoutStockYes": "Sí, permitir",
+    "allowSaleWithoutStockNo": "No permitir",
     "taxRate": "Tasa de impuesto (%)",
     "imageUrl": "URL de imagen",
     "imageUrlPlaceholder": "https://example.com/image.jpg",

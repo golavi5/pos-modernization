@@ -77,7 +77,11 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
       {/* Product grid */}
       <div className="grid grid-cols-3 gap-2.5 overflow-auto flex-1 content-start pb-2">
         {filtered.map((product: Product) => {
-          const outOfStock = product.stock_quantity === 0;
+          const canOversell = product.can_sell_without_stock ?? false;
+          const noStock = product.stock_quantity <= 0;
+          // `outOfStock` pasa a significar "no se puede vender", no "no hay".
+          const outOfStock = noStock && !canOversell;
+          const sellingWithoutStock = noStock && canOversell;
           const lowStock = product.stock_quantity > 0 && product.stock_quantity <= 5;
           return (
             <button
@@ -116,12 +120,12 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
                     'text-[9px] font-semibold px-1.5 py-0.5 rounded border',
                     outOfStock
                       ? 'text-destructive border-destructive/30'
-                      : lowStock
+                      : sellingWithoutStock || lowStock
                       ? 'text-amber-500 border-amber-500/30'
                       : 'text-emerald-500 border-emerald-500/30'
                   )}
                 >
-                  {outOfStock ? tInventory('table.noStock') : product.stock_quantity}
+                  {noStock ? tInventory('table.noStock') : product.stock_quantity}
                 </span>
               </div>
             </button>

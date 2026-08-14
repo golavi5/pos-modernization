@@ -20,6 +20,8 @@ import {
   MovementType,
 } from '../../inventory/entities/stock-movement.entity';
 import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
+import { ProductsService } from '../../products/products.service';
+import { canSellWithoutStock } from '../../products/can-sell-without-stock';
 
 @Injectable()
 export class PaymentsService {
@@ -32,6 +34,7 @@ export class PaymentsService {
     private readonly paymentRepository: Repository<Payment>,
     private readonly dataSource: DataSource,
     private readonly locations: InventoryLocationsService,
+    private readonly productsService: ProductsService,
   ) {}
 
   async recordPayment(
@@ -71,6 +74,28 @@ export class PaymentsService {
         `Payment amount ${dto.amount} exceeds remaining balance ${remainingBalance}`,
       );
     }
+
+    // Se resuelve fuera de la transacción, ANTES de abrirla: `getOversellPolicy`
+    // llega a `SettingsService`, que consulta contra el `DataSource` (no contra
+    // `manager`) y por tanto abre su propia conexión del pool. Hacerlo mientras
+    // la transacción de abajo ya sostiene una conexión y un `pessimistic_write`
+    // sobre el pedido (y, a partir de la segunda vuelta del bucle, sobre
+    // productos) puede agotar el pool bajo concurrencia: no hay `extra` de pool
+    // configurado, así que mysql2 usa sus valores por defecto
+    // (`connectionLimit: 10`, `waitForConnections: true`, `queueLimit: 0` — cola
+    // sin límite y sin timeout de adquisición), y diez cobros concurrentes
+    // bastan para dejarlos a todos esperando una conexión que nadie libera.
+    // También evita una segunda causa del mismo bug: `getSettings` inserta la
+    // fila de settings si la empresa no tiene una, y hacerlo en una conexión
+    // fuera de esta transacción deja esa inserción vulnerable a una carrera con
+    // otro cobro concurrente (duplicado sobre `idx_settings_company`).
+    // Depende solo de `order.company_id`, que ya tenemos de la lectura de
+    // arriba (la misma empresa que `locked.company_id` dentro de la
+    // transacción, porque la relectura busca por el mismo `orderId` +
+    // `company_id`).
+    const policy = await this.productsService.getOversellPolicy(
+      order.company_id,
+    );
 
     const savedPayment = await this.dataSource.transaction(async (manager) => {
       // Lectura BLOQUEANTE del pedido: serializa los pagos concurrentes sobre el
@@ -143,6 +168,10 @@ export class PaymentsService {
           manager,
         );
 
+        // `policy` ya se resolvió ANTES de abrir esta transacción (ver arriba):
+        // es una lectura de configuración que no cambia por ítem y que no debe
+        // competir por una segunda conexión mientras esta transacción sostiene
+        // la suya y sus bloqueos.
         for (const item of items) {
           // Bloqueo pesimista: entre crear el pedido y cobrarlo, otra caja pudo
           // llevarse la última unidad. Revalidamos dentro de la transacción.
@@ -155,7 +184,10 @@ export class PaymentsService {
               `Product ${item.product_id} not found`,
             );
           }
-          if (product.stock_quantity < item.quantity) {
+          // El bloqueo pesimista sigue siendo necesario aunque se permita la
+          // sobreventa: es lo que serializa el descuento entre dos cajas.
+          const oversold = product.stock_quantity < item.quantity;
+          if (oversold && !canSellWithoutStock(product, policy)) {
             throw new BadRequestException(
               `Insufficient stock for ${product.name}. Available: ${product.stock_quantity}, required: ${item.quantity}`,
             );
@@ -173,7 +205,12 @@ export class PaymentsService {
               movement_type: MovementType.OUT,
               quantity: item.quantity,
               reference_id: locked.id,
-              notes: `Venta ${locked.order_number}`,
+              // Mismo OUT y misma cantidad: los informes que agrupan por tipo
+              // no se enteran. La nota es lo único que distingue la sobreventa,
+              // y con ella queda el rastro de CUÁNDO el inventario se fue a negativo.
+              notes: oversold
+                ? `Venta ${locked.order_number} (sin existencias)`
+                : `Venta ${locked.order_number}`,
               created_by: user.id,
             }),
           );
