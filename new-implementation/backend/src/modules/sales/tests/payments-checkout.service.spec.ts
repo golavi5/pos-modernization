@@ -86,6 +86,18 @@ describe('recordPayment — cierre de venta', () => {
     expect(inserted).toHaveLength(0);
   });
 
+  // Fix MERGE-BLOCKING: `getOversellPolicy` se resuelve ANTES de abrir la
+  // transacción (usa el `DataSource`, no el `manager`, así que hacerlo dentro
+  // competiría por una segunda conexión del pool mientras la transacción ya
+  // sostiene la suya y un `pessimistic_write`). Un pago parcial nunca entra al
+  // bloque `becomesCompleted && !alreadyDeducted`, así que si la resolución de
+  // la política volviera a vivir ahí dentro, esta llamada NO se produciría.
+  it('pago parcial: igual resuelve la política de sobreventa (se hizo fuera de la transacción)', async () => {
+    await service.recordPayment('o1', { payment_method: 'cash', amount: 10000 } as any, USER);
+
+    expect(productsService.getOversellPolicy).toHaveBeenCalledWith('c1');
+  });
+
   it('segundo pago sobre pedido ya completado: NO vuelve a descontar', async () => {
     order.status = OrderStatus.COMPLETED;
     order.payment_status = OrderPaymentStatus.PAID;

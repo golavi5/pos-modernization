@@ -75,6 +75,28 @@ export class PaymentsService {
       );
     }
 
+    // Se resuelve fuera de la transacción, ANTES de abrirla: `getOversellPolicy`
+    // llega a `SettingsService`, que consulta contra el `DataSource` (no contra
+    // `manager`) y por tanto abre su propia conexión del pool. Hacerlo mientras
+    // la transacción de abajo ya sostiene una conexión y un `pessimistic_write`
+    // sobre el pedido (y, a partir de la segunda vuelta del bucle, sobre
+    // productos) puede agotar el pool bajo concurrencia: no hay `extra` de pool
+    // configurado, así que mysql2 usa sus valores por defecto
+    // (`connectionLimit: 10`, `waitForConnections: true`, `queueLimit: 0` — cola
+    // sin límite y sin timeout de adquisición), y diez cobros concurrentes
+    // bastan para dejarlos a todos esperando una conexión que nadie libera.
+    // También evita una segunda causa del mismo bug: `getSettings` inserta la
+    // fila de settings si la empresa no tiene una, y hacerlo en una conexión
+    // fuera de esta transacción deja esa inserción vulnerable a una carrera con
+    // otro cobro concurrente (duplicado sobre `idx_settings_company`).
+    // Depende solo de `order.company_id`, que ya tenemos de la lectura de
+    // arriba (la misma empresa que `locked.company_id` dentro de la
+    // transacción, porque la relectura busca por el mismo `orderId` +
+    // `company_id`).
+    const policy = await this.productsService.getOversellPolicy(
+      order.company_id,
+    );
+
     const savedPayment = await this.dataSource.transaction(async (manager) => {
       // Lectura BLOQUEANTE del pedido: serializa los pagos concurrentes sobre el
       // mismo pedido y, en InnoDB, devuelve la última fila comprometida — no el
@@ -146,16 +168,10 @@ export class PaymentsService {
           manager,
         );
 
-        // Se resuelve UNA vez, fuera del bucle: es una lectura de configuración
-        // (va contra `settingsRepo`, no contra `manager`) y no cambia por ítem.
-        // `getSettings` puede crear la fila de settings si la empresa no tiene
-        // una; esa escritura no la revierte un rollback de este cobro, pero es
-        // una fila de configuración idempotente, no parte del asiento de
-        // inventario.
-        const policy = await this.productsService.getOversellPolicy(
-          locked.company_id,
-        );
-
+        // `policy` ya se resolvió ANTES de abrir esta transacción (ver arriba):
+        // es una lectura de configuración que no cambia por ítem y que no debe
+        // competir por una segunda conexión mientras esta transacción sostiene
+        // la suya y sus bloqueos.
         for (const item of items) {
           // Bloqueo pesimista: entre crear el pedido y cobrarlo, otra caja pudo
           // llevarse la última unidad. Revalidamos dentro de la transacción.
