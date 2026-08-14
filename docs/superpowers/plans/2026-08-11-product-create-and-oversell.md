@@ -1375,7 +1375,21 @@ y en `interface CreateProductDto` y `UpdateProductDto` del mismo fichero:
   allow_sale_without_stock?: boolean | null;
 ```
 
-En `types/sale.ts`, dentro de `interface CartItem`, añade `sold_without_stock?: boolean;`.
+En `types/sale.ts`, dentro de `interface CartItem`, añade:
+
+```ts
+  /** Permiso resuelto por el backend, copiado al añadir. No es estado: no dice si esta
+   *  línea está sobrevendida, dice si se le permite estarlo. */
+  can_sell_without_stock?: boolean;
+```
+
+> **Corregido durante la ejecución. La primera redacción de esta tarea pedía
+> `sold_without_stock?: boolean`, calculado al añadir el artículo — y eso rompe el aviso
+> justo en el caso más común.** Con stock 3, bandera activa y el cajero vendiendo 5, el
+> valor se congela en `false` al añadir y ya no se recalcula: ni ⚠ en la línea ni aviso
+> agregado, mientras el backend descuenta a −2 sin problema. La venta es correcta; nadie
+> avisa. Y con stock 0 el `+` del carrito nace deshabilitado, porque `1 >= 0`. Lo que hay
+> que llevar en el carrito es el **permiso**; el estado se deriva vivo en cada render.
 
 - [ ] **Step 2: Añade las cadenas i18n**
 
@@ -1433,7 +1447,7 @@ En `app/(panel)/sales/page.tsx`, `handleAddProduct`:
           tax_rate: product.tax_rate ?? TAX_RATE * 100,
           subtotal: product.price,
           stock_quantity: product.stock_quantity,
-          sold_without_stock: product.stock_quantity <= 0,
+          can_sell_without_stock: canOversell,
           image_url: product.image_url,
         },
       ];
@@ -1472,11 +1486,23 @@ En `components/sales/ProductSearch.tsx`, sustituye las dos líneas del `filtered
 
 Así un producto sin existencias vendible se ve en ámbar, pulsable y con el texto "sin existencias", y uno no vendible sigue en rojo y deshabilitado.
 
-En `components/sales/SalesCart.tsx`, calcula el contador justo después de los `useTranslations` (línea ~41):
+En `components/sales/SalesCart.tsx`, deriva el estado **vivo** justo después de los `useTranslations` (línea ~41) — nunca desde una bandera congelada:
 
 ```ts
-  const oversellCount = items.filter((i) => i.sold_without_stock).length;
+  /** Vivo, no congelado: si esto se calculara al añadir el artículo, una línea que pasa
+   *  de 3 a 5 sobre un stock de 3 no avisaría de nada. */
+  const isOversold = (i: CartItem) => i.quantity > (i.stock_quantity ?? Infinity);
+
+  const oversellCount = items.filter(isOversold).length;
 ```
+
+Y el `+` del carrito (línea ~98) tiene que respetar el permiso, o nace muerto para todo producto sin existencias:
+
+```tsx
+                disabled={!item.can_sell_without_stock && item.quantity >= (item.stock_quantity ?? Infinity)}
+```
+
+**Son cuatro guardas, no tres.** Esta del carrito no la nombraba ni la spec ni la primera versión de este plan.
 
 y mete el aviso en el bloque de totales, **antes** de la fila del total (la que pinta `tCommon('total')`, línea ~133):
 
@@ -1490,7 +1516,7 @@ y mete el aviso en el bloque de totales, **antes** de la fila del total (la que 
         )}
 ```
 
-Marca además la línea del artículo: en el `items.map` del carrito, donde se pinta `formatCOP(item.subtotal)` (línea ~104), añade delante `{item.sold_without_stock && <span className="text-amber-500 mr-1">⚠</span>}`.
+Marca además la línea del artículo: en el `items.map` del carrito, donde se pinta `formatCOP(item.subtotal)` (línea ~104), añade delante `{isOversold(item) && <span className="text-amber-500 mr-1">⚠</span>}`.
 
 - [ ] **Step 4: Comprueba tipos, lint e i18n**
 
