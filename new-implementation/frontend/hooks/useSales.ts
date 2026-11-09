@@ -72,7 +72,7 @@ export function useCreateSale() {
 
   return useMutation({
     mutationFn: (data: CreateSaleDto) => salesApi.create(data),
-    // El `QueryClient` global trae `mutations: { retry: 1 }`. Sobre un POST no
+    // Explícito aunque el `QueryClient` global ya trae `retry: false`. Sobre un POST no
     // idempotente eso es un pedido duplicado cada vez que la red falla después
     // de que el backend ya lo creó — y un reintento automático no es una
     // decisión de la caja. Un pedido por carrito, y el reintento lo pide una
@@ -102,7 +102,7 @@ export function useRecordPayment() {
   return useMutation({
     mutationFn: ({ orderId, data }: { orderId: string; data: RecordPaymentDto }) =>
       paymentsApi.record(orderId, data),
-    // Igual que en `useCreateSale`, y aquí es dinero: con el `retry: 1` global,
+    // Igual que en `useCreateSale`, y aquí es dinero: con un `retry: 1`,
     // un timeout sobre un pago que SÍ llegó reenviaba el cobro solo, sin que
     // nadie lo pidiera, y dejaba un segundo `Payment` (un sobrepago que alguien
     // tiene que ir a resolver a mano). Reintentar un cobro es una decisión de
