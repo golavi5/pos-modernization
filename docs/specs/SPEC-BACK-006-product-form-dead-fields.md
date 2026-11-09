@@ -1,6 +1,6 @@
 # M2 — El formulario de producto pide campos que el backend no guarda
 
-**Status**: DRAFT — 2026-11-09. Ítem diferido de `SPEC-BACK-005` §6. Nada implementado.
+**Status**: APPROVED — 2026-11-09 (PR #60). Implementado: campos fuera del formulario, de los tipos y de la tabla; claves i18n sin uso eliminadas. Abierto: sin verificación en navegador.
 
 **Owner**: gandhi
 **Created**: 2026-11-09
