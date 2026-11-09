@@ -1,6 +1,6 @@
 # M2 — La categoría del formulario de producto se descarta en silencio
 
-**Status**: APPROVED — 2026-11-09 (PR #57, #58). Implementado, pero la verificación en navegador FALLÓ ([registro](../verification/2026-11-09-back-004-005-006.md), check 2): `GET /products/categories` devuelve 404 porque `GET /products/:id` (ProductsController, registrado primero) captura `categories`, así que el listado nunca carga — el selector queda vacío, las pestañas de la caja solo muestran «Todas» y el texto del cajero dice «sin categorías» aunque existan. Checks 3–5 bloqueados. Orden de rutas corregido en `products.module.ts` con test de regresión sobre HTTP real (PR #65). **Abierto:** repetir 2–6 y 11 en navegador; sigue APPROVED hasta entonces.
+**Status**: DONE — 2026-11-09 (PR #57, #58, #65). Implementado; verificado en navegador ([registro](../verification/2026-11-09-back-004-005-006.md), checks 2–6). La primera verificación falló (`GET /products/categories` devuelto 404 por `GET /products/:id`); se corrigió el orden de controladores en #65 y la repetición sobre `main` pasó.
 
 **Owner**: gandhi
 **Created**: 2026-08-11
