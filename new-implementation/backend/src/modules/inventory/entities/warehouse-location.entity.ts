@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { Warehouse } from './warehouse.entity';
 import { StockMovement } from './stock-movement.entity';
@@ -14,7 +14,11 @@ export class WarehouseLocation {
   @Column('uuid')
   warehouse_id: string;
 
-  @ManyToOne(() => Warehouse, (warehouse) => warehouse.locations)
+  // See StockMovement.location: join on the real column, no duplicate `warehouseId`.
+  @ManyToOne(() => Warehouse, (warehouse) => warehouse.locations, {
+    createForeignKeyConstraints: false,
+  })
+  @JoinColumn({ name: 'warehouse_id' })
   warehouse: Warehouse;
 
   @Column()

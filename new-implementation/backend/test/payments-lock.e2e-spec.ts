@@ -14,6 +14,8 @@ import { DataSource } from 'typeorm';
 import type { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectionOptions';
 import { BadRequestException } from '@nestjs/common';
 import { dataSourceOptions } from '../src/database/data-source';
+import { InventoryReportService } from '../src/modules/reports/services/inventory-report.service';
+import { Warehouse } from '../src/modules/inventory/entities/warehouse.entity';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
 import { ProductsService as RealProductsService } from '../src/modules/products/products.service';
 import { StockService } from '../src/modules/inventory/services/stock.service';
@@ -394,5 +396,38 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     const journal = await ds.manager.find(StockMovement, { where: { product_id: created.id } });
     expect(journal).toHaveLength(1);
     expect(journal[0]).toMatchObject({ movement_type: MovementType.IN, quantity: 7, notes: 'Stock inicial' });
+  });
+  // The inventory value report used to return hardcoded zeros.
+  it('inventory value report: stock at cost against the default warehouse, oversold counted as 0', async () => {
+    const valueCo = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Value Co' }));
+    const mk = (sku: string, stock: number, cost: number | null) =>
+      ds.manager.save(
+        Product,
+        ds.manager.create(Product, {
+          company_id: valueCo.id, name: sku, sku: `${sku}-${Date.now()}`, price: 1, cost, stock_quantity: stock, created_by: user.id,
+        } as Product),
+      );
+    await mk('A', 10, 5);
+    await mk('B', 3, 2);
+    await mk('C', -4, 100); // oversold: worth nothing
+    await mk('D', 0, 9);
+    const report = new InventoryReportService(
+      ds.getRepository(StockMovement), ds.getRepository(Warehouse), ds.getRepository(Product),
+    );
+    const totals = { productCount: 2, totalUnits: 13, totalValue: 56 };
+
+    // No warehouse yet (nothing sold): one default row.
+    expect(await report.getInventoryValueByWarehouse(valueCo.id)).toEqual([
+      { warehouseId: null, warehouseName: 'Principal', ...totals },
+    ]);
+
+    // Two warehouses: the oldest carries the stock, the other is listed with zeros.
+    const first = await ds.manager.save(Warehouse, ds.manager.create(Warehouse, { company_id: valueCo.id, name: 'Central', is_active: true }));
+    await new Promise((r) => setTimeout(r, 1100));
+    const second = await ds.manager.save(Warehouse, ds.manager.create(Warehouse, { company_id: valueCo.id, name: 'Sucursal', is_active: true }));
+    expect(await report.getInventoryValueByWarehouse(valueCo.id)).toEqual([
+      { warehouseId: first.id, warehouseName: 'Central', ...totals },
+      { warehouseId: second.id, warehouseName: 'Sucursal', productCount: 0, totalUnits: 0, totalValue: 0 },
+    ]);
   });
 });

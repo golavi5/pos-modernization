@@ -99,7 +99,7 @@ export function InventoryReportTab() {
           <CardContent>
             <div className="space-y-3">
               {warehouseValue.map((wh) => (
-                <div key={wh.warehouseId} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={wh.warehouseId ?? wh.warehouseName} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <p className="font-semibold">{wh.warehouseName}</p>
                     <p className="text-sm text-tertiary">{t('inventoryTab.warehouseSummary', { products: wh.productCount, units: wh.totalUnits.toLocaleString() })}</p>
