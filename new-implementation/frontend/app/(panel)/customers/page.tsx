@@ -11,12 +11,13 @@ import { CustomerForm } from '@/components/customers/CustomerForm';
 import { LoyaltyPointsModal } from '@/components/customers/LoyaltyPointsModal';
 import { useUpdateLoyaltyPoints, useDeleteCustomer } from '@/hooks/useCustomers';
 import { apiErrorMessage } from '@/lib/utils';
-import type { Customer } from '@/types/customer';
+import type { Customer, CustomerStatusFilter } from '@/types/customer';
 
 export default function CustomersPage() {
   const t = useTranslations('customers');
   const tCommon = useTranslations('common');
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<CustomerStatusFilter>('active');
   const [slideOver, setSlideOver] = useState<'closed' | 'new' | 'edit'>('closed');
   const [editTarget, setEditTarget] = useState<Customer | null>(null);
   const [loyaltyModalCustomer, setLoyaltyModalCustomer] = useState<Customer | null>(null);
@@ -69,6 +70,16 @@ export default function CustomersPage() {
             className="pl-8 h-9 text-sm"
           />
         </div>
+        <select
+          aria-label={t('page.statusFilter.label')}
+          value={status}
+          onChange={(e) => setStatus(e.target.value as CustomerStatusFilter)}
+          className="h-9 px-3 text-sm border bg-surface-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="active">{t('page.statusFilter.active')}</option>
+          <option value="inactive">{t('page.statusFilter.inactive')}</option>
+          <option value="all">{t('page.statusFilter.all')}</option>
+        </select>
         <div className="flex-1" />
         <Button onClick={openNew} size="sm" className="gap-1.5">
           <Plus size={14} /> {t('page.newCustomer')}
@@ -79,6 +90,7 @@ export default function CustomersPage() {
       <div className="flex-1 overflow-auto">
         <CustomersTable
           search={search}
+          status={status}
           onEdit={openEdit}
           onDelete={handleDelete}
           onManageLoyalty={setLoyaltyModalCustomer}

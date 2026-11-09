@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCustomers } from '@/hooks/useCustomers';
 import { formatCOP } from '@/lib/utils';
-import type { Customer } from '@/types/customer';
+import type { Customer, CustomerStatusFilter } from '@/types/customer';
 
 interface CustomersTableProps {
   /** If provided, the component owns its own data fetch filtered by search */
   search?: string;
+  /** Active customers by default; inactive = soft-deleted. */
+  status?: CustomerStatusFilter;
   /** Legacy: pass data directly */
   customers?: Customer[];
   onEdit?: (customer: Customer) => void;
@@ -28,6 +30,7 @@ export function CustomersTable({
   onView,
   onManageLoyalty,
   isLoading: isLoadingProp,
+  status = 'active',
 }: CustomersTableProps) {
   const t = useTranslations('customers');
   const tCommon = useTranslations('common');
@@ -35,7 +38,9 @@ export function CustomersTable({
   const tReports = useTranslations('reports');
   const queryEnabled = search !== undefined;
   const { data: customersData, isLoading: isLoadingQuery } = useCustomers(
-    queryEnabled ? { search: search || undefined, page: 1, pageSize: 50, isActive: true } : {}
+    queryEnabled
+      ? { search: search || undefined, page: 1, pageSize: 50, isActive: status === 'all' ? undefined : status === 'active' }
+      : {}
   );
   const customers = queryEnabled ? (customersData?.data ?? []) : (customersProp ?? []);
   const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);
