@@ -239,7 +239,6 @@
     "barcode": "Barcode",
     "barcodePlaceholder": "1234567890123",
     "category": "Category",
-    "categoryPlaceholder": "Electronics",
     "unitOfMeasure": "Unit of measure",
     "unit": "Unit",
     "kilogram": "Kilogram",
@@ -294,7 +293,13 @@
       "emptyHint": "Try adjusting the search or create a new product",
       "img": "IMG",
       "deleteConfirm": "Delete \"{name}\"?"
-    }
+    },
+    "categorySelectPlaceholder": "No category",
+    "categoryNew": "New category",
+    "categoryNewPlaceholder": "Category name",
+    "categoryAdd": "Add",
+    "categoryCreateError": "Could not create the category",
+    "categoryNoneHint": "No categories yet. Ask a manager to create one."
   },
   "customers": {
     "title": "Customers",

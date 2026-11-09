@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import { formatCOP } from '@/lib/utils';
 import type { Product } from '@/types/product';
 
@@ -22,6 +23,8 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
   const tNotifications = useTranslations('notifications');
   const { data: productsData, isLoading } = useProducts({ search, page: 1, pageSize: 50 });
   const deleteMutation = useDeleteProduct();
+  const { data: categories = [] } = useCategories();
+  const categoryName = new Map(categories.map((c) => [c.id, c.name]));
 
   const products: Product[] = productsData?.data ?? [];
 
@@ -111,7 +114,7 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
               </td>
               <td className="p-4">
                 <span className="text-sm text-muted-foreground">
-                  {product.category || '-'}
+                  {(product.category_id && categoryName.get(product.category_id)) || '-'}
                 </span>
               </td>
               <td className="p-4 text-right">

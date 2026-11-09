@@ -12,7 +12,4 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsUUID()
   parent_id?: string;
-
-  @IsUUID()
-  company_id: string;
 }
