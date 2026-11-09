@@ -14,6 +14,17 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      // `text-secondary` etc. must read the text-hierarchy tokens. They are also
+      // registered under `colors` as `text-secondary`, which Tailwind exposes as
+      // `text-text-secondary`; without this, `text-secondary` resolved to the
+      // unrelated shadcn `secondary` (near-white) and `text-tertiary` to nothing,
+      // so table headers and captions rendered invisible. `text-primary` is left
+      // alone: it is the shadcn primary colour and is used as such.
+      textColor: {
+        secondary: 'hsl(var(--text-secondary))',
+        tertiary: 'hsl(var(--text-tertiary))',
+        quaternary: 'hsl(var(--text-quaternary))',
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
