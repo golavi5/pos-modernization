@@ -1,6 +1,6 @@
 # M2 — La categoría del formulario de producto se descarta en silencio
 
-**Status**: DRAFT — 2026-08-11. Detectado mientras se diseñaba `SPEC-BACK-004`; separado a ítem propio porque arreglarlo exige un selector de categorías, no un ajuste del DTO. Nada implementado.
+**Status**: APPROVED — 2026-11-09 (PR #57). Implementado: selector de categorías con creación al vuelo, `category_id` en el formulario, nombre resuelto en la tabla, y `POST /products/categories` ya no exige `company_id` en el body. Abierto: sin verificación en navegador; `ProductSearch.tsx` (caja) filtra por `p.category`, siempre undefined, queda aparte.
 
 **Owner**: gandhi
 **Created**: 2026-08-11
@@ -58,11 +58,9 @@ regresión.
       explique. Una de las dos, no ninguna.
 - [ ] `types/product.ts` deja de declarar `category` y `category_id` a la vez.
 
-## 5. Decisión pendiente (no asumir)
+## 5. Decisión
 
-¿El selector permite **crear una categoría al vuelo** desde el formulario de
-producto, o obliga a darlas de alta antes en `CategoryManager`? Afecta al
-alcance: la primera opción toca también el backend de categorías.
+El selector **crea la categoría al vuelo** (decidido 2026-11-09). Solo admin/manager, porque `POST /products/categories` es `@Roles('manager')`; el resto ve un texto si no hay categorías. Tocó el backend de categorías solo para quitar `company_id` del DTO (el cliente nunca lo mandaba y la creación devolvía 400).
 
 ## 6. Fuera de alcance
 
