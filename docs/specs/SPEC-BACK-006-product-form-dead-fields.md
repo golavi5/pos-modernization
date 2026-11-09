@@ -1,6 +1,6 @@
 # M2 — El formulario de producto pide campos que el backend no guarda
 
-**Status**: APPROVED — 2026-11-09 (PR #60). Implementado: campos fuera del formulario, de los tipos y de la tabla; claves i18n sin uso eliminadas. Abierto: sin verificación en navegador.
+**Status**: DONE — 2026-11-09 (PR #60). Campos fuera del formulario, de los tipos y de la tabla; claves i18n sin uso eliminadas. Verificado en navegador: el formulario ya no muestra stock mínimo/máximo ni unidad de medida ([registro](../verification/2026-11-09-back-004-005-006.md), check 1).
 
 **Owner**: gandhi
 **Created**: 2026-11-09
