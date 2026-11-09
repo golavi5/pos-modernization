@@ -1,6 +1,6 @@
 # M2 — Un solo libro de inventario (cierra BACK-003 (c) y el resto de (d))
 
-**Status**: APPROVED — 2026-11-09. Diseño aprobado por Gandhi Olavi (las tres preguntas de §6 cerradas con los valores por defecto); **Slice 1 hecho 2026-11-09 (PR #71):** confirmación transaccional con `OUT`/`RETURN`, verificada contra MySQL y por mutación. **Slice 2 hecho 2026-11-09 (PR #72):** inventario y su página sobre `stock_quantity`, código muerto borrado, ajuste manual bajo bloqueo (mutación verificada). Abierto: slice 3 (formulario de producto); sin verificación en navegador de `/inventory`.
+**Status**: APPROVED — 2026-11-09. Diseño aprobado por Gandhi Olavi (las tres preguntas de §6 cerradas con los valores por defecto); **Slice 1 hecho 2026-11-09 (PR #71):** confirmación transaccional con `OUT`/`RETURN`, verificada contra MySQL y por mutación. **Slice 2 hecho 2026-11-09 (PR #72):** inventario y su página sobre `stock_quantity`, código muerto borrado, ajuste manual bajo bloqueo (mutación verificada). **Slice 3 hecho 2026-11-09 (PR #73):** el alta con stock escribe `IN`; la edición ya no puede cambiar el stock (DTO y formulario). **Abierto:** verificación en navegador de `/inventory` y del formulario; slices posteriores (quitar `current_stock`/`capacity` con migración, reporte `value-by-warehouse`, columna `locationId` duplicada). Por eso sigue `APPROVED` y no `DONE`.
 
 ## 1. Problema
 
