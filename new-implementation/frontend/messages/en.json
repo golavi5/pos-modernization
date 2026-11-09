@@ -278,6 +278,7 @@
     "inStock": "In stock",
     "lowStockCount": "Low stock ({stock})",
     "inStockCount": "In stock ({stock})",
+    "negativeStockCount": "Oversold ({stock})",
     "table": {
       "empty": "No products found",
       "emptyHint": "Try adjusting the search or create a new product",

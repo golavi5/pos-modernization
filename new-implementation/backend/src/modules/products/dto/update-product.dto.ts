@@ -56,9 +56,11 @@ export class UpdateProductDto {
   @Min(0)
   cost?: number;
 
+  // Sin `@Min(0)`: tras una venta sin existencias el stock es negativo por
+  // diseño (SPEC-BACK-004), y el formulario reenvía el producto entero al
+  // editarlo — con el mínimo, un producto sobrevendido no se podía guardar.
   @IsOptional()
   @IsNumber()
-  @Min(0)
   stock_quantity?: number;
 
   @IsOptional()

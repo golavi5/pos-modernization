@@ -100,7 +100,6 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
         <Input
           id="stock_quantity"
           type="number"
-          min="0"
           value={formData.stock_quantity}
           onChange={(e) => onChange('stock_quantity', parseInt(e.target.value) || 0)}
           placeholder="0"

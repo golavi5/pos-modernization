@@ -29,6 +29,13 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
   const products: Product[] = productsData?.data ?? [];
 
   const getStockStatus = (product: Product) => {
+    if (product.stock_quantity < 0) {
+      return (
+        <Badge variant="destructive">
+          {t('negativeStockCount', { stock: product.stock_quantity })}
+        </Badge>
+      );
+    }
     if (product.stock_quantity === 0) {
       return <Badge variant="destructive">{tInventory('table.noStock')}</Badge>;
     }
