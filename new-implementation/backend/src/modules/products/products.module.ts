@@ -7,11 +7,13 @@ import { ProductCategoriesService } from './product-categories.service';
 import { Product } from './entities/product.entity';
 import { ProductCategory } from './entities/product-category.entity';
 import { SettingsModule } from '../settings/settings.module';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Product, ProductCategory]),
     SettingsModule,
+    InventoryModule,
   ],
   controllers: [
     // Order matters: Nest registers routes in this order, and

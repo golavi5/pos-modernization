@@ -86,7 +86,9 @@ export function ProductForm({
     // formId/onSuccess mode: component owns the mutation
     try {
       if (product) {
-        await updateMutation.mutateAsync({ id: product.id, data: formData });
+        // El stock no se edita aquí: el backend lo ignora y solo cambia por ajuste o venta.
+        const { stock_quantity: _stock, ...rest } = formData;
+        await updateMutation.mutateAsync({ id: product.id, data: rest });
       } else {
         await createMutation.mutateAsync(formData);
       }
@@ -102,6 +104,7 @@ export function ProductForm({
         formData={formData}
         onChange={handleChange}
         t={t}
+        stockReadOnly={!!product}
       />
 
       {/* Buttons — only shown in legacy (non-formId) mode */}

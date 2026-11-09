@@ -242,6 +242,7 @@
     "salePrice": "Sale price *",
     "cost": "Cost",
     "stockQuantity": "Stock quantity *",
+    "stockReadOnlyHint": "To change stock, use Inventory → Adjust.",
     "allowSaleWithoutStock": "Sale without stock",
     "allowSaleWithoutStockInherit": "Inherit from global setting",
     "allowSaleWithoutStockYes": "Yes, allow",

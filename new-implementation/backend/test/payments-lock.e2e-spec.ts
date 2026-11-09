@@ -15,6 +15,7 @@ import type { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectio
 import { BadRequestException } from '@nestjs/common';
 import { dataSourceOptions } from '../src/database/data-source';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
+import { ProductsService as RealProductsService } from '../src/modules/products/products.service';
 import { StockService } from '../src/modules/inventory/services/stock.service';
 import { SalesService } from '../src/modules/sales/services/sales.service';
 import { OrderCalculationService } from '../src/modules/sales/services/order-calculation.service';
@@ -374,5 +375,24 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     expect(
       await ds.manager.count(StockMovement, { where: { product_id: solo.id } }),
     ).toBe(1);
+  });
+  // SPEC-BACK-007 slice 3: the initial stock of a new product is a journaled IN.
+  it('creating a product with initial stock journals it: stock equals the signed sum', async () => {
+    const products = new RealProductsService(
+      ds.getRepository(Product),
+      { getSettings: async () => ({ allowNegativeStock: false }) } as never,
+      ds,
+      new InventoryLocationsService(),
+    );
+    const created = await products.create(
+      { name: 'Nuevo', sku: `NEW-${Date.now()}`, price: TOTAL, stock_quantity: 7, tax_rate: 19 } as never,
+      user,
+    );
+
+    const row = await ds.manager.findOneByOrFail(Product, { id: created.id });
+    expect(row.stock_quantity).toBe(7);
+    const journal = await ds.manager.find(StockMovement, { where: { product_id: created.id } });
+    expect(journal).toHaveLength(1);
+    expect(journal[0]).toMatchObject({ movement_type: MovementType.IN, quantity: 7, notes: 'Stock inicial' });
   });
 });

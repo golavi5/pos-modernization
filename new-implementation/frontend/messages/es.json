@@ -242,6 +242,7 @@
     "salePrice": "Precio de venta *",
     "cost": "Costo",
     "stockQuantity": "Cantidad en stock *",
+    "stockReadOnlyHint": "Para cambiar el stock usa Inventario → Ajustar.",
     "allowSaleWithoutStock": "Venta sin existencias",
     "allowSaleWithoutStockInherit": "Heredar del ajuste global",
     "allowSaleWithoutStockYes": "Sí, permitir",
