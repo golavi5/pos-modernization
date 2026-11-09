@@ -120,10 +120,14 @@ export function CustomerForm({
 
         {/* Email */}
         <div>
-          <Label htmlFor="email">{tCommon('email')}</Label>
+          <Label htmlFor="email">
+            {tCommon('email')} <span className="text-red-500">*</span>
+          </Label>
+          {/* Required: customers.email is NOT NULL UNIQUE (the legacy import synthesises one). */}
           <Input
             id="email"
             type="email"
+            required
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             placeholder={t('emailPlaceholder')}

@@ -25,3 +25,14 @@ test.describe('Form errors reach the user', () => {
     await expect(page.locator('form').getByRole('alert')).toContainText(/already exists/i);
   });
 });
+
+test.describe('Customer form validation', () => {
+  test('email is required by the form (customers.email is NOT NULL)', async ({ page }) => {
+    await new AuthHelper(page).login();
+    await page.goto('/customers');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: 'Nuevo cliente' }).click();
+
+    await expect(page.locator('input#email')).toHaveAttribute('required', '');
+  });
+});
