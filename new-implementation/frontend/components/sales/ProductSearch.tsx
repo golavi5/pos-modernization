@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useProducts } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import { cn, formatCOP } from '@/lib/utils';
 import type { Product } from '@/types/product';
 
@@ -15,22 +16,19 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
   const tInventory = useTranslations('inventory');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const { data: productsData, isLoading } = useProducts();
+  const { data: allCategories = [] } = useCategories();
 
   // API returns { data: Product[], total, page, pageSize } or Product[]
   const products: Product[] = Array.isArray(productsData)
     ? productsData
     : (productsData as { data?: Product[] })?.data ?? [];
 
-  const categories = Array.from(
-    new Set(
-      products
-        .map((p: Product) => p.category)
-        .filter((c): c is string => Boolean(c))
-    )
-  );
+  // Solo las categorías que tienen productos; el producto trae `category_id`, no el nombre.
+  const usedIds = new Set(products.map((p: Product) => p.category_id).filter(Boolean));
+  const categories = allCategories.filter((c) => usedIds.has(c.id));
 
   const filtered = activeCategory
-    ? products.filter((p: Product) => p.category === activeCategory)
+    ? products.filter((p: Product) => p.category_id === activeCategory)
     : products;
 
   if (isLoading) {
@@ -60,16 +58,16 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
         </button>
         {categories.map((cat) => (
           <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-              activeCategory === cat
+              activeCategory === cat.id
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
             )}
           >
-            {cat}
+            {cat.name}
           </button>
         ))}
       </div>
