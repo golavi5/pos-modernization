@@ -173,4 +173,47 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     });
     expect(finalProduct.stock_quantity).toBe(START_STOCK - ROUNDS);
   });
+  // SPEC-BACK-003 gap (d): `refundPayment` checked "already refunded" on a read
+  // OUTSIDE its transaction, so two concurrent refunds both passed and both
+  // returned the stock.
+  it('two concurrent refunds of the same payment: exactly one wins, stock returns once', async () => {
+    const stockOf = async () =>
+      (await ds.manager.findOneByOrFail(Product, { id: product.id }))
+        .stock_quantity;
+    const before = await stockOf();
+
+    for (let i = 1; i <= ROUNDS; i++) {
+      const order = await seedOrder(1000 + i);
+      const payment = await service.recordPayment(
+        order.id,
+        { payment_method: PaymentMethod.CASH, amount: TOTAL },
+        user,
+      );
+
+      const results = await Promise.allSettled([
+        service.refundPayment(payment.id, user),
+        service.refundPayment(payment.id, user),
+      ]);
+
+      const failed = results.filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected',
+      );
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect(failed).toHaveLength(1);
+      expect(failed[0].reason).toBeInstanceOf(BadRequestException);
+      expect(String(failed[0].reason.message)).toMatch(/already refunded/);
+
+      expect(
+        await ds.manager.count(StockMovement, {
+          where: { reference_id: order.id, movement_type: MovementType.RETURN },
+        }),
+      ).toBe(1);
+      const after = await ds.manager.findOneByOrFail(Order, { id: order.id });
+      expect(after.status).toBe(OrderStatus.PENDING);
+      expect(after.payment_status).toBe(OrderPaymentStatus.UNPAID);
+    }
+
+    // Each round was pay (−1) then refund (+1): the net is zero.
+    expect(await stockOf()).toBe(before);
+  });
 });
