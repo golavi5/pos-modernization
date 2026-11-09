@@ -1,6 +1,6 @@
 # M2 — La categoría del formulario de producto se descarta en silencio
 
-**Status**: DONE — 2026-11-09 (PR #57, #58, #65). Implementado; verificado en navegador ([registro](../verification/2026-11-09-back-004-005-006.md), checks 2–6). La primera verificación falló (`GET /products/categories` devuelto 404 por `GET /products/:id`); se corrigió el orden de controladores en #65 y la repetición sobre `main` pasó.
+**Status**: DONE — 2026-11-09 (PR #57, #58, #65). Implementado; verificado en navegador ([registro](../verification/2026-11-09-back-004-005-006.md), checks 2–6). La primera verificación falló (`GET /products/categories` devuelto 404 por `GET /products/:id`); se corrigió el orden de controladores en #65 y la repetición sobre `main` pasó. **No re-ejecutado, por decisión:** el check 11 (venta de extremo a extremo con producto categorizado; había quedado parcial en la 1ª pasada) y el caso del cajero sin ninguna categoría (el texto explicativo, que era el que estaba mal); ninguno depende del código que cambió #65.
 
 **Owner**: gandhi
 **Created**: 2026-08-11
