@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Order } from '../../sales/entities/order.entity';
+import { Order, OrderStatus } from '../../sales/entities/order.entity';
+import { PaymentStatus } from '../../sales/entities/payment.entity';
 import { OrderItem } from '../../sales/entities/order-item.entity';
 import { ReportQueryDto, PeriodType } from '../dto/report-query.dto';
 import {
@@ -149,6 +150,9 @@ export class SalesReportService {
     const orders = await this.orderRepository.find({
       where: {
         company_id: companyId,
+        // A sale is a completed order: drafts, pending, cancelled and voided
+        // orders are not revenue.
+        status: OrderStatus.COMPLETED,
         created_at: Between(startDate, endDate),
       },
       relations: ['order_items', 'order_items.product'],
@@ -196,42 +200,42 @@ export class SalesReportService {
     periodType: PeriodType,
   ): Promise<SalesByPeriodDto[]> {
     let dateFormat: string;
-    let groupBy: string;
 
     switch (periodType) {
       case PeriodType.DAILY:
         dateFormat = '%Y-%m-%d';
-        groupBy = 'DATE(order.created_at)';
         break;
       case PeriodType.WEEKLY:
-        dateFormat = '%Y-W%u';
-        groupBy = 'YEARWEEK(order.created_at)';
+        dateFormat = '%x-W%v';
         break;
       case PeriodType.MONTHLY:
         dateFormat = '%Y-%m';
-        groupBy = 'DATE_FORMAT(order.created_at, "%Y-%m")';
         break;
       case PeriodType.YEARLY:
         dateFormat = '%Y';
-        groupBy = 'YEAR(order.created_at)';
         break;
       default:
         dateFormat = '%Y-%m-%d';
-        groupBy = 'DATE(order.created_at)';
     }
+
+    // Group by the very expression that is selected: MySQL 8's default
+    // `only_full_group_by` rejects selecting DATE_FORMAT(created_at) while
+    // grouping by DATE(created_at)/YEARWEEK(created_at), and the endpoint 500'd.
+    const bucket = `DATE_FORMAT(order.created_at, '${dateFormat}')`;
 
     const results = await this.orderRepository
       .createQueryBuilder('order')
-      .select(`DATE_FORMAT(order.created_at, '${dateFormat}')`, 'date')
+      .select(bucket, 'date')
       .addSelect('COUNT(*)', 'totalSales')
       .addSelect('SUM(order.total_amount)', 'totalRevenue')
       .addSelect('AVG(order.total_amount)', 'averageTicket')
       .where('order.company_id = :companyId', { companyId })
+      .andWhere('order.status = :completed', { completed: OrderStatus.COMPLETED })
       .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
       })
-      .groupBy(groupBy)
+      .groupBy(bucket)
       .orderBy('date', 'ASC')
       .getRawMany();
 
@@ -259,6 +263,8 @@ export class SalesReportService {
       .addSelect('SUM(payment.amount)', 'totalRevenue')
       .addSelect('COUNT(DISTINCT order.id)', 'transactionCount')
       .where('order.company_id = :companyId', { companyId })
+      // Refunded and failed payments are not revenue.
+      .andWhere('payment.status = :paid', { paid: PaymentStatus.COMPLETED })
       .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
