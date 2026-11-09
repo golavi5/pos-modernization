@@ -66,12 +66,19 @@ export class ProductsService {
       where.is_active = is_active;
     }
     
-    if (search) {
-      where.name = ILike(`%${search}%`);
-    }
+    // The UI promises "nombre, SKU o código de barras": an array is an OR of
+    // whole conditions, so every branch repeats the company/category/active filters.
+    const term = search ? ILike(`%${search}%`) : undefined;
+    const filter: FindOptionsWhere<Product> | FindOptionsWhere<Product>[] = term
+      ? [
+          { ...where, name: term },
+          { ...where, sku: term },
+          { ...where, barcode: term },
+        ]
+      : where;
 
     const [products, total] = await this.productRepository.findAndCount({
-      where,
+      where: filter,
       skip: offset,
       take: limit,
       order: { [sort]: order },

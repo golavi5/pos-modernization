@@ -441,5 +441,33 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     const row = await ds.manager.findOneByOrFail(Order, { id: order.id });
 
     expect(Math.abs(row.created_at.getTime() - Date.now())).toBeLessThan(60_000);
+  // The product list search promises name, SKU and barcode.
+  it('product search matches name, SKU and barcode, scoped to the company', async () => {
+    const products = new ProductsService(
+      ds.getRepository(Product),
+      { getSettings: async () => ({ allowNegativeStock: false }) } as never,
+    );
+    const tag = `SRCH${Date.now()}`;
+    const mk = (over: Partial<Product>) =>
+      ds.manager.save(
+        Product,
+        ds.manager.create(Product, {
+          company_id: company.id, price: 1, stock_quantity: 1, created_by: user.id, ...over,
+        } as Product),
+      );
+    await mk({ name: `${tag} by name`, sku: `${tag}-A` });
+    await mk({ name: 'plain', sku: `${tag}-SKU` });
+    await mk({ name: 'other', sku: `${tag}-B`, barcode: `${tag}7790001` });
+    // Another company's product with the same term must never show up.
+    const other = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Other Co' }));
+    await mk({ company_id: other.id, name: `${tag} foreign`, sku: `${tag}-FOREIGN` } as Partial<Product>);
+
+    const found = async (search: string) =>
+      (await products.findAll(user, { search, offset: 0, limit: 50 } as never)).data.map((p) => p.sku).sort();
+
+    expect(await found(`${tag} by name`)).toEqual([`${tag}-A`]);
+    expect(await found('SKU')).toEqual(expect.arrayContaining([`${tag}-SKU`]));
+    expect(await found(`${tag}7790001`)).toEqual([`${tag}-B`]);
+    expect(await found(tag)).toEqual([`${tag}-A`, `${tag}-B`, `${tag}-SKU`]);
   });
 });
