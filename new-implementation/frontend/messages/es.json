@@ -239,7 +239,6 @@
     "barcode": "Código de barras",
     "barcodePlaceholder": "1234567890123",
     "category": "Categoría",
-    "categoryPlaceholder": "Electrónica",
     "unitOfMeasure": "Unidad de medida",
     "unit": "Unidad",
     "kilogram": "Kilogramo",
@@ -294,7 +293,13 @@
       "emptyHint": "Intenta ajustar la búsqueda o crear un nuevo producto",
       "img": "IMG",
       "deleteConfirm": "¿Eliminar \"{name}\"?"
-    }
+    },
+    "categorySelectPlaceholder": "Sin categoría",
+    "categoryNew": "Nueva categoría",
+    "categoryNewPlaceholder": "Nombre de la categoría",
+    "categoryAdd": "Agregar",
+    "categoryCreateError": "No se pudo crear la categoría",
+    "categoryNoneHint": "Aún no hay categorías. Pide a un gerente que cree una."
   },
   "customers": {
     "title": "Clientes",

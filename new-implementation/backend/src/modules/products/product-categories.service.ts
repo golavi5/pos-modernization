@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductCategory } from './entities/product-category.entity';
@@ -34,11 +34,6 @@ export class ProductCategoriesService {
   }
 
   async create(createCategoryDto: CreateCategoryDto, user: User) {
-    // Ensure the company_id in the DTO matches the user's company_id
-    if (createCategoryDto.company_id !== user.company_id) {
-      throw new UnauthorizedException('Cannot create category for another company');
-    }
-    
     // Check if parent category exists if provided
     if (createCategoryDto.parent_id) {
       const parentCategory = await this.categoryRepository.findOne({

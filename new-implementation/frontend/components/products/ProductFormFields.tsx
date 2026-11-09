@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import type { CreateProductDto } from '@/types/product';
 import type { Translate } from '@/types/i18n';
 import { AllowSaleWithoutStockField } from './AllowSaleWithoutStockField';
+import { CategorySelect } from './CategorySelect';
 
 interface ProductFormFieldsProps {
   formData: CreateProductDto;
@@ -62,13 +63,11 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
         />
       </div>
       <div>
-        <Label htmlFor="category">{t('category')}</Label>
-        <Input
-          id="category"
-          type="text"
-          value={formData.category}
-          onChange={(e) => onChange('category', e.target.value)}
-          placeholder={t('categoryPlaceholder')}
+        <Label htmlFor="category_id">{t('category')}</Label>
+        <CategorySelect
+          value={formData.category_id}
+          onChange={(id) => onChange('category_id', id || null)}
+          t={t}
         />
       </div>
       <div>
