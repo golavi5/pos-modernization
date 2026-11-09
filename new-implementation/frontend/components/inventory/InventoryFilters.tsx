@@ -4,43 +4,28 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { StockQueryParams, Warehouse } from '@/types/inventory';
+import type { StockQueryParams } from '@/types/inventory';
 
 interface InventoryFiltersProps {
   onFilterChange: (filters: StockQueryParams) => void;
-  warehouses?: Warehouse[];
 }
 
-export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryFiltersProps) {
+export function InventoryFilters({ onFilterChange }: InventoryFiltersProps) {
   const t = useTranslations('inventory');
   const tCommon = useTranslations('common');
   const tProducts = useTranslations('products');
-  const tReports = useTranslations('reports');
   const tNotifications = useTranslations('notifications');
-  const [warehouseId, setWarehouseId] = useState<string>('');
-  const [lowStock, setLowStock] = useState<boolean | undefined>(undefined);
-  const [sortBy, setSortBy] = useState<StockQueryParams['sortBy']>('product_name');
-  const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('ASC');
+  const [lowStock, setLowStock] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleApply = () => {
-    onFilterChange({
-      warehouse_id: warehouseId || undefined,
-      low_stock: lowStock,
-      sortBy,
-      sortOrder,
-    });
+    onFilterChange({ low_stock: lowStock || undefined });
   };
 
   const handleReset = () => {
-    setWarehouseId('');
-    setLowStock(undefined);
-    setSortBy('product_name');
-    setSortOrder('ASC');
+    setLowStock(false);
     onFilterChange({});
   };
-
-  const hasActiveFilters = warehouseId || lowStock !== undefined || sortBy !== 'product_name';
 
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-4">
@@ -54,7 +39,7 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
           <Filter className="w-4 h-4 mr-2" />
           {tProducts('filters')}
         </Button>
-        {hasActiveFilters && (
+        {lowStock && (
           <Button variant="outline" onClick={handleReset}>
             <X className="w-4 h-4 mr-2" />
             {tCommon('clear')}
@@ -64,84 +49,24 @@ export function InventoryFilters({ onFilterChange, warehouses = [] }: InventoryF
 
       {/* Advanced filters */}
       {showAdvanced && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t">
-          {/* Warehouse */}
-          <div>
-            <label className="block text-sm font-medium text-secondary mb-2">
-              {tReports('productTab.warehouse')}
-            </label>
-            <select
-              value={warehouseId}
-              onChange={(e) => setWarehouseId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">{t('filters.allWarehouses')}</option>
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Stock level */}
-          <div>
+        <>
+          <div className="pt-4 border-t max-w-xs">
             <label className="block text-sm font-medium text-secondary mb-2">
               {t('filters.stockLevel')}
             </label>
             <select
-              value={lowStock === undefined ? '' : lowStock ? 'true' : 'false'}
-              onChange={(e) =>
-                setLowStock(
-                  e.target.value === '' ? undefined : e.target.value === 'true'
-                )
-              }
+              value={lowStock ? 'true' : ''}
+              onChange={(e) => setLowStock(e.target.value === 'true')}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">{tProducts('allStatus')}</option>
               <option value="true">{tNotifications('types.lowStock')}</option>
-              <option value="false">{t('filters.normalStock')}</option>
             </select>
           </div>
-
-          {/* Sort by */}
-          <div>
-            <label className="block text-sm font-medium text-secondary mb-2">
-              {tProducts('sortBy')}
-            </label>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as StockQueryParams['sortBy'])}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="product_name">{t('filters.productName')}</option>
-              <option value="quantity">{tCommon('quantity')}</option>
-              <option value="last_movement_date">{t('filters.lastMovement')}</option>
-            </select>
+          <div className="flex justify-end pt-2 border-t">
+            <Button onClick={handleApply}>{t('filters.applyFilters')}</Button>
           </div>
-
-          {/* Sort order */}
-          <div>
-            <label className="block text-sm font-medium text-secondary mb-2">
-              {tProducts('order')}
-            </label>
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as 'ASC' | 'DESC')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="ASC">{tProducts('ascending')}</option>
-              <option value="DESC">{tProducts('descending')}</option>
-            </select>
-          </div>
-        </div>
-      )}
-
-      {/* Apply button */}
-      {showAdvanced && (
-        <div className="flex justify-end pt-2 border-t">
-          <Button onClick={handleApply}>{t('filters.applyFilters')}</Button>
-        </div>
+        </>
       )}
     </div>
   );

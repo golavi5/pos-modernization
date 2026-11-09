@@ -1,3 +1,5 @@
+> **Stock semantics changed (SPEC-BACK-007, 2026-11-09).** `products.stock_quantity` is the single source of truth and `stock_movements` its delta journal. `warehouse_locations.current_stock`/`capacity`, `StockCalculatorService`, `ReorderAlertService` and the per-location stock endpoints described below are gone; `GET /inventory/stock` is one row per product. Read the spec before trusting the rest of this file.
+
 # Inventory Management API Module
 
 Complete documentation for the POS Modernization Inventory Management Module.

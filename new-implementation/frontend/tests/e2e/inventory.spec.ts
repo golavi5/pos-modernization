@@ -84,21 +84,6 @@ test.describe('Inventory Management', () => {
     expect(hasMovementType).toBeTruthy();
   });
 
-  test('should filter stock by warehouse', async ({ page }) => {
-    // Open filters
-    await page.click('text=Filtros');
-    
-    // Select warehouse
-    await page.selectOption('select:near(:text("Almacén"))', { index: 1 });
-    
-    // Apply
-    await page.click('button:has-text("Aplicar filtros")');
-    await page.waitForTimeout(500);
-    
-    // Results should be filtered
-    await expect(page.locator('table tbody tr')).toHaveCount({ min: 1 });
-  });
-
   test('should filter by low stock', async ({ page }) => {
     // Open filters
     await page.click('text=Filtros');

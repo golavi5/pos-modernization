@@ -20,6 +20,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AdjustStockDto } from './dto/adjust-stock.dto';
 import { MovementQueryDto } from './dto/movement-query.dto';
+import { StockQueryDto } from './dto/stock-query.dto';
 import { CreateWarehouseDto } from './dto/create-warehouse.dto';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { User } from '../auth/entities/user.entity';
@@ -40,8 +41,11 @@ export class InventoryController {
   // Stock endpoints
   @Get('stock')
   @Roles('inventory_manager', 'manager', 'admin')
-  async getStock(@CurrentUser() user: CurrentUserWithCompany) {
-    return this.stockService.getCurrentStock(user);
+  async getStock(
+    @Query() query: StockQueryDto,
+    @CurrentUser() user: CurrentUserWithCompany,
+  ) {
+    return this.stockService.getCurrentStock(query, user);
   }
 
   @Get('stock/:product_id')

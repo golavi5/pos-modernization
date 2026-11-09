@@ -4,17 +4,16 @@ import { InventoryController } from './inventory.controller';
 import { StockService } from './services/stock.service';
 import { WarehouseService } from './services/warehouse.service';
 import { MovementService } from './services/movement.service';
-import { StockCalculatorService } from './services/stock-calculator.service';
-import { ReorderAlertService } from './services/reorder-alert.service';
 import { InventoryLocationsService } from './services/inventory-locations.service';
 import { Warehouse } from './entities/warehouse.entity';
 import { WarehouseLocation } from './entities/warehouse-location.entity';
 import { StockMovement } from './entities/stock-movement.entity';
+import { Product } from '../products/entities/product.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Warehouse, WarehouseLocation, StockMovement]),
+    TypeOrmModule.forFeature([Warehouse, WarehouseLocation, StockMovement, Product]),
     AuthModule,
   ],
   controllers: [InventoryController],
@@ -22,8 +21,6 @@ import { AuthModule } from '../auth/auth.module';
     StockService,
     WarehouseService,
     MovementService,
-    StockCalculatorService,
-    ReorderAlertService,
     InventoryLocationsService,
   ],
   exports: [

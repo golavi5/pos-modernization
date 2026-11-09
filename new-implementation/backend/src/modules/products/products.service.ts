@@ -201,9 +201,4 @@ export class ProductsService {
     return lowStockProducts;
   }
 
-  async addStock(productId: string, quantity: number, user: User): Promise<Product> {
-    const product = await this.findOne(productId, user);
-    product.stock_quantity += quantity;
-    return await this.productRepository.save(product);
-  }
 }

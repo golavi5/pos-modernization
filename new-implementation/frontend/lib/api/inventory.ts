@@ -12,7 +12,6 @@ import type {
   MovementQueryParams,
   StockResponse,
   MovementsResponse,
-  InventoryStats,
 } from '@/types/inventory';
 
 export const inventoryApi = {
@@ -25,11 +24,7 @@ export const inventoryApi = {
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.pageSize) searchParams.append('pageSize', params.pageSize.toString());
     if (params?.search) searchParams.append('search', params.search);
-    if (params?.warehouse_id) searchParams.append('warehouse_id', params.warehouse_id);
-    if (params?.product_id) searchParams.append('product_id', params.product_id);
-    if (params?.low_stock) searchParams.append('low_stock', params.low_stock.toString());
-    if (params?.sortBy) searchParams.append('sortBy', params.sortBy);
-    if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder);
+    if (params?.low_stock) searchParams.append('low_stock', 'true');
 
     const response = await apiClient.get(`/inventory/stock?${searchParams.toString()}`);
     return response.data;
@@ -38,7 +33,7 @@ export const inventoryApi = {
   /**
    * Get stock for a specific product
    */
-  getStockByProduct: async (productId: string): Promise<StockLevel[]> => {
+  getStockByProduct: async (productId: string): Promise<StockLevel> => {
     const response = await apiClient.get(`/inventory/stock/${productId}`);
     return response.data;
   },
@@ -59,12 +54,10 @@ export const inventoryApi = {
 
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.pageSize) searchParams.append('pageSize', params.pageSize.toString());
-    if (params?.warehouse_id) searchParams.append('warehouse_id', params.warehouse_id);
     if (params?.product_id) searchParams.append('product_id', params.product_id);
     if (params?.movement_type) searchParams.append('movement_type', params.movement_type);
     if (params?.start_date) searchParams.append('start_date', params.start_date);
     if (params?.end_date) searchParams.append('end_date', params.end_date);
-    if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder);
 
     const response = await apiClient.get(`/inventory/movements?${searchParams.toString()}`);
     return response.data;
@@ -134,14 +127,6 @@ export const inventoryApi = {
     data: Partial<CreateLocationDto>
   ): Promise<WarehouseLocation> => {
     const response = await apiClient.put(`/inventory/locations/${id}`, data);
-    return response.data;
-  },
-
-  /**
-   * Get inventory statistics
-   */
-  getStats: async (): Promise<InventoryStats> => {
-    const response = await apiClient.get('/inventory/stats');
     return response.data;
   },
 };

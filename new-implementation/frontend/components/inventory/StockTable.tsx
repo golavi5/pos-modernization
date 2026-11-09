@@ -18,9 +18,6 @@ interface StockTableProps {
 
 export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLoadingProp }: StockTableProps) {
   const t = useTranslations('inventory');
-  const tReports = useTranslations('reports');
-  const tDashboard = useTranslations('dashboard');
-  const tNotifications = useTranslations('notifications');
   const tCommon = useTranslations('common');
   const queryEnabled = search !== undefined;
   const { data: stockData, isLoading: isLoadingQuery } = useStock(
@@ -29,14 +26,11 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
   const stock = queryEnabled ? (stockData?.data ?? []) : (stockProp ?? []);
   const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);
   const getStockStatus = (item: StockLevel) => {
-    if (item.quantity === 0) {
+    if (item.quantity <= 0) {
       return { label: t('table.noStock'), variant: 'destructive' as const, icon: AlertTriangle };
     }
-    if (item.reorder_point && item.quantity <= item.reorder_point) {
+    if (item.reorder_level > 0 && item.quantity <= item.reorder_level) {
       return { label: t('table.restock'), variant: 'warning' as const, icon: AlertTriangle };
-    }
-    if (item.min_stock_level && item.quantity <= item.min_stock_level) {
-      return { label: tNotifications('types.lowStock'), variant: 'warning' as const, icon: AlertTriangle };
     }
     return { label: t('table.available'), variant: 'success' as const, icon: Package };
   };
@@ -69,10 +63,7 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
             <th className="text-left p-4 font-semibold text-secondary">{tCommon('product')}</th>
-            <th className="text-left p-4 font-semibold text-secondary">{tReports('productTab.warehouse')}</th>
             <th className="text-center p-4 font-semibold text-secondary">{tCommon('quantity')}</th>
-            <th className="text-center p-4 font-semibold text-secondary">{t('table.reserved')}</th>
-            <th className="text-center p-4 font-semibold text-secondary">{t('table.available')}</th>
             <th className="text-center p-4 font-semibold text-secondary">{tCommon('status')}</th>
             <th className="text-center p-4 font-semibold text-secondary">{t('table.action')}</th>
           </tr>
@@ -99,31 +90,10 @@ export function StockTable({ search, stock: stockProp, onAdjust, isLoading: isLo
                     )}
                   </div>
                 </td>
-                <td className="p-4">
-                  <div>
-                    <div className="">{item.warehouse_name}</div>
-                    {item.location_name && (
-                      <div className="text-sm text-tertiary">{item.location_name}</div>
-                    )}
-                  </div>
-                </td>
                 <td className="p-4 text-center">
                   <div className="font-semibold  text-lg">
                     {item.quantity}
                   </div>
-                  {item.min_stock_level && (
-                    <div className="text-xs text-tertiary">
-                      {t('table.min', { value: item.min_stock_level })}
-                    </div>
-                  )}
-                </td>
-                <td className="p-4 text-center">
-                  <span className="text-secondary">{item.reserved_quantity}</span>
-                </td>
-                <td className="p-4 text-center">
-                  <span className="font-semibold text-green-600">
-                    {item.available_quantity}
-                  </span>
                 </td>
                 <td className="p-4 text-center">
                   <Badge variant={status.variant} className="inline-flex items-center gap-1">

@@ -392,7 +392,6 @@
       "title": "Ajustar Stock",
       "currentStock": "Stock actual",
       "movementType": "Tipo de movimiento",
-      "newQuantity": "Nueva cantidad",
       "exceedsStock": "Cantidad excede el stock disponible ({available})",
       "reference": "Número de referencia (Opcional)",
       "referencePlaceholder": "Ej: PO-12345, FACTURA-001",
@@ -407,40 +406,33 @@
       "IN": "Entrada",
       "OUT": "Salida",
       "ADJUST": "Ajuste",
-      "TRANSFER": "Transferencia",
       "DAMAGE": "Daño",
       "RETURN": "Devolución"
     },
     "movementDesc": {
       "IN": "Recibir stock",
       "OUT": "Retirar stock",
-      "ADJUST": "Ajustar a cantidad exacta",
+      "ADJUST": "Descontar stock (corregir a la baja)",
       "DAMAGE": "Registrar daño",
       "RETURN": "Devolución de cliente"
     },
     "filters": {
-      "allWarehouses": "Todos los almacenes",
       "stockLevel": "Nivel de stock",
       "normalStock": "Stock normal",
-      "productName": "Nombre del producto",
-      "lastMovement": "Último movimiento",
       "applyFilters": "Aplicar filtros"
     },
     "movementsList": {
       "empty": "No hay movimientos registrados",
       "emptyHint": "Los movimientos de stock aparecerán aquí",
-      "reference": "Ref: {number}",
-      "by": "Por: {name}"
+      "reference": "Ref: {number}"
     },
     "table": {
       "empty": "No hay stock disponible",
       "emptyHint": "Ajusta filtros o agrega productos al inventario",
-      "reserved": "Reservado",
       "available": "Disponible",
       "action": "Acción",
       "adjustStock": "Ajustar stock",
       "adjust": "Ajustar",
-      "min": "Min: {value}",
       "noName": "Producto sin nombre",
       "noStock": "Sin stock",
       "restock": "Reabastecer"

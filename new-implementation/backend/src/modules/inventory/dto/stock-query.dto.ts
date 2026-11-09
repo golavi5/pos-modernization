@@ -1,24 +1,26 @@
-import { IsOptional, IsNumber, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class StockQueryDto {
   @IsOptional()
+  @Transform(({ value }) => parseInt(value))
   @IsNumber()
   @Min(1)
   page?: number = 1;
 
   @IsOptional()
+  @Transform(({ value }) => parseInt(value))
   @IsNumber()
   @Min(1)
-  limit?: number = 10;
+  @Max(100)
+  pageSize?: number = 50;
 
   @IsOptional()
-  @IsUUID()
-  warehouse_id?: string;
+  @IsString()
+  search?: string;
 
   @IsOptional()
-  @IsUUID()
-  location_id?: string;
-
-  @IsOptional()
-  low_stock_only?: boolean;
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  low_stock?: boolean;
 }

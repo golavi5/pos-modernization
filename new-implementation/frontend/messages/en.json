@@ -392,7 +392,6 @@
       "title": "Adjust Stock",
       "currentStock": "Current stock",
       "movementType": "Movement type",
-      "newQuantity": "New quantity",
       "exceedsStock": "Quantity exceeds available stock ({available})",
       "reference": "Reference number (Optional)",
       "referencePlaceholder": "E.g.: PO-12345, INVOICE-001",
@@ -407,40 +406,33 @@
       "IN": "Inbound",
       "OUT": "Outbound",
       "ADJUST": "Adjustment",
-      "TRANSFER": "Transfer",
       "DAMAGE": "Damage",
       "RETURN": "Return"
     },
     "movementDesc": {
       "IN": "Receive stock",
       "OUT": "Remove stock",
-      "ADJUST": "Adjust to exact quantity",
+      "ADJUST": "Remove stock (correct down)",
       "DAMAGE": "Record damage",
       "RETURN": "Customer return"
     },
     "filters": {
-      "allWarehouses": "All warehouses",
       "stockLevel": "Stock level",
       "normalStock": "Normal stock",
-      "productName": "Product name",
-      "lastMovement": "Last movement",
       "applyFilters": "Apply filters"
     },
     "movementsList": {
       "empty": "No movements recorded",
       "emptyHint": "Stock movements will appear here",
-      "reference": "Ref: {number}",
-      "by": "By: {name}"
+      "reference": "Ref: {number}"
     },
     "table": {
       "empty": "No stock available",
       "emptyHint": "Adjust filters or add products to inventory",
-      "reserved": "Reserved",
       "available": "Available",
       "action": "Action",
       "adjustStock": "Adjust stock",
       "adjust": "Adjust",
-      "min": "Min: {value}",
       "noName": "Unnamed product",
       "noStock": "Out of stock",
       "restock": "Restock"

@@ -12,7 +12,6 @@ interface StockMovementsProps {
 
 export function StockMovements({ movements, isLoading }: StockMovementsProps) {
   const t = useTranslations('inventory');
-  const tReports = useTranslations('reports');
   const tCommon = useTranslations('common');
   const getMovementConfig = (type: StockMovement['movement_type']) => {
     const configs = {
@@ -33,12 +32,6 @@ export function StockMovements({ movements, isLoading }: StockMovementsProps) {
         icon: Edit3,
         variant: 'default' as const,
         color: 'text-blue-600',
-      },
-      TRANSFER: {
-        label: t('movementTypes.TRANSFER'),
-        icon: TrendingUp,
-        variant: 'secondary' as const,
-        color: 'text-purple-600',
       },
       DAMAGE: {
         label: t('movementTypes.DAMAGE'),
@@ -115,13 +108,9 @@ export function StockMovements({ movements, isLoading }: StockMovementsProps) {
               </div>
               <div className="text-sm text-secondary space-y-1">
                 <div className="flex items-center gap-4">
-                  <span>
-                    <span className="font-medium">{tReports('productTab.warehouse')}:</span> {movement.warehouse_name}
-                    {movement.location_name && ` - ${movement.location_name}`}
-                  </span>
-                  {movement.reference_number && (
+                  {movement.reference_id && (
                     <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                      {t('movementsList.reference', { number: movement.reference_number })}
+                      {t('movementsList.reference', { number: movement.reference_id })}
                     </span>
                   )}
                 </div>
@@ -140,11 +129,6 @@ export function StockMovements({ movements, isLoading }: StockMovementsProps) {
               <div className="text-xs text-tertiary mt-1">
                 {formatDate(movement.created_at)}
               </div>
-              {movement.user_name && (
-                <div className="text-xs text-quaternary mt-1">
-                  {t('movementsList.by', { name: movement.user_name })}
-                </div>
-              )}
             </div>
           </div>
         );

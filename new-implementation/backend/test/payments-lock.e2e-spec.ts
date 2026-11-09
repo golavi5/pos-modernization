@@ -15,6 +15,7 @@ import type { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectio
 import { BadRequestException } from '@nestjs/common';
 import { dataSourceOptions } from '../src/database/data-source';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
+import { StockService } from '../src/modules/inventory/services/stock.service';
 import { SalesService } from '../src/modules/sales/services/sales.service';
 import { OrderCalculationService } from '../src/modules/sales/services/order-calculation.service';
 import { InventoryLocationsService } from '../src/modules/inventory/services/inventory-locations.service';
@@ -45,6 +46,7 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
   let ds: DataSource;
   let service: PaymentsService;
   let sales: SalesService;
+  let stock: StockService;
   let company: Company;
   let user: User;
   let product: Product;
@@ -81,6 +83,12 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
       ds.getRepository(OrderItem),
       {} as unknown as OrderCalculationService,
       productsService,
+      ds,
+      new InventoryLocationsService(),
+    );
+
+    stock = new StockService(
+      ds.getRepository(Product),
       ds,
       new InventoryLocationsService(),
     );
@@ -239,7 +247,11 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     });
     return rows.reduce(
       (sum, m) =>
-        sum + (m.movement_type === MovementType.OUT ? -m.quantity : m.quantity),
+        sum +
+        (m.movement_type === MovementType.IN ||
+        m.movement_type === MovementType.RETURN
+          ? m.quantity
+          : -m.quantity),
       0,
     );
   };
@@ -308,5 +320,59 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     expect(await signedMovements(order.id)).toBe(0);
     const after = await ds.manager.findOneByOrFail(Order, { id: order.id });
     expect(after.status).toBe(OrderStatus.PENDING);
+  });
+  // SPEC-BACK-007 slice 2: manual adjustments go through `products.stock_quantity`
+  // and the journal, under the same product lock.
+  it('adjusts of every type: stock moves by the signed sum of the journal', async () => {
+    const before = await stockOf();
+    const marker = `ADJ-${Date.now()}`;
+    const run = (movement_type: MovementType, quantity: number) =>
+      stock.adjustStock(
+        { product_id: product.id, movement_type, quantity, reference_id: marker },
+        user,
+      );
+
+    await run(MovementType.IN, 10);
+    await run(MovementType.OUT, 3);
+    await run(MovementType.ADJUST, 2);
+    await run(MovementType.DAMAGE, 1);
+    await run(MovementType.RETURN, 4);
+
+    expect(await signedMovements(marker)).toBe(10 - 3 - 2 - 1 + 4);
+    expect(await stockOf()).toBe(before + 10 - 3 - 2 - 1 + 4);
+  });
+
+  it('two concurrent decrements of the whole stock: one wins, the other is rejected, never below zero', async () => {
+    const solo = await ds.manager.save(
+      Product,
+      ds.manager.create(Product, {
+        company_id: company.id,
+        name: 'Solo',
+        sku: `SOLO-${Date.now()}`,
+        price: TOTAL,
+        stock_quantity: 5,
+        created_by: user.id,
+      }),
+    );
+    const take = () =>
+      stock.adjustStock(
+        { product_id: solo.id, movement_type: MovementType.OUT, quantity: 5 },
+        user,
+      );
+
+    const results = await Promise.allSettled([take(), take()]);
+
+    const failed = results.filter(
+      (r): r is PromiseRejectedResult => r.status === 'rejected',
+    );
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(failed).toHaveLength(1);
+    expect(failed[0].reason).toBeInstanceOf(BadRequestException);
+    expect(
+      (await ds.manager.findOneByOrFail(Product, { id: solo.id })).stock_quantity,
+    ).toBe(0);
+    expect(
+      await ds.manager.count(StockMovement, { where: { product_id: solo.id } }),
+    ).toBe(1);
   });
 });
