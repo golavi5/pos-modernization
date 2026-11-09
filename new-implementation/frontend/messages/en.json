@@ -130,9 +130,7 @@
       "salesToday": "Sales today",
       "transactions": "Transactions",
       "avgTicket": "Average ticket",
-      "totalSales": "Total sales",
-      "deltaRevenue": "+12% vs yesterday",
-      "deltaTransactions": "+5 vs yesterday"
+      "totalSales": "Total sales"
     },
     "quickActions": {
       "title": "Quick actions",
