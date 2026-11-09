@@ -10,6 +10,10 @@ export function StockBadge({ stock, reorderLevel }: StockBadgeProps) {
   const t = useTranslations('products');
   const tInventory = useTranslations('inventory');
 
+  if (stock < 0) {
+    return <Badge variant="destructive">{t('negativeStockCount', { stock })}</Badge>;
+  }
+
   if (stock === 0) {
     return <Badge variant="destructive">{tInventory('table.noStock')}</Badge>;
   }
