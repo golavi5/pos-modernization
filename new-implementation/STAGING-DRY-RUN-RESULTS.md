@@ -591,10 +591,10 @@ Redeploy basta y no hay que restaurar backup.
 | S-item | Estado | Propuesta |
 |---|---|---|
 | S-01 CI green & gating | ✅ cerrado (`SPEC-BACK-002`, lint como check requerido) | — |
-| S-02 Observabilidad | Parcial: logging estructurado con redacción y `/health`+`/health/ready` listos; **Sentry no** | **fast-follow** |
-| S-03 Backups | Scripts probados hoy de punta a punta; **automatización (cron/S3) no configurada** | **fast-follow, con fecha** |
+| S-02 Observabilidad | Parcial: logging estructurado con redacción y `/health`+`/health/ready` listos; **Sentry no** | ~~fast-follow~~ **diferido por decisión del propietario (2026-11-09)**: se retoma cuando exista un DSN |
+| S-03 Backups | Scripts probados hoy de punta a punta; **automatización (cron/S3) no configurada** | ~~fast-follow, con fecha~~ **diferido por decisión del propietario (2026-11-09)**: hasta que haya bucket y credenciales, los backups se hacen con los scripts del repo |
 | S-05 Secretos | ✅ cerrado por decisión (histórico no purgado; secretos nuevos generados) | — |
-| S-06 Política de contraseñas | Mín. 10 con mayúscula, minúscula, dígito y símbolo, aplicada en los DTO | **fast-follow** |
+| S-06 Política de contraseñas | Mín. 10 con mayúscula, minúscula, dígito y símbolo, aplicada en los DTO | ✅ **ya hecho** (`SPEC-CUT-001` S-06); esta fila estaba desactualizada y la política nunca fue un pendiente |
 
 ## Recomendación
 
@@ -631,6 +631,7 @@ por API o migración. Se acepta como **fast-follow**, con item propio en
 
 **Fast-follow acordados en esta firma:** D3 (`SPEC-BACK-004`), S-02 Sentry,
 S-03 automatización de backups a S3 con retención, S-06 política de contraseñas.
+*(Actualización 2026-11-09: S-02 y S-03 quedan diferidos por decisión del propietario, S-06 ya estaba hecho, D3 se cerró en `SPEC-BACK-004` y los cuatro huecos de `SPEC-BACK-003` se cerraron.)*
 Y los cuatro huecos nombrados en `SPEC-BACK-003`: el `retry` global del
 QueryClient, el bloqueo pesimista sin ejercitar bajo concurrencia real, la
 divergencia entre los dos libros de inventario, y `refundPayment` sin guarda de
