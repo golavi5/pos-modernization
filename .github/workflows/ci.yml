@@ -23,6 +23,22 @@ jobs:
     defaults:
       run:
         working-directory: ./new-implementation/backend
+    # Throwaway MySQL for `npm run test:e2e` (the payment/refund lock races,
+    # SPEC-BACK-003). Credentials and port are the ones hard-coded in
+    # test/payments-lock.e2e-spec.ts, which drops its schema on connect.
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: locktest
+          MYSQL_DATABASE: pos_lock_test
+        ports:
+          - 3319:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -plocktest"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,6 +48,7 @@ jobs:
           cache-dependency-path: new-implementation/backend/package-lock.json
       - run: npm ci
       - run: npm test
+      - run: npm run test:e2e
       - run: npm run build
 
   frontend:
