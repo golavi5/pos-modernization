@@ -1,6 +1,6 @@
 # M2 — Zona horaria por empresa (los días de los reportes siguen la hora de la empresa)
 
-**Status**: APPROVED — 2026-11-09. Decidido por Gandhi Olavi («add a per-company timezone»); nada implementado todavía.
+**Status**: APPROVED — 2026-11-09 (PR #89). Decidido por Gandhi Olavi («add a per-company timezone»). Implementado y verificado: MySQL 8 real (barras y endpoint diario, zona UTC− y UTC+, con mutación) y Playwright 63/63 contra una pila viva. **Abierto:** aplicar la migración `AddCompanyTimezone` en staging (las empresas existentes pasan a `America/Bogota`, lo que mueve sus fronteras de día) y los límites declarados en §3. Por eso sigue `APPROVED`.
 
 ## 1. Problema
 
@@ -23,7 +23,7 @@ Los reportes agrupan por día con `DATE(created_at)` en la zona de MySQL (UTC) y
 
 ## 4. Aceptación
 
-- [ ] Una venta a las 20:00 de Bogotá aparece en la barra del día local, no en la del siguiente.
-- [ ] Cambiar la zona de la empresa mueve la venta de barra.
-- [ ] `PUT /settings/company` rechaza una zona que no existe.
-- [ ] Probado contra MySQL 8 real, incluida una zona UTC+ para el signo del offset.
+- [x] Una venta a las 20:00 de Bogotá aparece en la barra del día local, no en la del siguiente.
+- [x] Cambiar la zona de la empresa mueve la venta de barra.
+- [x] `PATCH /settings/company` rechaza una zona que no existe.
+- [x] Probado contra MySQL 8 real, incluida una zona UTC+ para el signo del offset.
