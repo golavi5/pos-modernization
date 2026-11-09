@@ -273,11 +273,29 @@ export class PaymentsService {
       throw new BadRequestException('Payment is already refunded');
     }
 
-    const order = payment.order;
-
     const updatedPayment = await this.dataSource.transaction(async (manager) => {
-      payment.status = PaymentStatus.REFUNDED;
-      const refunded = await manager.save(Payment, payment);
+      // El chequeo de arriba es un fallo rápido, no una garantía: dos
+      // reembolsos simultáneos lo pasan los dos y, sin esto, los dos devuelven
+      // el stock. Mismo patrón y MISMO orden de bloqueo que `recordPayment`
+      // (pedido primero, productos después), así que no hay deadlock entre ambos.
+      const order = await manager.findOne(Order, {
+        where: { id: payment.order_id, company_id: user.company_id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!order) {
+        throw new NotFoundException(`Order with ID ${payment.order_id} not found`);
+      }
+
+      // Releído DENTRO del bloqueo: la lectura de fuera puede estar rancia.
+      const current = await manager.findOne(Payment, {
+        where: { id: paymentId },
+      });
+      if (!current || current.status === PaymentStatus.REFUNDED) {
+        throw new BadRequestException('Payment is already refunded');
+      }
+
+      current.status = PaymentStatus.REFUNDED;
+      const refunded = await manager.save(Payment, current);
 
       // Update order payment status
       const remainingPayments =
@@ -373,7 +391,9 @@ export class PaymentsService {
       return refunded;
     });
 
-    this.logger.log(`Refunded payment ${paymentId} for order ${order.order_number}`);
+    this.logger.log(
+      `Refunded payment ${paymentId} for order ${payment.order.order_number}`,
+    );
 
     return updatedPayment;
   }

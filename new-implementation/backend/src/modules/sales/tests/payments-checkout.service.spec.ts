@@ -268,7 +268,9 @@ describe('refundPayment — deshacer el cierre de venta', () => {
     payment = { id: 'pay1', order_id: 'o1', amount: 29750, status: PaymentStatus.COMPLETED, order };
 
     manager = {
-      findOne: jest.fn(async (entity: any) => (entity === Product ? product : order)),
+      findOne: jest.fn(async (entity: any) =>
+        entity === Product ? product : entity === Payment ? payment : order,
+      ),
       find: jest.fn(async (entity: any) =>
         entity === Payment ? priorPayments : entity === StockMovement ? priorMovements : [],
       ),

@@ -322,6 +322,10 @@ describe('PaymentsService', () => {
       } as unknown as Payment;
 
       jest.spyOn(paymentRepository, 'findOne').mockResolvedValue(mockPayment);
+      // El pedido se relee (bloqueado) dentro de la transacción de reembolso.
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockPayment.order as unknown as Order);
       jest.spyOn(paymentRepository, 'save').mockResolvedValue({
         ...mockPayment,
         status: PaymentStatus.REFUNDED,
@@ -362,6 +366,10 @@ describe('PaymentsService', () => {
       } as unknown as Payment;
 
       jest.spyOn(paymentRepository, 'findOne').mockResolvedValue(mockPayment);
+      // El pedido se relee (bloqueado) dentro de la transacción de reembolso.
+      jest
+        .spyOn(orderRepository, 'findOne')
+        .mockResolvedValue(mockPayment.order as unknown as Order);
       jest.spyOn(paymentRepository, 'save').mockResolvedValue({
         ...mockPayment,
         status: PaymentStatus.REFUNDED,
