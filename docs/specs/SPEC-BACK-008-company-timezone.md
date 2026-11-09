@@ -1,6 +1,6 @@
 # M2 — Zona horaria por empresa (los días de los reportes siguen la hora de la empresa)
 
-**Status**: APPROVED — 2026-11-09 (PR #89). Decidido por Gandhi Olavi («add a per-company timezone»). Implementado y verificado: MySQL 8 real (barras y endpoint diario, zona UTC− y UTC+, con mutación) y Playwright 63/63 contra una pila viva. **Abierto:** aplicar la migración `AddCompanyTimezone` en staging (las empresas existentes pasan a `America/Bogota`, lo que mueve sus fronteras de día) y los límites declarados en §3. Por eso sigue `APPROVED`.
+**Status**: APPROVED — 2026-11-09 (PR #89). Decidido por Gandhi Olavi («add a per-company timezone»). Implementado y verificado: MySQL 8 real (barras y endpoint diario, zona UTC− y UTC+, con mutación) y Playwright 63/63 contra una pila viva. **Ensayo de actualización local hecho** ([registro](../verification/2026-11-09-migrations-upgrade-rehearsal.md): las filas de `settings` existentes reciben `America/Bogota`). **Abierto:** aplicar la migración `AddCompanyTimezone` en staging (las empresas existentes pasan a `America/Bogota`, lo que mueve sus fronteras de día) y los límites declarados en §3. Por eso sigue `APPROVED`.
 
 ## 1. Problema
 
