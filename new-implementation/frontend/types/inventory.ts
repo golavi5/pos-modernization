@@ -41,7 +41,6 @@ export interface WarehouseLocation {
   warehouse_name?: string;
   name: string;
   code: string;
-  capacity?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -73,7 +72,6 @@ export interface CreateLocationDto {
   warehouse_id: string;
   name: string;
   code: string;
-  capacity?: number;
 }
 
 export interface StockQueryParams {

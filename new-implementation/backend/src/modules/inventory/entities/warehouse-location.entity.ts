@@ -20,12 +20,6 @@ export class WarehouseLocation {
   @Column()
   location_code: string;
 
-  @Column()
-  capacity: number;
-
-  @Column({ default: 0 })
-  current_stock: number;
-
   @OneToMany(() => StockMovement, (movement) => movement.location)
   movements: StockMovement[];
 
