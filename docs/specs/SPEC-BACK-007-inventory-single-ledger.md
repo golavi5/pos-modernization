@@ -1,6 +1,6 @@
 # M2 — Un solo libro de inventario (cierra BACK-003 (c) y el resto de (d))
 
-**Status**: DRAFT — 2026-11-09. Diseño propuesto; nada implementado. No se puede empezar el slice 1 sin respuesta a la pregunta abierta 1.
+**Status**: APPROVED — 2026-11-09. Diseño aprobado por Gandhi Olavi (las tres preguntas de §6 cerradas con los valores por defecto); nada implementado. Siguiente: slice 1.
 
 ## 1. Problema
 
@@ -14,7 +14,7 @@ Hay dos libros que divergen (hechos verificados en código el 2026-11-09):
 
 Consecuencias: tras una venta el POS muestra un stock y `/inventory` otro (`current_stock` sigue en 0); una venta por `confirmed` no deja rastro, así que `refundPayment` no puede devolverla; `CONFIRMED → VOIDED` no restituye stock; y `updateOrderStatus` descuenta en un bucle sin transacción ni bloqueo (dos confirmaciones simultáneas descuentan dos veces — misma clase de fallo que el reembolso de #68).
 
-## 2. Decisión propuesta
+## 2. Decisión
 
 **`products.stock_quantity` es la fuente de verdad. `stock_movements` es su diario de deltas.** Razones: todo lo que el cajero y los reportes ven ya lee el libro A; la migración legada solo llena el libro A (incluidas las 7.809 filas negativas que la sobreventa exige conservar); y el único escritor del libro B no funciona.
 
@@ -52,8 +52,8 @@ Los pedidos confirmados **antes** del corte no tienen rastro: el respaldo actual
 
 Fuera de alcance (slices posteriores): quitar las columnas `current_stock`/`capacity` (migración), el reporte `value-by-warehouse` con ceros fijos, la columna duplicada `locationId`.
 
-## 6. Preguntas abiertas (decide Gandhi)
+## 6. Decisiones (cerradas 2026-11-09, Gandhi Olavi)
 
-1. **¿El sistema legado lleva stock por bodega?** Esta decisión asume que no (la migración solo mapea `CantFisica` por producto, y la sobreventa del legado es por producto), pero `info/bd_ex.sql` no está en este checkout y ningún doc lo afirma. *Por defecto: no → un solo libro.* Si la respuesta es sí, la fuente de verdad pasa a ser por ubicación y este diseño se rehace.
-2. **¿Se edita el stock desde el formulario de producto?** *Por defecto: no.* El alta con stock inicial escribe un `IN`; en edición el campo es solo lectura y los cambios van por ajuste de inventario (deja diario y hace imposible por construcción el caso de #67). Alternativa: la edición escribe una fila por el delta.
-3. **¿Puede un decremento manual cruzar 0?** *Por defecto: no.*
+1. **El legado no llevaba stock por bodega.** Se confirma el supuesto: un solo libro, por producto. (Palabra del propietario; `info/bd_ex.sql` no está en este checkout, así que no hay artefacto que lo respalde.)
+2. **El stock no se edita desde el formulario de producto.** El alta con stock inicial escribe un `IN`; en edición el campo es solo lectura y los cambios van por ajuste de inventario. Con esto el ajuste de `UpdateProductDto` de #67 (sin `@Min(0)`) deja de ser necesario; se retira en el slice 3.
+3. **Un decremento manual no puede cruzar 0.** Solo la venta lleva el stock a negativo.
