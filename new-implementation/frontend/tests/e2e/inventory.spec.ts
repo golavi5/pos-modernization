@@ -1,178 +1,129 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { AuthHelper } from './helpers/auth.helper';
+import { seedProduct } from './helpers/api.helper';
 
-test.describe('Inventory Management', () => {
-  let authHelper: AuthHelper;
+const SEARCH = 'Buscar producto o SKU...';
 
+async function openInventory(page: Page, search: string) {
+  await page.goto('/inventory');
+  await page.waitForLoadState('networkidle');
+  await page.getByPlaceholder(SEARCH).fill(search);
+}
+
+const rowOf = (page: Page, name: string) => page.getByRole('row').filter({ hasText: name });
+
+async function openAdjust(page: Page, name: string) {
+  await rowOf(page, name).getByRole('button', { name: 'Ajustar' }).click();
+  await expect(page.getByRole('heading', { name: 'Ajustar Stock' })).toBeVisible();
+}
+
+test.describe('Inventory', () => {
   test.beforeEach(async ({ page }) => {
-    authHelper = new AuthHelper(page);
-    await authHelper.login();
-    await page.goto('/dashboard/inventory');
+    await new AuthHelper(page).login();
   });
 
-  test('should view current stock levels', async ({ page }) => {
-    // Verify we're on inventory page
-    await expect(page.locator('text=Inventario')).toBeVisible();
-    
-    // Verify stock table is visible
-    await expect(page.locator('table')).toBeVisible();
-    
-    // Verify columns
-    await expect(page.locator('text=Producto')).toBeVisible();
-    await expect(page.locator('text=Almacén')).toBeVisible();
-    await expect(page.locator('text=Cantidad')).toBeVisible();
-    await expect(page.locator('text=Disponible')).toBeVisible();
+  test('lists one row per product with its quantity and status', async ({ page, request }) => {
+    const { name, sku } = await seedProduct(request, { stock_quantity: 12, reorder_level: 2 });
+    await openInventory(page, name);
+
+    const row = rowOf(page, name);
+    await expect(row).toHaveCount(1);
+    await expect(row).toContainText(`SKU: ${sku}`);
+    await expect(row).toContainText('12');
+    await expect(row).toContainText('Disponible');
+    // No warehouse dimension any more.
+    await expect(page.getByRole('columnheader', { name: 'Almacén' })).toHaveCount(0);
   });
 
-  test('should adjust stock IN', async ({ page }) => {
-    // Click adjust on first product
-    await page.locator('button:has-text("Ajustar")').first().click();
-    
-    // Modal should open
-    await expect(page.locator('text=Ajustar Stock')).toBeVisible();
-    
-    // Select IN operation
-    await page.click('text=Entrada');
-    
-    // Enter quantity
-    await page.fill('input[id="quantity"]', '50');
-    
-    // Add reference
-    await page.fill('input[id="reference"]', 'PO-12345');
-    
-    // Add notes
-    await page.fill('textarea[id="notes"]', 'Test stock adjustment');
-    
-    // Verify preview
-    await expect(page.locator('text=Vista previa')).toBeVisible();
-    
-    // Confirm
-    await page.click('text=Confirmar Ajuste');
-    
-    // Verify success
-    await expect(page.locator('text=ajustado exitosamente')).toBeVisible();
+  test('flags out-of-stock and restock-level products', async ({ page, request }) => {
+    const empty = await seedProduct(request, { stock_quantity: 0, reorder_level: 3 });
+    const low = await seedProduct(request, { stock_quantity: 2, reorder_level: 5 });
+
+    await openInventory(page, empty.name);
+    await expect(rowOf(page, empty.name)).toContainText('Sin stock');
+
+    await page.getByPlaceholder(SEARCH).fill(low.name);
+    await expect(rowOf(page, low.name)).toContainText('Reabastecer');
   });
 
-  test('should adjust stock OUT', async ({ page }) => {
-    // Adjust stock
-    await page.locator('button:has-text("Ajustar")').first().click();
-    
-    // Select OUT
-    await page.click('text=Salida');
-    
-    // Enter quantity
-    await page.fill('input[id="quantity"]', '10');
-    
-    // Confirm
-    await page.click('text=Confirmar Ajuste');
-    
-    // Success
-    await expect(page.locator('text=ajustado exitosamente')).toBeVisible();
+  test('adjusts stock IN and updates the row', async ({ page, request }) => {
+    const { name } = await seedProduct(request, { stock_quantity: 10 });
+    await openInventory(page, name);
+
+    await openAdjust(page, name);
+    await page.getByRole('button', { name: /^Entrada/ }).click();
+    await page.fill('input#quantity', '50');
+    await page.fill('input#reference', `PO-${Date.now()}`);
+    await page.fill('textarea#notes', 'Ajuste E2E');
+    await expect(page.getByText('Nuevo stock:')).toBeVisible();
+    await page.getByRole('button', { name: 'Confirmar Ajuste' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Ajustar Stock' })).toBeHidden();
+    await expect(rowOf(page, name).getByText('60', { exact: true })).toBeVisible();
   });
 
-  test('should view stock movements', async ({ page }) => {
-    // Click movements tab
-    await page.click('text=Movimientos');
-    
-    // Verify movements are shown
-    await expect(page.locator('[data-testid="movement-card"]').first()).toBeVisible();
-    
-    // Verify movement types are displayed
-    const movementTypes = ['Entrada', 'Salida', 'Ajuste', 'Daño', 'Devolución'];
-    const pageContent = await page.content();
-    const hasMovementType = movementTypes.some(type => pageContent.includes(type));
-    expect(hasMovementType).toBeTruthy();
+  test('adjusts stock OUT and updates the row', async ({ page, request }) => {
+    const { name } = await seedProduct(request, { stock_quantity: 10 });
+    await openInventory(page, name);
+
+    await openAdjust(page, name);
+    await page.getByRole('button', { name: /^Salida/ }).click();
+    await page.fill('input#quantity', '4');
+    await page.getByRole('button', { name: 'Confirmar Ajuste' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Ajustar Stock' })).toBeHidden();
+    await expect(rowOf(page, name).getByText('6', { exact: true })).toBeVisible();
   });
 
-  test('should filter by low stock', async ({ page }) => {
-    // Open filters
-    await page.click('text=Filtros');
-    
-    // Select low stock
-    await page.selectOption('select:near(:text("Nivel de stock"))', 'true');
-    
-    // Apply
-    await page.click('button:has-text("Aplicar filtros")');
-    await page.waitForTimeout(500);
-    
-    // Verify only low stock items
-    const badges = page.locator('text=Stock bajo');
-    const count = await badges.count();
-    expect(count).toBeGreaterThanOrEqual(0);
+  test('DAMAGE decrements and RETURN increments', async ({ page, request }) => {
+    const { name } = await seedProduct(request, { stock_quantity: 10 });
+    await openInventory(page, name);
+
+    await openAdjust(page, name);
+    await page.getByRole('button', { name: /^Daño/ }).click();
+    await page.fill('input#quantity', '5');
+    await page.getByRole('button', { name: 'Confirmar Ajuste' }).click();
+    await expect(rowOf(page, name).getByText('5', { exact: true })).toBeVisible();
+
+    await openAdjust(page, name);
+    await page.getByRole('button', { name: /^Devolución/ }).click();
+    await page.fill('input#quantity', '3');
+    await page.getByRole('button', { name: 'Confirmar Ajuste' }).click();
+    await expect(rowOf(page, name).getByText('8', { exact: true })).toBeVisible();
   });
 
-  test('should display inventory statistics', async ({ page }) => {
-    // Verify stats
-    await expect(page.locator('text=Total Productos')).toBeVisible();
-    await expect(page.locator('text=Stock Total')).toBeVisible();
-    await expect(page.locator('text=Stock Bajo')).toBeVisible();
-    await expect(page.locator('text=Almacenes')).toBeVisible();
+  test('blocks an OUT adjustment larger than the available stock', async ({ page, request }) => {
+    const { name } = await seedProduct(request, { stock_quantity: 10 });
+    await openInventory(page, name);
+
+    await openAdjust(page, name);
+    await page.getByRole('button', { name: /^Salida/ }).click();
+    await page.fill('input#quantity', '999');
+
+    await expect(page.getByText('Cantidad excede el stock disponible (10)')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Confirmar Ajuste' })).toBeDisabled();
   });
 
-  test('should validate stock OUT cannot exceed available', async ({ page }) => {
-    // Adjust stock
-    await page.locator('button:has-text("Ajustar")').first().click();
-    
-    // Select OUT
-    await page.click('text=Salida');
-    
-    // Try to remove more than available
-    await page.fill('input[id="quantity"]', '999999');
-    
-    // Should show validation error
-    await expect(page.locator('text=No hay suficiente stock')).toBeVisible();
-  });
+  test('records the adjustment in the movements tab', async ({ page, request }) => {
+    const { name } = await seedProduct(request, { stock_quantity: 10 });
+    const reference = `REF-${Date.now()}`;
+    await openInventory(page, name);
 
-  test('should switch between stock and movements tabs', async ({ page }) => {
-    // Verify we're on Stock tab
-    await expect(page.locator('table')).toBeVisible();
-    
-    // Switch to Movements
-    await page.click('text=Movimientos');
-    await page.waitForTimeout(300);
-    
-    // Verify movements view
-    await expect(page.locator('table')).not.toBeVisible();
-    
-    // Switch back to Stock
-    await page.click('text=Stock Actual');
-    await page.waitForTimeout(300);
-    
-    // Verify stock view
-    await expect(page.locator('table')).toBeVisible();
-  });
+    await openAdjust(page, name);
+    await page.getByRole('button', { name: /^Entrada/ }).click();
+    await page.fill('input#quantity', '7');
+    await page.fill('input#reference', reference);
+    await page.getByRole('button', { name: 'Confirmar Ajuste' }).click();
+    await expect(page.getByRole('heading', { name: 'Ajustar Stock' })).toBeHidden();
 
-  test('should adjust with DAMAGE type', async ({ page }) => {
-    await page.locator('button:has-text("Ajustar")').first().click();
-    
-    // Select DAMAGE
-    await page.click('text=Daño');
-    
-    // Enter quantity
-    await page.fill('input[id="quantity"]', '5');
-    await page.fill('textarea[id="notes"]', 'Damaged during transport');
-    
-    // Confirm
-    await page.click('text=Confirmar Ajuste');
-    
-    // Success
-    await expect(page.locator('text=ajustado exitosamente')).toBeVisible();
-  });
+    await page.getByRole('button', { name: /^Movimientos/ }).click();
+    await expect(page.getByRole('table')).toBeHidden();
+    const movement = page.locator('div.rounded-lg').filter({ hasText: reference });
+    await expect(movement.first()).toContainText(name);
+    await expect(movement.first()).toContainText('Entrada');
+    await expect(movement.first()).toContainText('+7');
 
-  test('should adjust with RETURN type', async ({ page }) => {
-    await page.locator('button:has-text("Ajustar")').first().click();
-    
-    // Select RETURN
-    await page.click('text=Devolución');
-    
-    // Enter quantity
-    await page.fill('input[id="quantity"]', '3');
-    await page.fill('input[id="reference"]', 'RET-001');
-    
-    // Confirm
-    await page.click('text=Confirmar Ajuste');
-    
-    // Success
-    await expect(page.locator('text=ajustado exitosamente')).toBeVisible();
+    await page.getByRole('button', { name: 'Stock', exact: true }).click();
+    await expect(page.getByRole('table')).toBeVisible();
   });
 });
