@@ -1,6 +1,6 @@
 # M2 — Un solo libro de inventario (cierra BACK-003 (c) y el resto de (d))
 
-**Status**: APPROVED — 2026-11-09. Diseño aprobado por Gandhi Olavi (las tres preguntas de §6 cerradas con los valores por defecto); **Slice 1 hecho 2026-11-09 (PR #71):** confirmación transaccional con `OUT`/`RETURN`, verificada contra MySQL y por mutación. Abiertos: slice 2 (inventario sobre `stock_quantity` y su página), slice 3 (formulario de producto).
+**Status**: APPROVED — 2026-11-09. Diseño aprobado por Gandhi Olavi (las tres preguntas de §6 cerradas con los valores por defecto); **Slice 1 hecho 2026-11-09 (PR #71):** confirmación transaccional con `OUT`/`RETURN`, verificada contra MySQL y por mutación. **Slice 2 hecho 2026-11-09 (PR #72):** inventario y su página sobre `stock_quantity`, código muerto borrado, ajuste manual bajo bloqueo (mutación verificada). Abierto: slice 3 (formulario de producto); sin verificación en navegador de `/inventory`.
 
 ## 1. Problema
 
