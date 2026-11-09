@@ -1,6 +1,6 @@
 # M2 — La categoría del formulario de producto se descarta en silencio
 
-**Status**: APPROVED — 2026-11-09 (PR #57). Implementado: selector de categorías con creación al vuelo, `category_id` en el formulario, nombre resuelto en la tabla, y `POST /products/categories` ya no exige `company_id` en el body. Abierto: sin verificación en navegador; `ProductSearch.tsx` (caja) filtra por `p.category`, siempre undefined, queda aparte.
+**Status**: APPROVED — 2026-11-09 (PR #57, #58). Implementado: selector de categorías con creación al vuelo, `category_id` en el formulario, nombre resuelto en la tabla, `POST /products/categories` ya no exige `company_id` en el body, y las pestañas de categoría de la caja (`ProductSearch.tsx`) filtran por `category_id`. Abierto: sin verificación en navegador (E2E suspendido en CI).
 
 **Owner**: gandhi
 **Created**: 2026-08-11
