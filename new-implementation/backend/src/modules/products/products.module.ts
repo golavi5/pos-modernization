@@ -14,8 +14,11 @@ import { SettingsModule } from '../settings/settings.module';
     SettingsModule,
   ],
   controllers: [
-    ProductsController,
+    // Order matters: Nest registers routes in this order, and
+    // `ProductsController` has `GET/PUT /products/:id`, which would capture
+    // `/products/categories` if it came first. Static-prefix controller first.
     ProductCategoriesController,
+    ProductsController,
   ],
   providers: [
     ProductsService,
