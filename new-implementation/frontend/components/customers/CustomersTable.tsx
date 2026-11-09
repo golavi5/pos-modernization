@@ -35,7 +35,7 @@ export function CustomersTable({
   const tReports = useTranslations('reports');
   const queryEnabled = search !== undefined;
   const { data: customersData, isLoading: isLoadingQuery } = useCustomers(
-    queryEnabled ? { search: search || undefined, page: 1, pageSize: 50 } : {}
+    queryEnabled ? { search: search || undefined, page: 1, pageSize: 50, isActive: true } : {}
   );
   const customers = queryEnabled ? (customersData?.data ?? []) : (customersProp ?? []);
   const isLoading = isLoadingProp ?? (queryEnabled ? isLoadingQuery : false);

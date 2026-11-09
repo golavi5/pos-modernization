@@ -110,3 +110,14 @@ export function isEmpty(value: any): boolean {
     (typeof value === 'object' && Object.keys(value).length === 0)
   );
 }
+
+/**
+ * The message to show for a failed request: the backend's `message` (a string,
+ * or an array of validation messages), else `fallback`. Never the raw Axios
+ * error text ("Request failed with status code 400").
+ */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  const message = (error as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+  if (Array.isArray(message)) return message.join('. ');
+  return message || fallback;
+}

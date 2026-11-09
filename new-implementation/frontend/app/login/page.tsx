@@ -28,7 +28,7 @@ export default function LoginPage() {
       // The auth store sets the accessToken cookie the middleware gates on.
       window.location.replace('/dashboard');
     } catch (err: any) {
-      setError(err.message || t('invalidCredentials'));
+      setError(err.status === 401 ? t('invalidCredentials') : err.message || t('invalidCredentials'));
     } finally {
       setLoading(false);
     }

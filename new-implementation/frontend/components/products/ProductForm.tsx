@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { useCreateProduct, useUpdateProduct } from '@/hooks/useProducts';
 import type { Product, CreateProductDto } from '@/types/product';
+import { apiErrorMessage } from '@/lib/utils';
+import { FormError } from '@/components/ui/form-error';
 import { ProductFormFields } from './ProductFormFields';
 
 interface ProductFormProps {
@@ -69,6 +71,8 @@ export function ProductForm({
     }
   }, [product]);
 
+  const [submitError, setSubmitError] = useState('');
+
   const handleChange = (
     field: keyof CreateProductDto,
     value: string | number | boolean | null,
@@ -78,6 +82,7 @@ export function ProductForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError('');
     if (onSubmit) {
       // Legacy mode: parent owns the mutation
       onSubmit(formData);
@@ -94,7 +99,7 @@ export function ProductForm({
       }
       onSuccess?.();
     } catch (err) {
-      console.error('ProductForm submit error:', err);
+      setSubmitError(apiErrorMessage(err, tCommon('requestFailed')));
     }
   };
 
@@ -106,6 +111,8 @@ export function ProductForm({
         t={t}
         stockReadOnly={!!product}
       />
+
+      <FormError message={submitError} />
 
       {/* Buttons — only shown in legacy (non-formId) mode */}
       {!formId && (
