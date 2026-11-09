@@ -23,6 +23,21 @@ const clampNum = (v: unknown, min: number, max: number, label: string, int = fal
   return n;
 };
 
+// `Iva` is a plain percentage in the legacy catalog (24,087 rows at 19, none above 19)
+// except two rows that hold 2140 and 1900 — not percentages. Clamping them to 0 would
+// migrate those two products with NO tax. Owner decision 2026-11-09 (SPEC-MIGR-001):
+// anything above 100% is junk and takes the standard IVA instead. Logged like every
+// other substitution so it surfaces in the operator's output.
+const STANDARD_IVA = 19;
+const taxRate = (v: unknown): number => {
+  const n = Number(v);
+  if (Number.isFinite(n) && n > 100) {
+    console.warn(`[migration] products: tax_rate=${String(v)} is not a percentage, replaced with ${STANDARD_IVA}`);
+    return STANDARD_IVA;
+  }
+  return clampNum(v, 0, 999.99, 'tax_rate');
+};
+
 export default {
   kind: 'map', source: 'inventarios', target: 'products', dependsOn: ['empresas'],
   // A handful of legacy rows carry corrupt numerics (barcodes mis-entered into
@@ -46,7 +61,7 @@ export default {
     { from: 'CantFisica',    to: 'stock_quantity', verify: 'exact',
       transform: (v) => clampNum(v, -2147483648, 2147483647, 'stock_quantity', true) },
     { from: 'Iva',           to: 'tax_rate',      verify: { tolerance: 0.01 },
-      transform: (v) => clampNum(v, 0, 999.99, 'tax_rate') },
+      transform: taxRate },
     // price: lowest IdLista entry from inventarios_precios for this IdInventario
     { from: 'IdInventario',  to: 'price',         verify: { tolerance: 0.01 },
       transform: (v, c) => clampNum(c.lookups.inventarios_precios?.get(String(v))?.Precio, 0, 99999999.99, 'price') },
