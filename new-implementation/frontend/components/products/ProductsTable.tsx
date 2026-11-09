@@ -32,9 +32,6 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
     if (product.stock_quantity === 0) {
       return <Badge variant="destructive">{tInventory('table.noStock')}</Badge>;
     }
-    if (product.min_stock_level && product.stock_quantity <= product.min_stock_level) {
-      return <Badge variant="warning">{tNotifications('types.lowStock')}</Badge>;
-    }
     return <Badge variant="success">{t('inStock')}</Badge>;
   };
 
@@ -123,11 +120,6 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
               <td className="p-4 text-center">
                 <div>
                   <span className="font-semibold">{product.stock_quantity}</span>
-                  {product.unit_of_measure && (
-                    <span className="text-sm text-muted-foreground ml-1">
-                      {product.unit_of_measure}
-                    </span>
-                  )}
                 </div>
                 {getStockStatus(product)}
               </td>
