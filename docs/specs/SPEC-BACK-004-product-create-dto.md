@@ -1,6 +1,6 @@
 # M2 — Alta de producto desde la UI (D3) + venta sin existencias
 
-**Status**: APPROVED — 2026-08-11. Diseño aprobado y escrito en [2026-08-11-product-create-and-oversell-design.md](../superpowers/specs/2026-08-11-product-create-and-oversell-design.md); nada implementado todavía. Único item rojo del dry-run firmado con GO ([acta](../../new-implementation/STAGING-DRY-RUN-RESULTS.md)); aceptado como fast-follow porque no toca el camino de venta, y es el primero de la siguiente iteración.
+**Status**: DONE — 2026-11-09 (PR #55). Header was stale (said "nada implementado"; it shipped in #55). Verified in a browser against a live local stack: SKU normalization, no `company_id`/`created_by` in the POST body, oversell with note `(sin existencias)`, per-product override ([registro](../verification/2026-11-09-back-004-005-006.md), checks 7–10).
 
 **Owner**: gandhi
 **Created**: 2026-08-11

@@ -1,6 +1,6 @@
 # M2 — La categoría del formulario de producto se descarta en silencio
 
-**Status**: APPROVED — 2026-11-09 (PR #57, #58). Implementado: selector de categorías con creación al vuelo, `category_id` en el formulario, nombre resuelto en la tabla, `POST /products/categories` ya no exige `company_id` en el body, y las pestañas de categoría de la caja (`ProductSearch.tsx`) filtran por `category_id`. Abierto: sin verificación en navegador (E2E suspendido en CI).
+**Status**: APPROVED — 2026-11-09 (PR #57, #58). Implementado, pero la verificación en navegador FALLÓ ([registro](../verification/2026-11-09-back-004-005-006.md), check 2): `GET /products/categories` devuelve 404 porque `GET /products/:id` (ProductsController, registrado primero) captura `categories`, así que el listado nunca carga — el selector queda vacío, las pestañas de la caja solo muestran «Todas» y el texto del cajero dice «sin categorías» aunque existan. Checks 3–5 bloqueados. Abierto: corregir el orden de rutas y repetir 2–5.
 
 **Owner**: gandhi
 **Created**: 2026-08-11
