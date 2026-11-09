@@ -71,23 +71,6 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
         />
       </div>
       <div>
-        <Label htmlFor="unit_of_measure">{t('unitOfMeasure')}</Label>
-        <select
-          id="unit_of_measure"
-          value={formData.unit_of_measure}
-          onChange={(e) => onChange('unit_of_measure', e.target.value)}
-          className="w-full px-3 py-2 border bg-surface-2 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="unidad">{t('unit')}</option>
-          <option value="kg">{t('kilogram')}</option>
-          <option value="lb">{t('pound')}</option>
-          <option value="lt">{t('liter')}</option>
-          <option value="mt">{t('meter')}</option>
-          <option value="caja">{t('box')}</option>
-          <option value="paquete">{t('package')}</option>
-        </select>
-      </div>
-      <div>
         <Label htmlFor="price">{t('salePrice')}</Label>
         <Input
           id="price"
@@ -125,28 +108,6 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
         />
       </div>
       <AllowSaleWithoutStockField formData={formData} onChange={onChange} t={t} />
-      <div>
-        <Label htmlFor="min_stock_level">{t('minStock')}</Label>
-        <Input
-          id="min_stock_level"
-          type="number"
-          min="0"
-          value={formData.min_stock_level}
-          onChange={(e) => onChange('min_stock_level', parseInt(e.target.value) || 0)}
-          placeholder="0"
-        />
-      </div>
-      <div>
-        <Label htmlFor="max_stock_level">{t('maxStock')}</Label>
-        <Input
-          id="max_stock_level"
-          type="number"
-          min="0"
-          value={formData.max_stock_level}
-          onChange={(e) => onChange('max_stock_level', parseInt(e.target.value) || 0)}
-          placeholder="0"
-        />
-      </div>
       <div>
         <Label htmlFor="tax_rate">{t('taxRate')}</Label>
         <Input

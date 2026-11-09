@@ -9,10 +9,7 @@ export interface Product {
   price: number;
   cost?: number;
   stock_quantity: number;
-  min_stock_level?: number;
-  max_stock_level?: number;
   reorder_level?: number;
-  unit_of_measure?: string;
   tax_rate?: number;
   is_active: boolean;
   image_url?: string;
@@ -40,10 +37,7 @@ export interface CreateProductDto {
   price: number;
   cost?: number;
   stock_quantity: number;
-  min_stock_level?: number;
-  max_stock_level?: number;
   reorder_level?: number;
-  unit_of_measure?: string;
   tax_rate?: number;
   image_url?: string;
   allow_sale_without_stock?: boolean | null;
@@ -58,10 +52,7 @@ export interface UpdateProductDto {
   price?: number;
   cost?: number;
   stock_quantity?: number;
-  min_stock_level?: number;
-  max_stock_level?: number;
   reorder_level?: number;
-  unit_of_measure?: string;
   tax_rate?: number;
   is_active?: boolean;
   image_url?: string;
