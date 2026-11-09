@@ -70,13 +70,12 @@ export interface SalesResponse {
   pageSize: number;
 }
 
-export interface SalesStats {
-  totalSales: number;
-  totalRevenue: number;
-  averageOrderValue: number;
-  todaySales: number;
-  todayRevenue: number;
-  pendingPayments: number;
+/** Mirrors the backend `SalesSummaryDto` (`GET /sales/reports/summary|daily`). */
+export interface SalesSummary {
+  total_orders: number;
+  total_revenue: number;
+  total_discount: number;
+  average_order_value: number;
 }
 
 export interface CartItem extends SaleItem {

@@ -2,6 +2,7 @@
   "common": {
     "welcome": "Bienvenido",
     "save": "Guardar",
+    "requestFailed": "No se pudo completar la operación.",
     "saving": "Guardando...",
     "cancel": "Cancelar",
     "delete": "Eliminar",

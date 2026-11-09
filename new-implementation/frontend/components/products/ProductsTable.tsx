@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useProducts, useDeleteProduct } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
-import { formatCOP } from '@/lib/utils';
+import { formatCOP, apiErrorMessage } from '@/lib/utils';
 import type { Product } from '@/types/product';
 
 interface ProductsTableProps {
@@ -44,7 +44,11 @@ export function ProductsTable({ search, onEdit }: ProductsTableProps) {
 
   const handleDelete = async (product: Product) => {
     if (window.confirm(t('table.deleteConfirm', { name: product.name }))) {
-      await deleteMutation.mutateAsync(product.id);
+      try {
+        await deleteMutation.mutateAsync(product.id);
+      } catch (error) {
+        window.alert(apiErrorMessage(error, tCommon('requestFailed')));
+      }
     }
   };
 

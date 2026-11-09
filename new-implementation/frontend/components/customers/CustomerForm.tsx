@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCreateCustomer, useUpdateCustomer } from '@/hooks/useCustomers';
 import type { Customer, CreateCustomerDto } from '@/types/customer';
-import { formatCOP } from '@/lib/utils';
+import { apiErrorMessage } from '@/lib/utils';
+import { FormError } from '@/components/ui/form-error';
+import { CustomerLoyaltySummary } from './CustomerLoyaltySummary';
 
 interface CustomerFormProps {
   customer?: Customer;
@@ -36,6 +38,7 @@ export function CustomerForm({
   const createMutation = useCreateCustomer();
   const updateMutation = useUpdateCustomer();
   const isLoadingInternal = createMutation.isPending || updateMutation.isPending;
+  const [submitError, setSubmitError] = useState('');
   const isLoading = isLoadingProp ?? (formId ? isLoadingInternal : false);
   const [formData, setFormData] = useState<CreateCustomerDto>({
     name: '',
@@ -61,6 +64,7 @@ export function CustomerForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError('');
 
     // Remove empty optional fields
     const submitData: CreateCustomerDto = {
@@ -92,7 +96,7 @@ export function CustomerForm({
       }
       onSuccess?.();
     } catch (err) {
-      console.error('CustomerForm submit error:', err);
+      setSubmitError(apiErrorMessage(err, tCommon('requestFailed')));
     }
   };
 
@@ -162,28 +166,9 @@ export function CustomerForm({
       </div>
 
       {/* Info adicional para edición */}
-      {customer && (
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <h4 className="font-semibold text-blue-900 mb-2">{t('additionalInfo')}</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-blue-700">{t('loyaltyPoints')}</span>
-              <span className="ml-2 font-semibold text-blue-900">
-                {customer.loyalty_points}
-              </span>
-            </div>
-            <div>
-              <span className="text-blue-700">{t('totalPurchases')}</span>
-              <span className="ml-2 font-semibold text-blue-900">
-                {formatCOP(customer.total_purchases)}
-              </span>
-            </div>
-          </div>
-          <p className="text-xs text-blue-600 mt-2">
-            {t('pointsNote')}
-          </p>
-        </div>
-      )}
+      {customer && <CustomerLoyaltySummary customer={customer} />}
+
+      <FormError message={submitError} />
 
       {/* Botones — only shown in legacy (non-formId) mode */}
       {!formId && (

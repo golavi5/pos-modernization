@@ -10,6 +10,7 @@ import { CustomersTable } from '@/components/customers/CustomersTable';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { LoyaltyPointsModal } from '@/components/customers/LoyaltyPointsModal';
 import { useUpdateLoyaltyPoints, useDeleteCustomer } from '@/hooks/useCustomers';
+import { apiErrorMessage } from '@/lib/utils';
 import type { Customer } from '@/types/customer';
 
 export default function CustomersPage() {
@@ -34,7 +35,7 @@ export default function CustomersPage() {
       try {
         await deleteMutation.mutateAsync(customer.id);
       } catch (error) {
-        console.error(error);
+        window.alert(apiErrorMessage(error, tCommon('requestFailed')));
       }
     }
   };
@@ -51,7 +52,7 @@ export default function CustomersPage() {
       });
       setLoyaltyModalCustomer(null);
     } catch (error) {
-      console.error(error);
+      window.alert(apiErrorMessage(error, tCommon('requestFailed')));
     }
   };
 
