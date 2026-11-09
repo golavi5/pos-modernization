@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Customer } from '../../customers/customer.entity';
-import { Order } from '../../sales/entities/order.entity';
+import { Order, OrderStatus } from '../../sales/entities/order.entity';
 import { ReportQueryDto } from '../dto/report-query.dto';
 import {
   CustomerReportDto,
@@ -44,6 +44,8 @@ export class CustomerReportService {
       .addSelect('AVG(order.total_amount)', 'averageTicket')
       .addSelect('MAX(order.created_at)', 'lastPurchaseDate')
       .where('order.company_id = :companyId', { companyId })
+      // A purchase is a completed order.
+      .andWhere('order.status = :completed', { completed: OrderStatus.COMPLETED })
       .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
@@ -79,7 +81,12 @@ export class CustomerReportService {
     // Get all customers with their purchase data
     const customers = await this.customerRepository
       .createQueryBuilder('customer')
-      .leftJoin(Order, 'order', 'order.customer_id = customer.id')
+      .leftJoin(
+        Order,
+        'order',
+        'order.customer_id = customer.id AND order.status = :completed',
+        { completed: OrderStatus.COMPLETED },
+      )
       .select('customer.id', 'customerId')
       .addSelect('customer.created_at', 'registrationDate')
       .addSelect('COUNT(order.id)', 'totalPurchases')
@@ -213,6 +220,7 @@ export class CustomerReportService {
       .createQueryBuilder('order')
       .select('COUNT(DISTINCT order.customer_id)', 'count')
       .where('order.company_id = :companyId', { companyId })
+      .andWhere('order.status = :completed', { completed: OrderStatus.COMPLETED })
       .andWhere('order.created_at >= :date', { date: thirtyDaysAgo })
       .andWhere('order.customer_id IS NOT NULL')
       .getRawOne();

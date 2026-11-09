@@ -12,9 +12,11 @@ interface ProductFormFieldsProps {
   formData: CreateProductDto;
   onChange: (field: keyof CreateProductDto, value: string | number | boolean | null) => void;
   t: Translate<'products'>;
+  /** Editing: stock only changes through inventory adjust or a sale (SPEC-BACK-007). */
+  stockReadOnly?: boolean;
 }
 
-export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsProps) {
+export function ProductFormFields({ formData, onChange, t, stockReadOnly }: ProductFormFieldsProps) {
   const tCommon = useTranslations('common');
 
   return (
@@ -100,11 +102,16 @@ export function ProductFormFields({ formData, onChange, t }: ProductFormFieldsPr
         <Input
           id="stock_quantity"
           type="number"
+          min="0"
           value={formData.stock_quantity}
           onChange={(e) => onChange('stock_quantity', parseInt(e.target.value) || 0)}
           placeholder="0"
           required
+          disabled={stockReadOnly}
         />
+        {stockReadOnly && (
+          <p className="text-xs text-tertiary mt-1">{t('stockReadOnlyHint')}</p>
+        )}
       </div>
       <AllowSaleWithoutStockField formData={formData} onChange={onChange} t={t} />
       <div>

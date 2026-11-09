@@ -116,7 +116,9 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             isAuthenticated: false,
           });
-          throw new Error(errorMessage);
+          // Keep the HTTP status so the login form can show its own translated
+          // text for a 401 instead of the backend's English message.
+          throw Object.assign(new Error(errorMessage), { status: error.response?.status });
         }
       },
 

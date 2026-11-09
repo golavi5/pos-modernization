@@ -50,8 +50,6 @@ export class InventoryLocationsService {
         company_id: companyId,
         warehouse_id: warehouse.id,
         location_code: InventoryLocationsService.DEFAULT_LOCATION_CODE,
-        capacity: 0,
-        current_stock: 0,
       }),
     );
 

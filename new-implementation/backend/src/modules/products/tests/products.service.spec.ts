@@ -1,22 +1,35 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { ProductsService } from '../products.service';
 import { Product } from '../entities/product.entity';
 import { User } from '../../auth/entities/user.entity';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { SettingsService } from '../../settings/services/settings.service';
+import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
+import { StockMovement, MovementType } from '../../inventory/entities/stock-movement.entity';
 
 describe('ProductsService', () => {
   let service: ProductsService;
   let repository: Repository<Product>;
   let settingsService: SettingsService;
+  let manager: { save: jest.Mock; insert: jest.Mock; create: jest.Mock };
   let mockUser: User;
 
   beforeEach(async () => {
+    // El alta con stock inicial va en una transacción (SPEC-BACK-007): el gestor
+    // delega `save` en el mismo mock de repositorio para que las aserciones
+    // existentes sigan valiendo.
+    manager = {
+      save: jest.fn(async (_e: unknown, p: unknown) => p),
+      insert: jest.fn(),
+      create: jest.fn((_e: unknown, o: unknown) => o),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
+        { provide: DataSource, useValue: { transaction: (cb: (m: typeof manager) => unknown) => cb(manager) } },
+        { provide: InventoryLocationsService, useValue: { ensureDefaultLocation: jest.fn(async () => 'loc1') } },
         {
           provide: getRepositoryToken(Product),
           useClass: Repository,
@@ -124,6 +137,27 @@ describe('ProductsService', () => {
       stock_quantity: 5,
       tax_rate: 19,
     }) as any;
+
+    it('writes an IN movement for a non-zero initial stock, in the same transaction', async () => {
+      await service.create(dto(), mockUser);
+
+      expect(manager.insert).toHaveBeenCalledWith(
+        StockMovement,
+        expect.objectContaining({
+          movement_type: MovementType.IN,
+          quantity: 5,
+          location_id: 'loc1',
+          created_by: mockUser.id,
+          notes: 'Stock inicial',
+        }),
+      );
+    });
+
+    it('writes no movement when the initial stock is zero', async () => {
+      await service.create({ ...dto(), stock_quantity: 0 }, mockUser);
+
+      expect(manager.insert).not.toHaveBeenCalled();
+    });
 
     it('should create a new product successfully', async () => {
       const createProductDto = {
@@ -368,51 +402,6 @@ describe('ProductsService', () => {
 
       await expect(service.getOversellPolicy('company-uuid'))
         .resolves.toEqual({ allowNegativeStock: true });
-    });
-  });
-
-  describe('deductStock — venta sin existencias', () => {
-    const productWith = (flag: boolean | null, stock = 1) => ({
-      id: 'p1', company_id: 'company-uuid', name: 'Café',
-      stock_quantity: stock, allow_sale_without_stock: flag,
-    }) as any;
-
-    beforeEach(() => {
-      jest.spyOn(repository, 'save').mockImplementation(async (p: any) => p);
-      jest.spyOn(settingsService, 'getSettings')
-        .mockResolvedValue({ allowNegativeStock: false } as any);
-    });
-
-    it('sin bandera, sigue rechazando por stock insuficiente', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(false));
-
-      await expect(service.deductStock('p1', 3, mockUser)).rejects.toThrow(BadRequestException);
-    });
-
-    it('con la bandera, descuenta y deja el stock negativo', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(true));
-
-      const result = await service.deductStock('p1', 3, mockUser);
-
-      expect(result.stock_quantity).toBe(-2);
-    });
-
-    it('con la bandera en null, hereda del global encendido', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(null));
-      jest.spyOn(settingsService, 'getSettings')
-        .mockResolvedValue({ allowNegativeStock: true } as any);
-
-      const result = await service.deductStock('p1', 3, mockUser);
-
-      expect(result.stock_quantity).toBe(-2);
-    });
-
-    it('resuelve la politica una sola vez por llamada', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValue(productWith(true));
-
-      await service.deductStock('p1', 3, mockUser);
-
-      expect(settingsService.getSettings).toHaveBeenCalledTimes(1);
     });
   });
 });

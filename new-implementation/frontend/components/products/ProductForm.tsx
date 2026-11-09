@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { useCreateProduct, useUpdateProduct } from '@/hooks/useProducts';
 import type { Product, CreateProductDto } from '@/types/product';
+import { apiErrorMessage } from '@/lib/utils';
+import { FormError } from '@/components/ui/form-error';
 import { ProductFormFields } from './ProductFormFields';
 
 interface ProductFormProps {
@@ -69,6 +71,8 @@ export function ProductForm({
     }
   }, [product]);
 
+  const [submitError, setSubmitError] = useState('');
+
   const handleChange = (
     field: keyof CreateProductDto,
     value: string | number | boolean | null,
@@ -78,6 +82,7 @@ export function ProductForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError('');
     if (onSubmit) {
       // Legacy mode: parent owns the mutation
       onSubmit(formData);
@@ -86,13 +91,15 @@ export function ProductForm({
     // formId/onSuccess mode: component owns the mutation
     try {
       if (product) {
-        await updateMutation.mutateAsync({ id: product.id, data: formData });
+        // El stock no se edita aquí: el backend lo ignora y solo cambia por ajuste o venta.
+        const { stock_quantity: _stock, ...rest } = formData;
+        await updateMutation.mutateAsync({ id: product.id, data: rest });
       } else {
         await createMutation.mutateAsync(formData);
       }
       onSuccess?.();
     } catch (err) {
-      console.error('ProductForm submit error:', err);
+      setSubmitError(apiErrorMessage(err, tCommon('requestFailed')));
     }
   };
 
@@ -102,7 +109,10 @@ export function ProductForm({
         formData={formData}
         onChange={handleChange}
         t={t}
+        stockReadOnly={!!product}
       />
+
+      <FormError message={submitError} />
 
       {/* Buttons — only shown in legacy (non-formId) mode */}
       {!formId && (

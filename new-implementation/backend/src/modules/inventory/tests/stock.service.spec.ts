@@ -1,231 +1,136 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { StockService } from '../services/stock.service';
-import { StockCalculatorService } from '../services/stock-calculator.service';
-import { WarehouseLocation } from '../entities/warehouse-location.entity';
-import { StockMovement, MovementType } from '../entities/stock-movement.entity';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { StockService } from '../services/stock.service';
+import { MovementType, StockMovement } from '../entities/stock-movement.entity';
+import { Product } from '../../products/entities/product.entity';
+import type { AdjustStockDto } from '../dto/adjust-stock.dto';
 
+// SPEC-BACK-007: stock lives in `products.stock_quantity`; every adjustment
+// writes exactly one movement in the same transaction.
 describe('StockService', () => {
+  const user = { id: 'u1', company_id: 'c1' } as never;
+  let product: Partial<Product> | null;
+  let manager: Record<'findOne' | 'save' | 'create', jest.Mock>;
+  let productRepo: { createQueryBuilder: jest.Mock; findOne: jest.Mock };
   let service: StockService;
-  let locationRepository: Repository<WarehouseLocation>;
-  let movementRepository: Repository<StockMovement>;
-  // Resolved but unread: the module.get below asserts the provider is registered.
-  let _stockCalculator: StockCalculatorService;
 
-  const mockUser = {
-    id: 'user-123',
-    company_id: 'company-1',
-    email: 'test@example.com',
-    name: 'Test User',
-  };
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        StockService,
-        StockCalculatorService,
-        {
-          provide: getRepositoryToken(WarehouseLocation),
-          useValue: {
-            find: jest.fn(),
-            findOne: jest.fn(),
-            save: jest.fn(),
-          },
-        },
-        {
-          provide: getRepositoryToken(StockMovement),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            find: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    service = module.get<StockService>(StockService);
-    locationRepository = module.get<Repository<WarehouseLocation>>(
-      getRepositoryToken(WarehouseLocation),
-    );
-    movementRepository = module.get<Repository<StockMovement>>(
-      getRepositoryToken(StockMovement),
-    );
-    _stockCalculator = module.get<StockCalculatorService>(StockCalculatorService);
+  const adjust = (movement_type: MovementType, quantity: number): AdjustStockDto => ({
+    product_id: 'p1',
+    movement_type,
+    quantity,
   });
 
-  describe('getCurrentStock', () => {
-    it('should return current stock levels for all locations', async () => {
-      const mockLocations = [
-        {
-          id: 'loc-1',
-          location_code: 'A1',
-          current_stock: 50,
-          capacity: 100,
-        },
-        {
-          id: 'loc-2',
-          location_code: 'A2',
-          current_stock: 30,
-          capacity: 100,
-        },
-      ];
-
-      jest
-        .spyOn(locationRepository, 'find')
-        .mockResolvedValue(mockLocations as any);
-
-      const result = await service.getCurrentStock(mockUser as any);
-
-      expect(result).toHaveLength(2);
-      expect(result[0].location_code).toBe('A1');
-      expect(result[0].current_stock).toBe(50);
-    });
+  beforeEach(() => {
+    product = { id: 'p1', name: 'Café', sku: 'CAF', stock_quantity: 5, reorder_level: 2 };
+    manager = {
+      findOne: jest.fn(async () => product),
+      save: jest.fn(async (_e: unknown, o: unknown) => o),
+      create: jest.fn((_e: unknown, o: unknown) => o),
+    };
+    productRepo = { createQueryBuilder: jest.fn(), findOne: jest.fn() };
+    service = new StockService(
+      productRepo as never,
+      { transaction: (cb: (m: typeof manager) => unknown) => cb(manager) } as never,
+      { ensureDefaultLocation: jest.fn(async () => 'loc1') } as never,
+    );
   });
 
   describe('adjustStock', () => {
-    it('should increase stock on IN movement', async () => {
-      const mockLocation = {
-        id: 'loc-1',
-        company_id: 'company-1',
-        current_stock: 50,
-        capacity: 100,
-      };
+    it.each([
+      [MovementType.IN, 3, 8],
+      [MovementType.RETURN, 3, 8],
+      [MovementType.OUT, 3, 2],
+      [MovementType.ADJUST, 3, 2],
+      [MovementType.DAMAGE, 3, 2],
+    ])('%s of %i leaves stock at %i and journals one movement', async (type, qty, expected) => {
+      const movement = await service.adjustStock(adjust(type, qty), user);
 
-      jest
-        .spyOn(locationRepository, 'findOne')
-        .mockResolvedValue(mockLocation as any);
-      jest
-        .spyOn(movementRepository, 'create')
-        .mockReturnValue({ id: 'move-1' } as any);
-      jest
-        .spyOn(movementRepository, 'save')
-        .mockResolvedValue({ id: 'move-1' } as any);
-      jest.spyOn(locationRepository, 'save').mockResolvedValue(mockLocation as any);
-
-      const dto = {
-        product_id: 'prod-1',
-        location_id: 'loc-1',
-        movement_type: MovementType.IN,
-        quantity: 20,
-      };
-
-      await service.adjustStock(dto, mockUser as any);
-
-      expect(movementRepository.create).toHaveBeenCalled();
-      expect(locationRepository.save).toHaveBeenCalled();
-      expect(mockLocation.current_stock).toBe(70);
+      expect(product!.stock_quantity).toBe(expected);
+      expect(movement).toMatchObject({
+        movement_type: type,
+        quantity: qty,
+        product_id: 'p1',
+        location_id: 'loc1',
+        company_id: 'c1',
+        created_by: 'u1',
+      });
+      expect(manager.save).toHaveBeenCalledWith(StockMovement, expect.anything());
     });
 
-    it('should decrease stock on OUT movement', async () => {
-      const mockLocation = {
-        id: 'loc-1',
-        company_id: 'company-1',
-        current_stock: 50,
-        capacity: 100,
-      };
-
-      jest
-        .spyOn(locationRepository, 'findOne')
-        .mockResolvedValue(mockLocation as any);
-      jest
-        .spyOn(movementRepository, 'create')
-        .mockReturnValue({ id: 'move-1' } as any);
-      jest
-        .spyOn(movementRepository, 'save')
-        .mockResolvedValue({ id: 'move-1' } as any);
-      jest.spyOn(locationRepository, 'save').mockResolvedValue(mockLocation as any);
-
-      const dto = {
-        product_id: 'prod-1',
-        location_id: 'loc-1',
-        movement_type: MovementType.OUT,
-        quantity: 20,
-      };
-
-      await service.adjustStock(dto, mockUser as any);
-
-      expect(mockLocation.current_stock).toBe(30);
+    it('rejects a manual decrement that would cross zero and writes nothing', async () => {
+      await expect(
+        service.adjustStock(adjust(MovementType.OUT, 6), user),
+      ).rejects.toThrow(BadRequestException);
+      expect(product!.stock_quantity).toBe(5);
+      expect(manager.save).not.toHaveBeenCalled();
     });
 
-    it('should throw error on insufficient stock', async () => {
-      const mockLocation = {
-        id: 'loc-1',
-        company_id: 'company-1',
-        current_stock: 10,
-        capacity: 100,
-      };
-
-      jest
-        .spyOn(locationRepository, 'findOne')
-        .mockResolvedValue(mockLocation as any);
-
-      const dto = {
-        product_id: 'prod-1',
-        location_id: 'loc-1',
-        movement_type: MovementType.OUT,
-        quantity: 20,
-      };
-
-      await expect(service.adjustStock(dto, mockUser as any)).rejects.toThrow(
-        BadRequestException,
-      );
+    it('allows an exact decrement to zero', async () => {
+      await service.adjustStock(adjust(MovementType.DAMAGE, 5), user);
+      expect(product!.stock_quantity).toBe(0);
     });
 
-    it('should throw error when location not found', async () => {
-      jest.spyOn(locationRepository, 'findOne').mockResolvedValue(null);
-
-      const dto = {
-        product_id: 'prod-1',
-        location_id: 'invalid-loc',
-        movement_type: MovementType.IN,
-        quantity: 10,
-      };
-
-      await expect(service.adjustStock(dto, mockUser as any)).rejects.toThrow(
-        NotFoundException,
-      );
+    it('rejects any decrement on an already-negative (oversold) product', async () => {
+      product!.stock_quantity = -2;
+      await expect(
+        service.adjustStock(adjust(MovementType.ADJUST, 1), user),
+      ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw error when exceeding capacity', async () => {
-      const mockLocation = {
-        id: 'loc-1',
-        company_id: 'company-1',
-        current_stock: 90,
-        capacity: 100,
-      };
+    it('lets an IN lift an oversold product back toward zero', async () => {
+      product!.stock_quantity = -2;
+      await service.adjustStock(adjust(MovementType.IN, 1), user);
+      expect(product!.stock_quantity).toBe(-1);
+    });
 
-      jest
-        .spyOn(locationRepository, 'findOne')
-        .mockResolvedValue(mockLocation as any);
-
-      const dto = {
-        product_id: 'prod-1',
-        location_id: 'loc-1',
-        movement_type: MovementType.IN,
-        quantity: 20,
-      };
-
-      await expect(service.adjustStock(dto, mockUser as any)).rejects.toThrow(
-        BadRequestException,
-      );
+    it('throws NotFound for an unknown (or other-company) product', async () => {
+      product = null;
+      await expect(
+        service.adjustStock(adjust(MovementType.IN, 1), user),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
-  describe('Multi-tenant isolation', () => {
-    it('should only return locations for user company', async () => {
-      jest.spyOn(locationRepository, 'find').mockResolvedValue([]);
+  describe('getStockByProduct', () => {
+    it('maps the product to a stock level', async () => {
+      productRepo.findOne.mockResolvedValue(product);
+      await expect(service.getStockByProduct('p1', user)).resolves.toEqual({
+        id: 'p1',
+        product_id: 'p1',
+        product_name: 'Café',
+        product_sku: 'CAF',
+        quantity: 5,
+        reorder_level: 2,
+      });
+    });
 
-      await service.getCurrentStock(mockUser as any);
+    it('throws NotFound when the product is not in the company', async () => {
+      productRepo.findOne.mockResolvedValue(null);
+      await expect(service.getStockByProduct('p1', user)).rejects.toThrow(NotFoundException);
+    });
+  });
 
-      expect(locationRepository.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            company_id: mockUser.company_id,
-          }),
-        }),
+  describe('getCurrentStock', () => {
+    it('pages products and filters by search and low stock', async () => {
+      const qb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn(async () => [[product], 1]),
+      };
+      productRepo.createQueryBuilder.mockReturnValue(qb);
+
+      const page = await service.getCurrentStock(
+        { page: 2, pageSize: 10, search: 'caf', low_stock: true },
+        user,
       );
+
+      expect(qb.skip).toHaveBeenCalledWith(10);
+      expect(qb.take).toHaveBeenCalledWith(10);
+      expect(qb.andWhere).toHaveBeenCalledTimes(2);
+      expect(page).toMatchObject({ total: 1, page: 2, pageSize: 10 });
+      expect(page.data[0]).toMatchObject({ product_id: 'p1', quantity: 5 });
     });
   });
 });

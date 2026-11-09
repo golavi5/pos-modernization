@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsUUID, Min } from 'class-validator';
+import { IsString, IsUUID } from 'class-validator';
 
 export class CreateLocationDto {
   @IsUUID()
@@ -6,8 +6,4 @@ export class CreateLocationDto {
 
   @IsString()
   location_code: string;
-
-  @IsNumber()
-  @Min(0)
-  capacity: number;
 }

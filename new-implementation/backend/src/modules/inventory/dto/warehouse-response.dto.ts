@@ -8,8 +8,6 @@ export class WarehouseResponseDto {
   locations?: Array<{
     id: string;
     location_code: string;
-    capacity: number;
-    current_stock: number;
   }>;
   created_at: Date;
   updated_at: Date;

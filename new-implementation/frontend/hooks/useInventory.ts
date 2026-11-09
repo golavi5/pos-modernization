@@ -88,16 +88,6 @@ export function useLocations(warehouseId: string) {
 }
 
 /**
- * Hook to fetch inventory statistics
- */
-export function useInventoryStats() {
-  return useQuery({
-    queryKey: [INVENTORY_QUERY_KEY, 'stats'],
-    queryFn: () => inventoryApi.getStats(),
-  });
-}
-
-/**
  * Hook to adjust stock
  */
 export function useAdjustStock() {

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { SalesService } from '../services/sales.service';
 import { OrderCalculationService } from '../services/order-calculation.service';
@@ -10,6 +10,8 @@ import { OrderItem } from '../entities/order-item.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
 import { Product } from '../../products/entities/product.entity';
+import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
+import { StockMovement, MovementType } from '../../inventory/entities/stock-movement.entity';
 
 describe('SalesService', () => {
   let service: SalesService;
@@ -18,6 +20,11 @@ describe('SalesService', () => {
   // Resolved but unread: the module.get below asserts the provider is registered.
   let _calculationService: OrderCalculationService;
   let productsService: ProductsService;
+  // Gestor falso de la transacción de `updateOrderStatus`.
+  let manager: Record<'findOne' | 'find' | 'save' | 'create' | 'insert', jest.Mock>;
+  let txOrder: Partial<Order>;
+  let txProduct: Partial<Product>;
+  let txItems: Partial<OrderItem>[];
 
   const mockUser = {
     id: 1,
@@ -27,9 +34,21 @@ describe('SalesService', () => {
   } as any;
 
   beforeEach(async () => {
+    txOrder = { id: 'o1', order_number: 'ORD1', company_id: 'c1', status: OrderStatus.PENDING };
+    txProduct = { id: 'p1', name: 'Café', stock_quantity: 5, allow_sale_without_stock: false };
+    txItems = [{ product_id: 'p1', quantity: 2 }];
+    manager = {
+      findOne: jest.fn(async (entity: unknown) => (entity === Order ? txOrder : txProduct)),
+      find: jest.fn(async () => txItems),
+      save: jest.fn(async (_e: unknown, o: unknown) => o),
+      create: jest.fn((_e: unknown, o: unknown) => o),
+      insert: jest.fn(),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SalesService,
+        { provide: DataSource, useValue: { transaction: (cb: (m: typeof manager) => unknown) => cb(manager) } },
+        { provide: InventoryLocationsService, useValue: { ensureDefaultLocation: jest.fn(async () => 'loc1') } },
         OrderCalculationService,
         {
           provide: getRepositoryToken(Order),
@@ -52,7 +71,6 @@ describe('SalesService', () => {
           provide: ProductsService,
           useValue: {
             findOne: jest.fn(),
-            deductStock: jest.fn(),
             getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: false })),
           },
         },
@@ -324,63 +342,117 @@ describe('SalesService', () => {
   });
 
   describe('updateOrderStatus', () => {
+    const seen = (status: OrderStatus) =>
+      jest.spyOn(service, 'getOrderById').mockResolvedValue({
+        id: 'o1', order_number: 'ORD1', status,
+      } as unknown as Order);
+    const dto = (status: OrderStatus): UpdateOrderStatusDto => ({ status });
+
     it('should transition from DRAFT to PENDING', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.DRAFT } as unknown as Order;
+      seen(OrderStatus.DRAFT);
+      txOrder.status = OrderStatus.DRAFT;
 
-      jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
-      jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
+      await service.updateOrderStatus('o1', dto(OrderStatus.PENDING), mockUser);
 
-      const dto: UpdateOrderStatusDto = { status: OrderStatus.PENDING };
+      expect(manager.save).toHaveBeenCalledWith(
+        Order,
+        expect.objectContaining({ status: OrderStatus.PENDING }),
+      );
+      expect(manager.insert).not.toHaveBeenCalled();
+    });
 
-      await service.updateOrderStatus(1 as any, dto, mockUser);
+    it('confirming deducts the stock and writes an OUT movement for the order', async () => {
+      seen(OrderStatus.PENDING);
 
-      expect(orderRepository.save).toHaveBeenCalledWith(
+      await service.updateOrderStatus('o1', dto(OrderStatus.CONFIRMED), mockUser);
+
+      expect(txProduct.stock_quantity).toBe(3);
+      expect(manager.insert).toHaveBeenCalledWith(
+        StockMovement,
         expect.objectContaining({
-          status: OrderStatus.PENDING,
+          movement_type: MovementType.OUT,
+          quantity: 2,
+          reference_id: 'o1',
+          location_id: 'loc1',
+          notes: 'Venta ORD1',
         }),
       );
     });
 
-    it('should deduct stock when confirming order', async () => {
-      const mockOrder = {
-        id: 1,
-        status: OrderStatus.PENDING,
-        order_items: [{ product_id: 1, quantity: 2 }],
-      } as unknown as Order;
+    it('confirming rejects insufficient stock and writes nothing', async () => {
+      seen(OrderStatus.PENDING);
+      txProduct.stock_quantity = 1;
 
-      jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
-      jest.spyOn(orderRepository, 'save').mockResolvedValue(mockOrder);
-      jest.spyOn(productsService, 'deductStock').mockResolvedValue({} as any);
-
-      const dto: UpdateOrderStatusDto = { status: OrderStatus.CONFIRMED };
-
-      await service.updateOrderStatus(1 as any, dto, mockUser);
-
-      expect(productsService.deductStock).toHaveBeenCalledWith(1, 2, mockUser);
+      await expect(
+        service.updateOrderStatus('o1', dto(OrderStatus.CONFIRMED), mockUser),
+      ).rejects.toThrow(BadRequestException);
+      expect(manager.insert).not.toHaveBeenCalled();
     });
 
-    it('should throw ConflictException for invalid transitions', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.COMPLETED } as unknown as Order;
+    it('confirming with the product flag oversells: stock goes negative, note says so', async () => {
+      seen(OrderStatus.PENDING);
+      txProduct.stock_quantity = 1;
+      txProduct.allow_sale_without_stock = true;
 
-      jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
+      await service.updateOrderStatus('o1', dto(OrderStatus.CONFIRMED), mockUser);
 
-      const dto: UpdateOrderStatusDto = { status: OrderStatus.DRAFT };
-
-      await expect(service.updateOrderStatus(1 as any, dto, mockUser)).rejects.toThrow(
-        BadRequestException,
+      expect(txProduct.stock_quantity).toBe(-1);
+      expect(manager.insert).toHaveBeenCalledWith(
+        StockMovement,
+        expect.objectContaining({ notes: 'Venta ORD1 (sin existencias)' }),
       );
+    });
+
+    it('confirming with the flag null inherits the global setting', async () => {
+      seen(OrderStatus.PENDING);
+      txProduct.stock_quantity = 1;
+      txProduct.allow_sale_without_stock = null;
+      jest.spyOn(productsService, 'getOversellPolicy').mockResolvedValue({ allowNegativeStock: true });
+
+      await service.updateOrderStatus('o1', dto(OrderStatus.CONFIRMED), mockUser);
+
+      expect(txProduct.stock_quantity).toBe(-1);
+      expect(productsService.getOversellPolicy).toHaveBeenCalledTimes(1);
+    });
+
+    it('voiding a confirmed order returns the stock with a RETURN movement', async () => {
+      seen(OrderStatus.CONFIRMED);
+      txOrder.status = OrderStatus.CONFIRMED;
+      txProduct.stock_quantity = 3;
+
+      await service.updateOrderStatus('o1', dto(OrderStatus.VOIDED), mockUser);
+
+      expect(txProduct.stock_quantity).toBe(5);
+      expect(manager.insert).toHaveBeenCalledWith(
+        StockMovement,
+        expect.objectContaining({ movement_type: MovementType.RETURN, quantity: 2, reference_id: 'o1' }),
+      );
+    });
+
+    it('rejects, under the lock, a transition that went stale after the first read', async () => {
+      seen(OrderStatus.PENDING);
+      txOrder.status = OrderStatus.CONFIRMED; // otro cajero lo confirmó entre medias
+
+      await expect(
+        service.updateOrderStatus('o1', dto(OrderStatus.CONFIRMED), mockUser),
+      ).rejects.toThrow(/Cannot transition/);
+      expect(manager.insert).not.toHaveBeenCalled();
+    });
+
+    it('should throw for invalid transitions', async () => {
+      seen(OrderStatus.COMPLETED);
+
+      await expect(
+        service.updateOrderStatus('o1', dto(OrderStatus.DRAFT), mockUser),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should prevent transitions from COMPLETED status', async () => {
-      const mockOrder = { id: 1, status: OrderStatus.COMPLETED } as unknown as Order;
+      seen(OrderStatus.COMPLETED);
 
-      jest.spyOn(service, 'getOrderById').mockResolvedValue(mockOrder);
-
-      const dto: UpdateOrderStatusDto = { status: OrderStatus.CANCELLED };
-
-      await expect(service.updateOrderStatus(1 as any, dto, mockUser)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.updateOrderStatus('o1', dto(OrderStatus.CANCELLED), mockUser),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

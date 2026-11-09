@@ -5,7 +5,7 @@ import type {
   UpdateSaleDto,
   SaleQueryParams,
   SalesResponse,
-  SalesStats,
+  SalesSummary,
 } from '@/types/sale';
 
 /**
@@ -89,7 +89,7 @@ export const salesApi = {
    * forma, el mapeo va en el consumidor: aquí no se inventa una traducción
    * que oculte una discrepancia de contrato.
    */
-  getStats: async (): Promise<SalesStats> => {
+  getStats: async (): Promise<SalesSummary> => {
     const response = await apiClient.get('/sales/reports/summary');
     return response.data;
   },
@@ -97,7 +97,7 @@ export const salesApi = {
   /**
    * Get today's sales (resumen del día, no la lista de pedidos).
    */
-  getToday: async (): Promise<Sale[]> => {
+  getToday: async (): Promise<SalesSummary> => {
     const response = await apiClient.get('/sales/reports/daily');
     return response.data;
   },
@@ -105,7 +105,7 @@ export const salesApi = {
   /**
    * Get sales by date range
    */
-  getByDateRange: async (startDate: string, endDate: string): Promise<Sale[]> => {
+  getByDateRange: async (startDate: string, endDate: string): Promise<SalesSummary> => {
     const response = await apiClient.get(
       `/sales/reports/summary?startDate=${startDate}&endDate=${endDate}`
     );

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { WarehouseLocation } from './warehouse-location.entity';
 
@@ -24,7 +24,13 @@ export class StockMovement {
   @Column('uuid')
   location_id: string;
 
-  @ManyToOne(() => WarehouseLocation, (location) => location.movements)
+  // Joins on the real `location_id`. Without @JoinColumn TypeORM invented a second
+  // `locationId` column (always NULL) and put the FK on it. No DB FK here on purpose:
+  // adding one in a boot-time migration could fail on existing rows.
+  @ManyToOne(() => WarehouseLocation, (location) => location.movements, {
+    createForeignKeyConstraints: false,
+  })
+  @JoinColumn({ name: 'location_id' })
   location: WarehouseLocation;
 
   @Column({

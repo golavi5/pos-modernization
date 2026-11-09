@@ -19,6 +19,11 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USERNAME || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'pos_db',
+  // MySQL stamps DATETIME defaults (created_at) in UTC; the driver's default
+  // `timezone: 'local'` read them in the Node host's zone, so a non-UTC host
+  // (any dev machine in Bogota) saw every timestamp shifted and the reports'
+  // date windows matched nothing. UTC on both ends makes the host irrelevant.
+  timezone: 'Z',
   entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   migrationsTableName: 'typeorm_migrations',

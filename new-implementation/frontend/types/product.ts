@@ -51,7 +51,6 @@ export interface UpdateProductDto {
   category_id?: string;
   price?: number;
   cost?: number;
-  stock_quantity?: number;
   reorder_level?: number;
   tax_rate?: number;
   is_active?: boolean;

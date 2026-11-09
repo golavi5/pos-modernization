@@ -12,7 +12,7 @@ import {
   useMovements,
   useAdjustStock,
 } from '@/hooks/useInventory';
-import type { StockLevel, MovementQueryParams } from '@/types/inventory';
+import type { StockLevel, MovementQueryParams, MovementType } from '@/types/inventory';
 
 export default function InventoryPage() {
   const t = useTranslations('inventory');
@@ -29,20 +29,18 @@ export default function InventoryPage() {
   const adjustStockMutation = useAdjustStock();
 
   const handleConfirmAdjust = async (
-    movementType: 'IN' | 'OUT' | 'ADJUST' | 'DAMAGE' | 'RETURN',
+    movementType: MovementType,
     quantity: number,
-    referenceNumber?: string,
+    referenceId?: string,
     notes?: string
   ) => {
     if (!adjustingStock) return;
     try {
       await adjustStockMutation.mutateAsync({
         product_id: adjustingStock.product_id,
-        warehouse_id: adjustingStock.warehouse_id,
-        location_id: adjustingStock.location_id,
         movement_type: movementType,
         quantity,
-        reference_number: referenceNumber,
+        reference_id: referenceId,
         notes,
       });
       setAdjustingStock(null);

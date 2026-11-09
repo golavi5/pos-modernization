@@ -109,14 +109,13 @@ jobs:
           npm run lint:ci
 
   e2e:
-    name: E2E — Playwright (suspended)
+    name: E2E — Playwright
     needs: [backend, frontend]
     runs-on: ubuntu-latest
-    # SUSPENDED: this job is disabled via `if: false` and does not run. The
-    # full-stack orchestration below is not yet validated on a runner (sale flows
-    # need seeded catalog data); re-enable by removing `if: false` once E2E is
-    # hardened (S-01 follow-up). The backend/frontend jobs remain the gates.
-    if: false
+    # Runs the whole suite (all spec files rewritten or deleted to match the
+    # current UI; 56 tests green against a clean stack). NOT a required check, and
+    # `continue-on-error` stays on until it has been green on a few real runs — see
+    # SPEC-BACK-002's note on required checks that have never reported.
     continue-on-error: true
     services:
       mysql:
@@ -149,8 +148,8 @@ jobs:
         working-directory: ./new-implementation/frontend
         run: npx playwright install --with-deps chromium
 
-      # Backend on :3001 (migrations + admin bootstrap on boot); the frontend
-      # (started by Playwright's webServer) keeps the default :3000 the config expects.
+      # Backend on :3001 (migrations + admin bootstrap on boot). The admin is the
+      # one tests/e2e/helpers/auth.helper.ts logs in as by default.
       - name: Build + start backend (:3001)
         working-directory: ./new-implementation/backend
         env:
@@ -165,19 +164,42 @@ jobs:
           JWT_SECRET: ci-test-jwt-secret-aaaaaaaaaaaaaaaaaaaaaaaaaaaa
           JWT_REFRESH_SECRET: ci-test-refresh-secret-bbbbbbbbbbbbbbbbbbbb
           CORS_ORIGINS: http://localhost:3000
-          BOOTSTRAP_ADMIN_EMAIL: admin@ci.local
-          BOOTSTRAP_ADMIN_PASSWORD: ci-admin-password-123
+          BOOTSTRAP_ADMIN_EMAIL: admin@test.com
+          BOOTSTRAP_ADMIN_PASSWORD: Fddm1ZDKTv3RbDpU
         run: |
           npm run build
           node dist/main.js &
           npx wait-on http://localhost:3001/health -t 60000
 
+      # Production build, not `next dev`: no on-demand compile, so tests never
+      # race a cold page. NEXT_PUBLIC_API_URL is baked in at build time.
+      - name: Build + start frontend (:3000)
+        working-directory: ./new-implementation/frontend
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+        run: |
+          npm run build
+          npx next start -p 3000 &
+          npx wait-on http://localhost:3000/login -t 60000
+
+      # sale-flow needs a sellable product in the catalog (a fresh database has
+      # none). Same admin the bootstrap step created.
+      - name: Seed one product
+        run: |
+          TOKEN=$(curl -sf -X POST http://localhost:3001/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"admin@test.com","password":"Fddm1ZDKTv3RbDpU"}' \
+            | node -pe 'JSON.parse(require("fs").readFileSync(0)).accessToken')
+          curl -sf -X POST http://localhost:3001/products \
+            -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+            -d '{"name":"E2E Cafe","sku":"E2E-CAFE","price":10000,"stock_quantity":100,"tax_rate":19}'
+
       - name: Run E2E (frontend :3000 → API :3001)
         working-directory: ./new-implementation/frontend
         env:
           BASE_URL: http://localhost:3000
-          NEXT_PUBLIC_API_URL: http://localhost:3001
-        run: npm run test:e2e
+          API_BASE_URL: http://localhost:3001
+        run: npx playwright test --project=chromium
 
       - uses: actions/upload-artifact@v4
         if: always()

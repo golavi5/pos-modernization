@@ -56,12 +56,9 @@ export class UpdateProductDto {
   @Min(0)
   cost?: number;
 
-  // Sin `@Min(0)`: tras una venta sin existencias el stock es negativo por
-  // diseño (SPEC-BACK-004), y el formulario reenvía el producto entero al
-  // editarlo — con el mínimo, un producto sobrevendido no se podía guardar.
-  @IsOptional()
-  @IsNumber()
-  stock_quantity?: number;
+  // `stock_quantity` NO se edita aquí (SPEC-BACK-007): cada cambio de stock
+  // debe dejar un movimiento, y eso solo lo hacen el ajuste de inventario y las
+  // ventas. El ValidationPipe (`whitelist`) descarta el campo si llega.
 
   @IsOptional()
   @IsNumber()

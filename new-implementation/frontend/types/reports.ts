@@ -142,7 +142,8 @@ export interface CustomerReport {
 
 // Inventory Value Types
 export interface InventoryValue {
-  warehouseId: number;
+  /** null when the company has no warehouse yet (nothing has been sold). */
+  warehouseId: string | null;
   warehouseName: string;
   productCount: number;
   totalUnits: number;

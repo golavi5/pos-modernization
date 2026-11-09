@@ -5,6 +5,14 @@ import { StockMovement } from '../../inventory/entities/stock-movement.entity';
 import { Warehouse } from '../../inventory/entities/warehouse.entity';
 import { Product } from '../../products/entities/product.entity';
 
+export interface InventoryValueRow {
+  warehouseId: string | null;
+  warehouseName: string;
+  productCount: number;
+  totalUnits: number;
+  totalValue: number;
+}
+
 /**
  * Inventory Report Service
  *
@@ -26,17 +34,37 @@ export class InventoryReportService {
   /**
    * Get inventory value by warehouse
    */
-  async getInventoryValueByWarehouse(companyId: string): Promise<any[]> {
+  async getInventoryValueByWarehouse(companyId: string): Promise<InventoryValueRow[]> {
+    // SPEC-BACK-007: stock is one ledger per PRODUCT (the legacy system had no
+    // per-warehouse stock), so it cannot be split by warehouse. All of it is
+    // reported against the default warehouse (the oldest) and any other warehouse
+    // is listed with zeros. Valued at cost; oversold (negative) stock counts as 0.
+    const totals = await this.productRepository
+      .createQueryBuilder('p')
+      .select('COUNT(CASE WHEN p.stock_quantity > 0 THEN 1 END)', 'productCount')
+      .addSelect('COALESCE(SUM(GREATEST(p.stock_quantity, 0)), 0)', 'totalUnits')
+      .addSelect('COALESCE(SUM(GREATEST(p.stock_quantity, 0) * COALESCE(p.cost, 0)), 0)', 'totalValue')
+      .where('p.company_id = :companyId', { companyId })
+      .getRawOne();
+    const stock = {
+      productCount: Number(totals.productCount),
+      totalUnits: Number(totals.totalUnits),
+      totalValue: Number(totals.totalValue),
+    };
+    const none = { productCount: 0, totalUnits: 0, totalValue: 0 };
+
     const warehouses = await this.warehouseRepository.find({
       where: { company_id: companyId },
+      order: { created_at: 'ASC', id: 'ASC' },
     });
-
-    return warehouses.map((warehouse) => ({
+    if (warehouses.length === 0) {
+      // Nothing has been sold yet, so the default warehouse does not exist.
+      return [{ warehouseId: null, warehouseName: 'Principal', ...stock }];
+    }
+    return warehouses.map((warehouse, i) => ({
       warehouseId: warehouse.id,
       warehouseName: warehouse.name,
-      productCount: 0,
-      totalUnits: 0,
-      totalValue: 0,
+      ...(i === 0 ? stock : none),
     }));
   }
 

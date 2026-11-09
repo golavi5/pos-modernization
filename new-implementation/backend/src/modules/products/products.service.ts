@@ -1,12 +1,14 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, ILike } from 'typeorm';
+import { Repository, FindOptionsWhere, ILike, DataSource } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { User } from '../auth/entities/user.entity';
 import { SettingsService } from '../settings/services/settings.service';
+import { StockMovement, MovementType } from '../inventory/entities/stock-movement.entity';
+import { InventoryLocationsService } from '../inventory/services/inventory-locations.service';
 import {
   canSellWithoutStock,
   OversellPolicy,
@@ -26,6 +28,8 @@ export class ProductsService {
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
     private readonly settingsService: SettingsService,
+    private readonly dataSource: DataSource,
+    private readonly locations: InventoryLocationsService,
   ) {}
 
   /** El ajuste de empresa que sirve de defecto a la bandera por producto. */
@@ -62,12 +66,19 @@ export class ProductsService {
       where.is_active = is_active;
     }
     
-    if (search) {
-      where.name = ILike(`%${search}%`);
-    }
+    // The UI promises "nombre, SKU o código de barras": an array is an OR of
+    // whole conditions, so every branch repeats the company/category/active filters.
+    const term = search ? ILike(`%${search}%`) : undefined;
+    const filter: FindOptionsWhere<Product> | FindOptionsWhere<Product>[] = term
+      ? [
+          { ...where, name: term },
+          { ...where, sku: term },
+          { ...where, barcode: term },
+        ]
+      : where;
 
     const [products, total] = await this.productRepository.findAndCount({
-      where,
+      where: filter,
       skip: offset,
       take: limit,
       order: { [sort]: order },
@@ -135,7 +146,29 @@ export class ProductsService {
       created_by: user.id,
     });
 
-    const saved = await this.productRepository.save(product);
+    // SPEC-BACK-007: el stock inicial es un cambio de stock como cualquier otro
+    // y deja su movimiento `IN`, en la misma transacción que el alta.
+    const initial = createProductDto.stock_quantity ?? 0;
+    const saved =
+      initial > 0
+        ? await this.dataSource.transaction(async (manager) => {
+            const created = await manager.save(Product, product);
+            await manager.insert(
+              StockMovement,
+              manager.create(StockMovement, {
+                company_id: user.company_id,
+                product_id: created.id,
+                location_id: await this.locations.ensureDefaultLocation(user.company_id, manager),
+                movement_type: MovementType.IN,
+                quantity: initial,
+                reference_id: created.id,
+                notes: 'Stock inicial',
+                created_by: user.id,
+              }),
+            );
+            return created;
+          })
+        : await this.productRepository.save(product);
     return this.withOversellFlag(saved, await this.getOversellPolicy(user.company_id));
   }
 
@@ -201,33 +234,4 @@ export class ProductsService {
     return lowStockProducts;
   }
 
-  /**
-   * Vía `CONFIRMED` del descuento de inventario.
-   *
-   * OJO: a diferencia del cierre de venta en `PaymentsService`, esta vía NO
-   * escribe en `stock_movements`. Es un hueco preexistente, anotado en el
-   * diseño de POS-BACK-004 §3, no algo que esta función deba resolver de paso.
-   */
-  async deductStock(productId: string, quantity: number, user: User): Promise<Product> {
-    const product = await this.findOne(productId, user);
-    const policy = await this.getOversellPolicy(user.company_id);
-
-    if (
-      product.stock_quantity < quantity &&
-      !canSellWithoutStock(product, policy)
-    ) {
-      throw new BadRequestException(
-        `Insufficient stock for product ${product.name}. Available: ${product.stock_quantity}, Requested: ${quantity}`,
-      );
-    }
-
-    product.stock_quantity -= quantity;
-    return await this.productRepository.save(product);
-  }
-
-  async addStock(productId: string, quantity: number, user: User): Promise<Product> {
-    const product = await this.findOne(productId, user);
-    product.stock_quantity += quantity;
-    return await this.productRepository.save(product);
-  }
 }
