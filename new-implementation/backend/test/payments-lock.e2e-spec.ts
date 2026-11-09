@@ -14,6 +14,8 @@ import { DataSource } from 'typeorm';
 import type { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectionOptions';
 import { BadRequestException } from '@nestjs/common';
 import { dataSourceOptions } from '../src/database/data-source';
+import { SalesReportService } from '../src/modules/reports/services/sales-report.service';
+import { PeriodType } from '../src/modules/reports/dto/report-query.dto';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
 import { InventoryLocationsService } from '../src/modules/inventory/services/inventory-locations.service';
 import { ProductsService } from '../src/modules/products/products.service';
@@ -29,6 +31,7 @@ import { OrderItem } from '../src/modules/sales/entities/order-item.entity';
 import {
   Payment,
   PaymentMethod,
+  PaymentStatus as PayStatus,
 } from '../src/modules/sales/entities/payment.entity';
 import {
   StockMovement,
@@ -215,5 +218,44 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
 
     // Each round was pay (−1) then refund (+1): the net is zero.
     expect(await stockOf()).toBe(before);
+  });
+  // Sales reports count revenue: completed orders, and payments that were kept.
+  it('sales reports ignore draft/pending/cancelled orders and refunded payments', async () => {
+    const reportCo = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Report Co' }));
+    const order = (n: string, total: number, status: OrderStatus) =>
+      ds.manager.save(
+        Order,
+        ds.manager.create(Order, {
+          company_id: reportCo.id, order_number: `RPT-${n}-${Date.now()}`, total_amount: total,
+          status, payment_status: OrderPaymentStatus.UNPAID, created_by: user.id,
+        }),
+      );
+    const pay = (o: Order, method: PaymentMethod, amount: number, status: PayStatus) =>
+      ds.manager.save(
+        Payment,
+        ds.manager.create(Payment, { order_id: o.id, payment_method: method, amount, status, payment_date: new Date() }),
+      );
+    const o1 = await order('1', 100, OrderStatus.COMPLETED);
+    const o2 = await order('2', 50, OrderStatus.COMPLETED);
+    await order('3', 30, OrderStatus.PENDING);
+    await order('4', 20, OrderStatus.CANCELLED);
+    await pay(o1, PaymentMethod.CASH, 100, PayStatus.COMPLETED);
+    await pay(o2, PaymentMethod.CARD, 30, PayStatus.COMPLETED);
+    await pay(o2, PaymentMethod.CARD, 20, PayStatus.REFUNDED);
+
+    const reports = new SalesReportService(ds.getRepository(Order), ds.getRepository(OrderItem));
+    const range = { startDate: new Date(Date.now() - 86_400_000).toISOString(), endDate: new Date(Date.now() + 86_400_000).toISOString() };
+
+    const summary = await reports.getSalesSummary(reportCo.id, { period: PeriodType.MONTHLY, ...range });
+    expect(summary.totalSales).toBe(2);
+    expect(summary.totalRevenue).toBe(150);
+
+    const byPeriod = await reports.getSalesByPeriod(reportCo.id, { period: PeriodType.DAILY, ...range });
+    expect(byPeriod.periodData.reduce((n, r) => n + r.totalSales, 0)).toBe(2);
+    expect(byPeriod.periodData.reduce((n, r) => n + r.totalRevenue, 0)).toBe(150);
+
+    const trends = await reports.getRevenueTrends(reportCo.id, { period: PeriodType.DAILY, ...range });
+    const byMethod = Object.fromEntries(trends.byPaymentMethod.map((m) => [m.paymentMethod, m.totalRevenue]));
+    expect(byMethod).toEqual({ cash: 100, card: 30 });
   });
 });
