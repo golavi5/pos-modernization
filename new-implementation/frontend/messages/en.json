@@ -368,7 +368,13 @@
     "page": {
       "searchPlaceholder": "Search customers...",
       "newCustomer": "New customer",
-      "editCustomer": "Edit customer"
+      "editCustomer": "Edit customer",
+      "statusFilter": {
+        "label": "Customer status",
+        "active": "Active",
+        "inactive": "Inactive",
+        "all": "All"
+      }
     }
   },
   "inventory": {

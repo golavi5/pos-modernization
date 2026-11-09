@@ -28,6 +28,9 @@ export interface UpdateCustomerDto {
   is_active?: boolean;
 }
 
+/** Which customers the list shows (deleted customers are only deactivated). */
+export type CustomerStatusFilter = 'active' | 'inactive' | 'all';
+
 export interface CustomerQueryParams {
   page?: number;
   pageSize?: number;

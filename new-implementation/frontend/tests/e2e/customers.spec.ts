@@ -69,6 +69,28 @@ test.describe('Customers', () => {
     await expect(row).toHaveCount(0);
   });
 
+  test('the status select shows deleted customers on demand', async ({ page, request }) => {
+    const { name } = await seedCustomer(request);
+    await openCustomers(page);
+    await page.getByPlaceholder('Buscar clientes...').fill(name);
+    const row = page.getByRole('row').filter({ hasText: name });
+    const status = page.getByLabel('Estado de clientes');
+    await expect(row).toBeVisible();
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await row.getByTitle('Eliminar').click();
+    await expect(row).toHaveCount(0);
+
+    await status.selectOption('inactive');
+    await expect(row.getByText('Inactivo')).toBeVisible();
+
+    await status.selectOption('all');
+    await expect(row).toBeVisible();
+
+    await status.selectOption('active');
+    await expect(row).toHaveCount(0);
+  });
+
   test('searches customers by name', async ({ page, request }) => {
     const { name } = await seedCustomer(request);
     await openCustomers(page);
