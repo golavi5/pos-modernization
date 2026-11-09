@@ -20,7 +20,7 @@ const path = require('path');
 // efecto lateral de esta. Subirlo aqui deja la puerta verde y el problema
 // visible en una linea que se lee en el diff, que es justo lo que este
 // script existe para conseguir.
-const CAP = 213;
+const CAP = 204;
 const RULE = '@typescript-eslint/no-explicit-any';
 const GLOB = '{src,apps,libs,test}/**/*.ts';
 

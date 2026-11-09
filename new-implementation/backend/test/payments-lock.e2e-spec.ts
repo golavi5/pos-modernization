@@ -15,6 +15,8 @@ import type { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectio
 import { BadRequestException } from '@nestjs/common';
 import { dataSourceOptions } from '../src/database/data-source';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
+import { SalesService } from '../src/modules/sales/services/sales.service';
+import { OrderCalculationService } from '../src/modules/sales/services/order-calculation.service';
 import { InventoryLocationsService } from '../src/modules/inventory/services/inventory-locations.service';
 import { ProductsService } from '../src/modules/products/products.service';
 import { Company } from '../src/modules/companies/entities/company.entity';
@@ -42,6 +44,7 @@ const TOTAL = 50;
 describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () => {
   let ds: DataSource;
   let service: PaymentsService;
+  let sales: SalesService;
   let company: Company;
   let user: User;
   let product: Product;
@@ -71,6 +74,15 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
       ds,
       new InventoryLocationsService(),
       productsService,
+    );
+
+    sales = new SalesService(
+      ds.getRepository(Order),
+      ds.getRepository(OrderItem),
+      {} as unknown as OrderCalculationService,
+      productsService,
+      ds,
+      new InventoryLocationsService(),
     );
 
     company = await ds.manager.save(
@@ -215,5 +227,86 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
 
     // Each round was pay (−1) then refund (+1): the net is zero.
     expect(await stockOf()).toBe(before);
+  });
+  // SPEC-BACK-007 slice 1. The invariant of every test below: the change in a
+  // product's stock equals the signed sum of the movements written for the order.
+  const stockOf = async () =>
+    (await ds.manager.findOneByOrFail(Product, { id: product.id }))
+      .stock_quantity;
+  const signedMovements = async (orderId: string) => {
+    const rows = await ds.manager.find(StockMovement, {
+      where: { reference_id: orderId },
+    });
+    return rows.reduce(
+      (sum, m) =>
+        sum + (m.movement_type === MovementType.OUT ? -m.quantity : m.quantity),
+      0,
+    );
+  };
+  const confirm = (orderId: string) =>
+    sales.updateOrderStatus(orderId, { status: OrderStatus.CONFIRMED }, user);
+  const voidOrder = (orderId: string) =>
+    sales.updateOrderStatus(orderId, { status: OrderStatus.VOIDED }, user);
+
+  it('two concurrent confirms: exactly one wins, one OUT, stock leaves once', async () => {
+    for (let i = 1; i <= ROUNDS; i++) {
+      const order = await seedOrder(2000 + i);
+      const before = await stockOf();
+
+      const results = await Promise.allSettled([
+        confirm(order.id),
+        confirm(order.id),
+      ]);
+
+      const failed = results.filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected',
+      );
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect(failed).toHaveLength(1);
+      expect(failed[0].reason).toBeInstanceOf(BadRequestException);
+      expect(String(failed[0].reason.message)).toMatch(/Cannot transition/);
+
+      expect(await signedMovements(order.id)).toBe(-1);
+      expect(await stockOf()).toBe(before - 1);
+    }
+  });
+
+  it('voiding a confirmed order returns its stock exactly once', async () => {
+    for (let i = 1; i <= ROUNDS; i++) {
+      const order = await seedOrder(3000 + i);
+      const before = await stockOf();
+      await confirm(order.id);
+      expect(await stockOf()).toBe(before - 1);
+
+      const results = await Promise.allSettled([
+        voidOrder(order.id),
+        voidOrder(order.id),
+      ]);
+
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect(results.filter((r) => r.status === 'rejected')).toHaveLength(1);
+      expect(await signedMovements(order.id)).toBe(0);
+      expect(await stockOf()).toBe(before);
+    }
+  });
+
+  it('a sale confirmed, then paid, can be refunded: no double deduct, stock returns', async () => {
+    const order = await seedOrder(4000);
+    const before = await stockOf();
+    await confirm(order.id);
+    const payment = await service.recordPayment(
+      order.id,
+      { payment_method: PaymentMethod.CASH, amount: TOTAL },
+      user,
+    );
+    // confirmed → paid must not deduct a second time
+    expect(await stockOf()).toBe(before - 1);
+
+    await service.refundPayment(payment.id, user);
+
+    expect(await stockOf()).toBe(before);
+    expect(await signedMovements(order.id)).toBe(0);
+    const after = await ds.manager.findOneByOrFail(Order, { id: order.id });
+    expect(after.status).toBe(OrderStatus.PENDING);
   });
 });

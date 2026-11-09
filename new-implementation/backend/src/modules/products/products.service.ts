@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere, ILike } from 'typeorm';
 import { Product } from './entities/product.entity';
@@ -199,30 +199,6 @@ export class ProductsService {
       .getMany();
 
     return lowStockProducts;
-  }
-
-  /**
-   * Vía `CONFIRMED` del descuento de inventario.
-   *
-   * OJO: a diferencia del cierre de venta en `PaymentsService`, esta vía NO
-   * escribe en `stock_movements`. Es un hueco preexistente, anotado en el
-   * diseño de POS-BACK-004 §3, no algo que esta función deba resolver de paso.
-   */
-  async deductStock(productId: string, quantity: number, user: User): Promise<Product> {
-    const product = await this.findOne(productId, user);
-    const policy = await this.getOversellPolicy(user.company_id);
-
-    if (
-      product.stock_quantity < quantity &&
-      !canSellWithoutStock(product, policy)
-    ) {
-      throw new BadRequestException(
-        `Insufficient stock for product ${product.name}. Available: ${product.stock_quantity}, Requested: ${quantity}`,
-      );
-    }
-
-    product.stock_quantity -= quantity;
-    return await this.productRepository.save(product);
   }
 
   async addStock(productId: string, quantity: number, user: User): Promise<Product> {

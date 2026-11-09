@@ -148,9 +148,8 @@ export class PaymentsService {
 
       // El invariante es "el stock se descuenta EXACTAMENTE UNA VEZ por
       // pedido", y hay DOS productores del descuento:
-      //   - `SalesService.updateOrderStatus` al pasar a CONFIRMED
-      //     (`productsService.deductStock`), que no deja rastro en
-      //     `stock_movements`;
+      //   - `SalesService.updateOrderStatus` al pasar a CONFIRMED (escribe OUT
+      //     desde SPEC-BACK-007; los confirmados antes no dejaron rastro);
       //   - esta misma función al cerrar la venta.
       // Por eso la guarda mira el estado de la fila BLOQUEADA: `confirmed` y
       // `completed` son los dos estados que sólo se alcanzan tras un descuento.

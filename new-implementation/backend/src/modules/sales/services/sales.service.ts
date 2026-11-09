@@ -6,7 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Between } from 'typeorm';
+import { Repository, FindOptionsWhere, Between, DataSource, EntityManager } from 'typeorm';
 import { Order, OrderStatus, PaymentStatus } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
 import { CreateOrderDto } from '../dto/create-order.dto';
@@ -17,6 +17,13 @@ import { OrderCalculationService } from './order-calculation.service';
 import { ProductsService } from '../../products/products.service';
 import { canSellWithoutStock } from '../../products/can-sell-without-stock';
 import { User } from '../../auth/entities/user.entity';
+import { Product } from '../../products/entities/product.entity';
+import { OversellPolicy } from '../../products/can-sell-without-stock';
+import {
+  StockMovement,
+  MovementType,
+} from '../../inventory/entities/stock-movement.entity';
+import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
 
 @Injectable()
 export class SalesService {
@@ -39,6 +46,8 @@ export class SalesService {
     private readonly orderItemRepository: Repository<OrderItem>,
     private readonly calculationService: OrderCalculationService,
     private readonly productsService: ProductsService,
+    private readonly dataSource: DataSource,
+    private readonly locations: InventoryLocationsService,
   ) {}
 
   async listOrders(
@@ -206,33 +215,144 @@ export class SalesService {
     dto: UpdateOrderStatusDto,
     user: User,
   ): Promise<Order> {
-    const order = await this.getOrderById(id, user);
+    // Fallo rápido (404 / transición inválida) antes de abrir la transacción;
+    // el chequeo autoritativo es el de dentro, sobre la fila bloqueada.
+    const current = await this.getOrderById(id, user);
+    this.assertTransition(current.status, dto.status);
 
-    // Validate status transition
-    const validTransitions = this.VALID_STATUS_TRANSITIONS[order.status];
-    if (!validTransitions.includes(dto.status)) {
+    // Se resuelve ANTES de abrir la transacción por la misma razón que en
+    // `PaymentsService.recordPayment`: `SettingsService` consulta por otra
+    // conexión del pool y no debe competir con la que sostiene los bloqueos.
+    const policy =
+      dto.status === OrderStatus.CONFIRMED
+        ? await this.productsService.getOversellPolicy(user.company_id)
+        : null;
+
+    // SPEC-BACK-007: el pedido se bloquea y todo el movimiento de stock va en
+    // la misma transacción. Antes el bucle de `deductStock` no tenía ni lo uno
+    // ni lo otro: dos confirmaciones simultáneas descontaban dos veces, y un
+    // fallo a mitad dejaba ítems descontados.
+    await this.dataSource.transaction(async (manager) => {
+      const order = await manager.findOne(Order, {
+        where: { id, company_id: user.company_id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!order) {
+        throw new NotFoundException(`Order with ID ${id} not found`);
+      }
+      this.assertTransition(order.status, dto.status);
+
+      if (dto.status === OrderStatus.CONFIRMED) {
+        await this.deductOrderStock(manager, order, policy, user);
+      } else if (dto.status === OrderStatus.VOIDED) {
+        await this.returnOrderStock(manager, order, user);
+      }
+
+      order.status = dto.status;
+      await manager.save(Order, order);
+    });
+
+    this.logger.log(`Updated order ${current.order_number} status to ${dto.status}`);
+    return this.getOrderById(id, user);
+  }
+
+  private assertTransition(from: OrderStatus, to: OrderStatus): void {
+    const validTransitions = this.VALID_STATUS_TRANSITIONS[from];
+    if (!validTransitions.includes(to)) {
       throw new BadRequestException(
-        `Cannot transition from ${order.status} to ${dto.status}. Valid transitions: ${validTransitions.join(', ')}`,
+        `Cannot transition from ${from} to ${to}. Valid transitions: ${validTransitions.join(', ')}`,
       );
     }
+  }
 
-    // Special handling for confirmation
-    if (dto.status === OrderStatus.CONFIRMED) {
-      // Deduct stock from products
-      for (const item of order.order_items) {
-        await this.productsService.deductStock(
-          item.product_id,
-          item.quantity,
-          user,
+  /** Ítems ordenados por producto: orden de bloqueo estable entre pedidos. */
+  private async orderItems(manager: EntityManager, orderId: string) {
+    const items = await manager.find(OrderItem, { where: { order_id: orderId } });
+    return [...items].sort((a, b) => a.product_id.localeCompare(b.product_id));
+  }
+
+  private async deductOrderStock(
+    manager: EntityManager,
+    order: Order,
+    policy: OversellPolicy,
+    user: User,
+  ): Promise<void> {
+    const items = await this.orderItems(manager, order.id);
+    const locationId = await this.locations.ensureDefaultLocation(order.company_id, manager);
+
+    for (const item of items) {
+      const product = await manager.findOne(Product, {
+        where: { id: item.product_id, company_id: order.company_id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) {
+        throw new BadRequestException(`Product ${item.product_id} not found`);
+      }
+      const oversold = product.stock_quantity < item.quantity;
+      if (oversold && !canSellWithoutStock(product, policy)) {
+        throw new BadRequestException(
+          `Insufficient stock for product ${product.name}. Available: ${product.stock_quantity}, Requested: ${item.quantity}`,
         );
       }
+
+      product.stock_quantity -= item.quantity;
+      await manager.save(Product, product);
+      await manager.insert(
+        StockMovement,
+        manager.create(StockMovement, {
+          company_id: order.company_id,
+          product_id: item.product_id,
+          location_id: locationId,
+          movement_type: MovementType.OUT,
+          quantity: item.quantity,
+          reference_id: order.id,
+          notes: oversold
+            ? `Venta ${order.order_number} (sin existencias)`
+            : `Venta ${order.order_number}`,
+          created_by: user.id,
+        }),
+      );
     }
+  }
 
-    order.status = dto.status;
-    const updatedOrder = await this.orderRepository.save(order);
+  /**
+   * `VOIDED` solo se alcanza desde `CONFIRMED`, y `CONFIRMED` siempre descontó
+   * los ítems del pedido (con o sin rastro: los confirmados antes de
+   * SPEC-BACK-007 no escribieron movimientos). La transición, validada bajo el
+   * bloqueo, garantiza que esto corre una sola vez.
+   */
+  private async returnOrderStock(
+    manager: EntityManager,
+    order: Order,
+    user: User,
+  ): Promise<void> {
+    const items = await this.orderItems(manager, order.id);
+    const locationId = await this.locations.ensureDefaultLocation(order.company_id, manager);
 
-    this.logger.log(`Updated order ${order.order_number} status to ${dto.status}`);
-    return this.getOrderById(updatedOrder.id, user);
+    for (const item of items) {
+      const product = await manager.findOne(Product, {
+        where: { id: item.product_id, company_id: order.company_id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!product) {
+        continue;
+      }
+      product.stock_quantity += item.quantity;
+      await manager.save(Product, product);
+      await manager.insert(
+        StockMovement,
+        manager.create(StockMovement, {
+          company_id: order.company_id,
+          product_id: item.product_id,
+          location_id: locationId,
+          movement_type: MovementType.RETURN,
+          quantity: item.quantity,
+          reference_id: order.id,
+          notes: `Anulación ${order.order_number}`,
+          created_by: user.id,
+        }),
+      );
+    }
   }
 
   async deleteOrder(id: string, user: User): Promise<{ message: string }> {
