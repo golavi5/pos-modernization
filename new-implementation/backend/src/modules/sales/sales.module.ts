@@ -11,6 +11,7 @@ import { Payment } from './entities/payment.entity';
 import { AuthModule } from '../auth/auth.module';
 import { ProductsModule } from '../products/products.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     AuthModule,
     ProductsModule,
     InventoryModule,
+    SettingsModule,
   ],
   controllers: [SalesController, PaymentsController],
   providers: [SalesService, PaymentsService, OrderCalculationService],

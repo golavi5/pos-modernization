@@ -8,7 +8,8 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentSales } from '@/components/dashboard/RecentSales';
 import { useSalesStats, useTodaySales } from '@/hooks/useSales';
 import { useSalesByPeriod } from '@/hooks/useReports';
-import { lastSevenDays, lastSevenDaysStart } from '@/lib/dashboard';
+import { useSettings } from '@/hooks/useSettings';
+import { DEFAULT_TIMEZONE, lastSevenDays, lastSevenDaysStart } from '@/lib/dashboard';
 import { formatCOP } from '@/lib/utils';
 
 export default function DashboardPage() {
@@ -21,13 +22,16 @@ export default function DashboardPage() {
   const locale = useLocale();
   // Fixed for the lifetime of the page: a `new Date()` in the query params would
   // change the query key on every render and refetch forever.
+  // The window and the day keys use the company's timezone (Settings → Empresa).
+  const { data: settings } = useSettings();
+  const timeZone = settings?.timezone ?? DEFAULT_TIMEZONE;
   const weekQuery = useMemo(
-    () => ({ period: 'daily' as const, startDate: lastSevenDaysStart(), endDate: new Date().toISOString() }),
-    [],
+    () => ({ period: 'daily' as const, startDate: lastSevenDaysStart(timeZone), endDate: new Date().toISOString() }),
+    [timeZone],
   );
   const { data: week } = useSalesByPeriod(weekQuery);
 
-  const chartData = lastSevenDays(week?.periodData, locale);
+  const chartData = lastSevenDays(week?.periodData, locale, timeZone);
 
   return (
     <div className="p-5 space-y-4 overflow-auto h-full">

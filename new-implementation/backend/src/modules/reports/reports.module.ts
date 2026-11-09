@@ -14,6 +14,7 @@ import { Product } from '../products/entities/product.entity';
 import { Customer } from '../customers/customer.entity';
 import { StockMovement } from '../inventory/entities/stock-movement.entity';
 import { Warehouse } from '../inventory/entities/warehouse.entity';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { Warehouse } from '../inventory/entities/warehouse.entity';
       StockMovement,
       Warehouse,
     ]),
+    SettingsModule,
   ],
   controllers: [ReportsController],
   providers: [

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SalesReportService } from '../services/sales-report.service';
+import { SettingsService } from '../../settings/services/settings.service';
 import { Order } from '../../sales/entities/order.entity';
 import { OrderItem } from '../../sales/entities/order-item.entity';
 import { ReportQueryDto, PeriodType } from '../dto/report-query.dto';
@@ -73,6 +74,7 @@ describe('SalesReportService (tenant scoping)', () => {
         SalesReportService,
         { provide: getRepositoryToken(Order), useValue: orderRepo },
         { provide: getRepositoryToken(OrderItem), useValue: { find: jest.fn() } },
+        { provide: SettingsService, useValue: { getSettings: jest.fn(async () => ({ timezone: 'America/Bogota' })) } },
       ],
     }).compile();
     service = module.get(SalesReportService);

@@ -11,6 +11,8 @@ export interface Settings {
   logoUrl?: string;
   city?: string;
   country?: string;
+  /** IANA zone; a "day" in reports and the dashboard is a day in this zone. */
+  timezone: string;
   // Tax
   taxRate: number;
   taxIncludedInPrice: boolean;

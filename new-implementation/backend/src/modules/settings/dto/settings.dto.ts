@@ -1,4 +1,6 @@
 import {
+  IsTimeZone,
+  ValidateIf,
   IsString,
   IsOptional,
   IsBoolean,
@@ -28,8 +30,10 @@ export class UpdateCompanyDto {
   @IsString() @IsOptional() @MaxLength(20)
   phone?: string;
 
+  // The settings form sends every field on save, so an empty email arrives as ''.
+  // '' means "clear it"; only a non-empty value has to be a valid address.
   @ApiProperty({ required: false })
-  @IsEmail() @IsOptional()
+  @ValidateIf((o: UpdateCompanyDto) => !!o.email) @IsEmail()
   email?: string;
 
   @ApiProperty({ required: false })
@@ -47,6 +51,10 @@ export class UpdateCompanyDto {
   @ApiProperty({ required: false })
   @IsString() @IsOptional() @MaxLength(100)
   country?: string;
+
+  @ApiProperty({ required: false, example: 'America/Bogota' })
+  @IsTimeZone() @IsOptional()
+  timezone?: string;
 }
 
 export class UpdateTaxDto {

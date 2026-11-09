@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Order, OrderStatus } from '../../sales/entities/order.entity';
 import { PaymentStatus } from '../../sales/entities/payment.entity';
+import { SettingsService } from '../../settings/services/settings.service';
+import { mysqlOffset } from '../../../common/timezone';
 import { OrderItem } from '../../sales/entities/order-item.entity';
 import { ReportQueryDto, PeriodType } from '../dto/report-query.dto';
 import {
@@ -22,6 +24,7 @@ export class SalesReportService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(OrderItem)
     private readonly orderItemRepository: Repository<OrderItem>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -84,15 +87,17 @@ export class SalesReportService {
     query: ReportQueryDto,
   ): Promise<SalesReportDto> {
     const { startDate, endDate } = this.getDateRange(query);
+    const { timezone } = await this.settingsService.getSettings(companyId);
 
     const summary = await this.getSalesSummary(companyId, query);
 
-    // Get period data grouped by day/week/month
+    // Get period data grouped by day/week/month (in the company's timezone)
     const periodData = await this.getSalesGroupedByPeriod(
       companyId,
       startDate,
       endDate,
       query.period,
+      timezone,
     );
 
     return {
@@ -110,13 +115,15 @@ export class SalesReportService {
     query: ReportQueryDto,
   ): Promise<RevenueTrendsDto> {
     const { startDate, endDate } = this.getDateRange(query);
+    const { timezone } = await this.settingsService.getSettings(companyId);
 
-    // Get trends over time
+    // Get trends over time (in the company's timezone)
     const trends = await this.getSalesGroupedByPeriod(
       companyId,
       startDate,
       endDate,
       query.period,
+      timezone,
     );
 
     // Get revenue by payment method
@@ -198,6 +205,7 @@ export class SalesReportService {
     startDate: Date,
     endDate: Date,
     periodType: PeriodType,
+    timeZone: string,
   ): Promise<SalesByPeriodDto[]> {
     let dateFormat: string;
 
@@ -221,7 +229,11 @@ export class SalesReportService {
     // Group by the very expression that is selected: MySQL 8's default
     // `only_full_group_by` rejects selecting DATE_FORMAT(created_at) while
     // grouping by DATE(created_at)/YEARWEEK(created_at), and the endpoint 500'd.
-    const bucket = `DATE_FORMAT(order.created_at, '${dateFormat}')`;
+    // `created_at` is UTC; shift it to the company's zone before bucketing
+    // (SPEC-BACK-008). The offset is fixed per query (the one at the end of the
+    // range): exact without daylight saving, ≤1 h off at a DST boundary.
+    const offset = mysqlOffset(timeZone, endDate);
+    const bucket = `DATE_FORMAT(CONVERT_TZ(order.created_at, '+00:00', '${offset}'), '${dateFormat}')`;
 
     const results = await this.orderRepository
       .createQueryBuilder('order')
