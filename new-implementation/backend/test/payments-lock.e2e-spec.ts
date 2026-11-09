@@ -216,4 +216,17 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     // Each round was pay (−1) then refund (+1): the net is zero.
     expect(await stockOf()).toBe(before);
   });
+  // A DB-generated timestamp (CURRENT_TIMESTAMP, UTC in the MySQL container)
+  // must read back as the same instant whatever timezone the Node host is in.
+  // test/set-tz.js runs this whole suite as a UTC−5 host: with the driver's
+  // default `timezone: 'local'` every created_at read 5 hours off and the
+  // reports' date windows matched nothing.
+  it('created_at round-trips as the same instant on a non-UTC host', async () => {
+    expect(new Date(2026, 0, 1).getTimezoneOffset()).toBe(300);
+    const order = await seedOrder(5000);
+
+    const row = await ds.manager.findOneByOrFail(Order, { id: order.id });
+
+    expect(Math.abs(row.created_at.getTime() - Date.now())).toBeLessThan(60_000);
+  });
 });
