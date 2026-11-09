@@ -65,8 +65,8 @@ test.describe('Customers', () => {
     page.once('dialog', (dialog) => dialog.accept());
     await row.getByTitle('Eliminar').click();
 
-    // Soft delete: the row stays listed but flips to the inactive badge.
-    await expect(row.getByText('Inactivo')).toBeVisible();
+    // Soft delete: the customer leaves the list (it only shows active customers).
+    await expect(row).toHaveCount(0);
   });
 
   test('searches customers by name', async ({ page, request }) => {

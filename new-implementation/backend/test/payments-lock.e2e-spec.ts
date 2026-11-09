@@ -22,7 +22,6 @@ import { ProductReportService } from '../src/modules/reports/services/product-re
 import { CustomerReportService } from '../src/modules/reports/services/customer-report.service';
 import { Customer } from '../src/modules/customers/customer.entity';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
-import { ProductsService as RealProductsService } from '../src/modules/products/products.service';
 import { StockService } from '../src/modules/inventory/services/stock.service';
 import { SalesService } from '../src/modules/sales/services/sales.service';
 import { OrderCalculationService } from '../src/modules/sales/services/order-calculation.service';
@@ -386,7 +385,7 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
   });
   // SPEC-BACK-007 slice 3: the initial stock of a new product is a journaled IN.
   it('creating a product with initial stock journals it: stock equals the signed sum', async () => {
-    const products = new RealProductsService(
+    const products = new ProductsService(
       ds.getRepository(Product),
       { getSettings: async () => ({ allowNegativeStock: false }) } as never,
       ds,
@@ -435,6 +434,8 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
       { warehouseId: first.id, warehouseName: 'Central', ...totals },
       { warehouseId: second.id, warehouseName: 'Sucursal', productCount: 0, totalUnits: 0, totalValue: 0 },
     ]);
+  });
+
   // A DB-generated timestamp (CURRENT_TIMESTAMP, UTC in the MySQL container)
   // must read back as the same instant whatever timezone the Node host is in.
   // test/set-tz.js runs this whole suite as a UTC−5 host: with the driver's
@@ -447,11 +448,15 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     const row = await ds.manager.findOneByOrFail(Order, { id: order.id });
 
     expect(Math.abs(row.created_at.getTime() - Date.now())).toBeLessThan(60_000);
+  });
+
   // The product list search promises name, SKU and barcode.
   it('product search matches name, SKU and barcode, scoped to the company', async () => {
     const products = new ProductsService(
       ds.getRepository(Product),
       { getSettings: async () => ({ allowNegativeStock: false }) } as never,
+      ds,
+      new InventoryLocationsService(),
     );
     const tag = `SRCH${Date.now()}`;
     const mk = (over: Partial<Product>) =>
@@ -475,6 +480,8 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     expect(await found('SKU')).toEqual(expect.arrayContaining([`${tag}-SKU`]));
     expect(await found(`${tag}7790001`)).toEqual([`${tag}-B`]);
     expect(await found(tag)).toEqual([`${tag}-A`, `${tag}-B`, `${tag}-SKU`]);
+  });
+
   // Sales reports count revenue: completed orders, and payments that were kept.
   it('sales reports ignore draft/pending/cancelled orders and refunded payments', async () => {
     const reportCo = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Report Co' }));
