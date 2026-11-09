@@ -185,10 +185,23 @@ jobs:
           npx next start -p 3000 &
           npx wait-on http://localhost:3000/login -t 60000
 
+      # sale-flow needs a sellable product in the catalog (a fresh database has
+      # none). Same admin the bootstrap step created.
+      - name: Seed one product
+        run: |
+          TOKEN=$(curl -sf -X POST http://localhost:3001/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"admin@test.com","password":"Fddm1ZDKTv3RbDpU"}' \
+            | node -pe 'JSON.parse(require("fs").readFileSync(0)).accessToken')
+          curl -sf -X POST http://localhost:3001/products \
+            -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+            -d '{"name":"E2E Cafe","sku":"E2E-CAFE","price":10000,"stock_quantity":100,"tax_rate":19}'
+
       - name: Run E2E (frontend :3000 → API :3001)
         working-directory: ./new-implementation/frontend
         env:
           BASE_URL: http://localhost:3000
+          API_BASE_URL: http://localhost:3001
         run: >-
           npx playwright test --project=chromium
           tests/e2e/command-palette.spec.ts
