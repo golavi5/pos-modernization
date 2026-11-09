@@ -18,6 +18,9 @@ import { InventoryReportService } from '../src/modules/reports/services/inventor
 import { Warehouse } from '../src/modules/inventory/entities/warehouse.entity';
 import { SalesReportService } from '../src/modules/reports/services/sales-report.service';
 import { PeriodType } from '../src/modules/reports/dto/report-query.dto';
+import { ProductReportService } from '../src/modules/reports/services/product-report.service';
+import { CustomerReportService } from '../src/modules/reports/services/customer-report.service';
+import { Customer } from '../src/modules/customers/customer.entity';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
 import { ProductsService as RealProductsService } from '../src/modules/products/products.service';
 import { StockService } from '../src/modules/inventory/services/stock.service';
@@ -510,5 +513,56 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     const trends = await reports.getRevenueTrends(reportCo.id, { period: PeriodType.DAILY, ...range });
     const byMethod = Object.fromEntries(trends.byPaymentMethod.map((m) => [m.paymentMethod, m.totalRevenue]));
     expect(byMethod).toEqual({ cash: 100, card: 30 });
+  });
+  // Product and customer reports: only completed orders count as sold / purchases.
+  it('product and customer reports ignore cancelled and pending orders', async () => {
+    const co = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Rep2 Co' }));
+    const prod = await ds.manager.save(
+      Product,
+      ds.manager.create(Product, { company_id: co.id, name: 'Reportable', sku: `REP-${Date.now()}`, price: 10, stock_quantity: 50, created_by: user.id }),
+    );
+    const cust = await ds.manager.save(
+      Customer,
+      ds.manager.create(Customer, { company_id: co.id, name: 'Buyer', email: `buyer${Date.now()}@example.com` }),
+    );
+    const sell = async (n: string, status: OrderStatus, qty: number, total: number) => {
+      const o = await ds.manager.save(
+        Order,
+        ds.manager.create(Order, {
+          company_id: co.id, customer_id: cust.id, order_number: `R2-${n}-${Date.now()}`, total_amount: total,
+          status, payment_status: OrderPaymentStatus.UNPAID, created_by: user.id,
+        }),
+      );
+      await ds.manager.save(
+        OrderItem,
+        ds.manager.create(OrderItem, { order_id: o.id, product_id: prod.id, quantity: qty, unit_price: 10, subtotal: qty * 10, tax_amount: 0, total: qty * 10 }),
+      );
+    };
+    await sell('1', OrderStatus.COMPLETED, 2, 100);
+    await sell('2', OrderStatus.CANCELLED, 5, 900);
+    await sell('3', OrderStatus.PENDING, 7, 40);
+
+    const range = { startDate: new Date(Date.now() - 86_400_000).toISOString(), endDate: new Date(Date.now() + 86_400_000).toISOString() };
+    const products = new ProductReportService(
+      ds.getRepository(Product), ds.getRepository(OrderItem), ds.getRepository(Order), ds.getRepository(StockMovement),
+    );
+    const customers = new CustomerReportService(ds.getRepository(Customer), ds.getRepository(Order));
+
+    const top = await products.getTopSellingProducts(co.id, range);
+    expect(top).toHaveLength(1);
+    expect(top[0].totalQuantitySold).toBe(2);
+    expect(top[0].totalRevenue).toBe(20);
+
+    const turnover = await products.getInventoryTurnover(co.id, range);
+    expect(turnover.turnover[0].totalSold).toBe(2);
+
+    const buyers = await customers.getTopCustomers(co.id, range);
+    expect(buyers).toHaveLength(1);
+    expect(buyers[0].totalPurchases).toBe(1);
+    expect(buyers[0].totalSpent).toBe(100);
+
+    const report = await customers.getCustomerReport(co.id, range);
+    expect(report.segments.reduce((n, g) => n + g.totalRevenue, 0)).toBe(100);
+    expect(report.activeCustomers).toBe(1);
   });
 });

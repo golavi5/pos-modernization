@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 import { OrderItem } from '../../sales/entities/order-item.entity';
-import { Order } from '../../sales/entities/order.entity';
+import { Order, OrderStatus } from '../../sales/entities/order.entity';
 import { StockMovement } from '../../inventory/entities/stock-movement.entity';
 import { ReportQueryDto } from '../dto/report-query.dto';
 import {
@@ -51,6 +51,8 @@ export class ProductReportService {
       .addSelect('AVG(item.unit_price)', 'averagePrice')
       .addSelect('COUNT(DISTINCT order.id)', 'transactionCount')
       .where('order.company_id = :companyId', { companyId })
+      // Sold = on a completed order (not draft/pending/cancelled/voided).
+      .andWhere('order.status = :completed', { completed: OrderStatus.COMPLETED })
       .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
@@ -215,6 +217,7 @@ export class ProductReportService {
       .innerJoin('item.order', 'order')
       .select('SUM(item.quantity)', 'total')
       .where('item.product_id = :productId', { productId })
+      .andWhere('order.status = :completed', { completed: OrderStatus.COMPLETED })
       .andWhere('order.created_at BETWEEN :startDate AND :endDate', {
         startDate,
         endDate,
