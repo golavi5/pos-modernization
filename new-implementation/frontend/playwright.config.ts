@@ -76,7 +76,10 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    // Always reuse a running server: CI starts the frontend from a production
+    // build before Playwright (no cold on-demand compiles); locally this was
+    // already the behaviour.
+    reuseExistingServer: true,
     timeout: 120000,
   },
 });
