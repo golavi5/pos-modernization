@@ -691,7 +691,9 @@
     "pointsPerAmount": "Points per $ spent",
     "pointValue": "Value of 1 point ($)",
     "loyaltyCalculation": "💡 With this configuration: $10,000 purchase generates <b>{points} points</b> worth <b>${value}</b>",
-    "resetConfirm": "Reset settings to default values?"
+    "resetConfirm": "Reset settings to default values?",
+    "timezone": "Time zone",
+    "timezoneHelp": "Decides which day each sale belongs to in reports and the dashboard (times are stored in UTC)."
   },
   "theme": {
     "light": "Light",

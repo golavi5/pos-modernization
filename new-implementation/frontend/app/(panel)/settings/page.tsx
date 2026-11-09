@@ -17,6 +17,7 @@ import {
   useUpdateLoyaltySettings,
   useResetSettings,
 } from '@/hooks/useSettings';
+import { TimezoneSelect } from '@/components/settings/TimezoneSelect';
 import {
   Building2, CreditCard, Package, ShoppingCart, Star, Receipt, RotateCcw, Save
 } from 'lucide-react';
@@ -91,7 +92,7 @@ export default function SettingsPage() {
   const reset           = useResetSettings();
 
   // Local form state (initialized from server)
-  const [company, setCompany] = useState({ companyName: '', nit: '', address: '', phone: '', email: '', website: '', city: '', country: '' });
+  const [company, setCompany] = useState({ companyName: '', nit: '', address: '', phone: '', email: '', website: '', city: '', country: '', timezone: 'America/Bogota' });
   const [tax, setTax] = useState({ taxRate: 19, taxIncludedInPrice: true, currency: 'COP', locale: 'es-CO' });
   const [payments, setPayments] = useState({ paymentCash: true, paymentCard: true, paymentTransfer: true, paymentCredit: false, paymentTransferInstructions: '' });
   const [inventory, setInventory] = useState({ trackInventory: true, allowNegativeStock: false, defaultReorderPoint: 5 });
@@ -101,7 +102,7 @@ export default function SettingsPage() {
   // Populate from server
   useEffect(() => {
     if (!settings) return;
-    setCompany({ companyName: settings.companyName, nit: settings.nit || '', address: settings.address || '', phone: settings.phone || '', email: settings.email || '', website: settings.website || '', city: settings.city || '', country: settings.country || '' });
+    setCompany({ companyName: settings.companyName, nit: settings.nit || '', address: settings.address || '', phone: settings.phone || '', email: settings.email || '', website: settings.website || '', city: settings.city || '', country: settings.country || '', timezone: settings.timezone || 'America/Bogota' });
     setTax({ taxRate: settings.taxRate, taxIncludedInPrice: settings.taxIncludedInPrice, currency: settings.currency, locale: settings.locale });
     setPayments({ paymentCash: settings.paymentCash, paymentCard: settings.paymentCard, paymentTransfer: settings.paymentTransfer, paymentCredit: settings.paymentCredit, paymentTransferInstructions: settings.paymentTransferInstructions || '' });
     setInventory({ trackInventory: settings.trackInventory, allowNegativeStock: settings.allowNegativeStock, defaultReorderPoint: settings.defaultReorderPoint });
@@ -236,6 +237,7 @@ export default function SettingsPage() {
           {field(t('website'), 'website', company.website, (v) => setCompany((p) => ({ ...p, website: v })))}
           {field(t('city'), 'city', company.city, (v) => setCompany((p) => ({ ...p, city: v })))}
           {field(t('country'), 'country', company.country, (v) => setCompany((p) => ({ ...p, country: v })))}
+          <TimezoneSelect value={company.timezone} onChange={(v) => setCompany((p) => ({ ...p, timezone: v }))} />
         </Section>
       )}
 

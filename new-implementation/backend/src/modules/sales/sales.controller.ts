@@ -25,6 +25,8 @@ import { OrderQueryDto } from './dto/order-query.dto';
 import { Order } from './entities/order.entity';
 import { User } from '../auth/entities/user.entity';
 import { SalesSummaryDto } from './dto/sales-summary.dto';
+import { SettingsService } from '../settings/services/settings.service';
+import { dayRange } from '../../common/timezone';
 
 @Controller('sales')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,6 +34,7 @@ export class SalesController {
   constructor(
     private readonly salesService: SalesService,
     private readonly calculationService: OrderCalculationService,
+    private readonly settingsService: SettingsService,
   ) {}
 
   @Get('orders')
@@ -107,11 +110,9 @@ export class SalesController {
     @CurrentUser() user: User,
     @Query('date') date?: string,
   ): Promise<SalesSummaryDto> {
-    const reportDate = date ? new Date(date) : new Date();
-    const startOfDay = new Date(reportDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(reportDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    // The day is a calendar day in the company's timezone (SPEC-BACK-008).
+    const { timezone } = await this.settingsService.getSettings(user.company_id);
+    const { start: startOfDay, end: endOfDay } = dayRange(date, timezone);
 
     const { orders } = await this.salesService.listOrders(
       {

@@ -44,6 +44,11 @@ export class Settings {
   @Column('varchar', { length: 100, nullable: true })
   country: string;
 
+  // IANA zone the company operates in (SPEC-BACK-008): "a day" in reports and the
+  // dashboard is a calendar day in this zone. Timestamps stay UTC.
+  @Column('varchar', { length: 64, default: 'America/Bogota' })
+  timezone: string;
+
   // ── Impuestos ─────────────────────────────────────────
   @Column('decimal', { precision: 5, scale: 2, default: 19.00 })
   taxRate: number;           // IVA % (Colombia = 19%)

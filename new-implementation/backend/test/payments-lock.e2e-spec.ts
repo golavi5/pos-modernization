@@ -16,6 +16,9 @@ import { BadRequestException } from '@nestjs/common';
 import { dataSourceOptions } from '../src/database/data-source';
 import { InventoryReportService } from '../src/modules/reports/services/inventory-report.service';
 import { Warehouse } from '../src/modules/inventory/entities/warehouse.entity';
+import { SettingsService } from '../src/modules/settings/services/settings.service';
+import { Settings } from '../src/modules/settings/entities/settings.entity';
+import { SalesController } from '../src/modules/sales/sales.controller';
 import { SalesReportService } from '../src/modules/reports/services/sales-report.service';
 import { PeriodType } from '../src/modules/reports/dto/report-query.dto';
 import { ProductReportService } from '../src/modules/reports/services/product-report.service';
@@ -506,7 +509,11 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     await pay(o2, PaymentMethod.CARD, 30, PayStatus.COMPLETED);
     await pay(o2, PaymentMethod.CARD, 20, PayStatus.REFUNDED);
 
-    const reports = new SalesReportService(ds.getRepository(Order), ds.getRepository(OrderItem));
+    const reports = new SalesReportService(
+      ds.getRepository(Order),
+      ds.getRepository(OrderItem),
+      { getSettings: async () => ({ timezone: 'UTC' }) } as never,
+    );
     const range = { startDate: new Date(Date.now() - 86_400_000).toISOString(), endDate: new Date(Date.now() + 86_400_000).toISOString() };
 
     const summary = await reports.getSalesSummary(reportCo.id, { period: PeriodType.MONTHLY, ...range });
@@ -571,5 +578,48 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     const report = await customers.getCustomerReport(co.id, range);
     expect(report.segments.reduce((n, g) => n + g.totalRevenue, 0)).toBe(100);
     expect(report.activeCustomers).toBe(1);
+  });
+  // SPEC-BACK-008: "a day" is a calendar day in the company's timezone.
+  it('report days follow the company timezone (bars and the dashboard "today")', async () => {
+    const tzCo = await ds.manager.save(Company, ds.manager.create(Company, { name: 'TZ Co' }));
+    const settings = new SettingsService(ds.getRepository(Settings));
+    const mkOrder = async (n: string, utc: string) => {
+      const o = await ds.manager.save(
+        Order,
+        ds.manager.create(Order, {
+          company_id: tzCo.id, order_number: `TZ-${n}-${Date.now()}`, total_amount: 100,
+          status: OrderStatus.COMPLETED, payment_status: OrderPaymentStatus.PAID, created_by: user.id,
+        }),
+      );
+      // Raw SQL: the connection runs in UTC ('Z'), so this stores exactly this instant.
+      // (`order_date` is what the daily endpoint filters on; for real sales it equals created_at.)
+      await ds.query('UPDATE orders SET created_at = ?, order_date = ? WHERE id = ?', [utc, utc, o.id]);
+    };
+    await mkOrder('a', '2026-11-10 01:00:00.000000'); // 20:00 on the 9th in Bogotá
+    await mkOrder('b', '2026-11-10 06:00:00.000000'); // 01:00 on the 10th in Bogotá
+
+    const reports = new SalesReportService(ds.getRepository(Order), ds.getRepository(OrderItem), settings);
+    const range = { period: PeriodType.DAILY, startDate: '2026-11-08T00:00:00.000Z', endDate: '2026-11-11T12:00:00.000Z' };
+    const bars = async () =>
+      Object.fromEntries((await reports.getSalesByPeriod(tzCo.id, range)).periodData.map((r) => [r.date, r.totalSales]));
+    const controller = new SalesController(sales, {} as never, settings);
+    const caller = { ...user, company_id: tzCo.id } as typeof user;
+    const todayOrders = async (date: string) => (await controller.getDailySalesReport(caller, date)).total_orders;
+
+    // The default (a new settings row) is America/Bogota: the 20:00 sale is the 9th's.
+    expect((await settings.getSettings(tzCo.id)).timezone).toBe('America/Bogota');
+    expect(await bars()).toEqual({ '2026-11-09': 1, '2026-11-10': 1 });
+    expect(await todayOrders('2026-11-09')).toBe(1);
+    expect(await todayOrders('2026-11-10')).toBe(1);
+
+    // UTC: both sales fall on the 10th.
+    await settings.updateCompany(tzCo.id, { timezone: 'UTC' });
+    expect(await bars()).toEqual({ '2026-11-10': 2 });
+    expect(await todayOrders('2026-11-09')).toBe(0);
+    expect(await todayOrders('2026-11-10')).toBe(2);
+
+    // UTC+9 (positive offset): 10:00 and 15:00 on the 10th.
+    await settings.updateCompany(tzCo.id, { timezone: 'Asia/Tokyo' });
+    expect(await bars()).toEqual({ '2026-11-10': 2 });
   });
 });
