@@ -109,16 +109,13 @@ jobs:
           npm run lint:ci
 
   e2e:
-    name: E2E — Playwright (maintained specs)
+    name: E2E — Playwright
     needs: [backend, frontend]
     runs-on: ubuntu-latest
-    # Re-enabled 2026-11-09 for the specs that pass against a clean stack
-    # (command-palette, panel-hydration-failure, sale-flow, sidebar-reachability).
-    # NOT a required check, and `continue-on-error` stays on until it has been
-    # green on a few runs — see SPEC-BACK-002's note on required checks that have
-    # never reported. The older specs (auth, customers, inventory, products,
-    # sales) assert stale selectors/routes and are not run here; they need a
-    # rewrite, not a re-enable.
+    # Runs the whole suite (all spec files rewritten or deleted to match the
+    # current UI; 56 tests green against a clean stack). NOT a required check, and
+    # `continue-on-error` stays on until it has been green on a few real runs — see
+    # SPEC-BACK-002's note on required checks that have never reported.
     continue-on-error: true
     services:
       mysql:
@@ -202,12 +199,7 @@ jobs:
         env:
           BASE_URL: http://localhost:3000
           API_BASE_URL: http://localhost:3001
-        run: >-
-          npx playwright test --project=chromium
-          tests/e2e/command-palette.spec.ts
-          tests/e2e/panel-hydration-failure.spec.ts
-          tests/e2e/sale-flow.spec.ts
-          tests/e2e/sidebar-reachability.spec.ts
+        run: npx playwright test --project=chromium
 
       - uses: actions/upload-artifact@v4
         if: always()

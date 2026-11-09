@@ -115,7 +115,7 @@ export function Sidebar() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-3 h-9 w-full rounded-lg px-2.5 transition-colors whitespace-nowrap text-muted-foreground hover:bg-accent hover:text-foreground">
+            <button data-testid="user-menu" className="flex items-center gap-3 h-9 w-full rounded-lg px-2.5 transition-colors whitespace-nowrap text-muted-foreground hover:bg-accent hover:text-foreground">
               <Avatar className="h-[18px] w-[18px] shrink-0">
                 <AvatarFallback className="text-[9px] font-bold bg-indigo-600 text-white">
                   {getInitials(user?.name || 'U')}

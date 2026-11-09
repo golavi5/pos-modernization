@@ -9,6 +9,9 @@ export class AuthHelper {
   // defaults for the e2e suite to authenticate out of the box.
   async login(email: string = 'admin@test.com', password: string = 'Fddm1ZDKTv3RbDpU') {
     await this.page.goto('/login');
+    // Wait for hydration: a fill that lands before React hydrates is wiped when the
+    // controlled inputs mount.
+    await this.page.waitForLoadState('networkidle');
     await this.page.fill('input[type="email"]', email);
     await this.page.fill('input[type="password"]', password);
     await this.page.click('button[type="submit"]');

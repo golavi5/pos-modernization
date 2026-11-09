@@ -162,7 +162,7 @@ export default function SalesPage() {
       </div>
 
       {/* Cart panel */}
-      <div className="w-[280px] shrink-0 border-l border-border bg-card flex flex-col overflow-hidden">
+      <div data-testid="cart-panel" className="w-[280px] shrink-0 border-l border-border bg-card flex flex-col overflow-hidden">
         <SalesCart
           items={cart.items}
           subtotal={cart.subtotal}
