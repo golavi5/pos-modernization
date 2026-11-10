@@ -3,6 +3,7 @@ import { RULES, ruleOrder, ruleBySource, allLegacyTables } from '../src/rules/_r
 import { applyFields } from '../src/core/applyFields.js';
 import { deterministicId } from '../src/core/idMap.js';
 import orders from '../src/rules/orders.rule.js';
+import products from '../src/rules/products.rule.js';
 import type { MapRule, TransformCtx } from '../src/types/Rule.js';
 
 const LEGACY_47 = 'Logs arqueo_cajas ciudades clientes clientes_agrup1 clientes_tipodoc clientes_tiporeg config_plemsi customers departamentos documentos e_invoice_response empresas empresas_resoluciones encabezados encabezados_costos encabezados_mov encabezados_pagodet formaspago inventarios inventarios_abc inventarios_agrup1 inventarios_clasifimpto inventarios_formulas inventarios_kardex inventarios_listas inventarios_precios inventarios_tipos inventarios_unidades inventarios_unidades_tipos monedas order_items orders paises payloads prefijos products puntos puntosmov roles userclaims userlogins userroles users usuario_systemconfig usuarios usuariostipo'.split(' ');
@@ -37,5 +38,23 @@ describe('orders.created_by null guard', () => {
   it('falls back to the bootstrap user when IdUsuario is null (NOT NULL + FK→users)', () => {
     expect(run(null)).toBe('boot-user');
     expect(run(undefined)).toBe('boot-user');
+  });
+});
+
+describe('products.tax_rate (MIGR-001: Iva above 100 is junk, not 0% tax)', () => {
+  const ctx: TransformCtx = { row: {}, source: 'inventarios', lookups: {}, companyId: 'co-1', bootstrapUserId: 'boot-user' };
+  const field = (products as MapRule).fields.find((f) => f.to === 'tax_rate')!;
+  const run = (v: unknown) => (field.transform as (v: unknown, c: TransformCtx) => unknown)(v, ctx);
+
+  it('replaces the two real junk values (2140, 1900) with the standard 19, not 0', () => {
+    expect(run(2140)).toBe(19);
+    expect(run('1900.000000')).toBe(19); // the legacy decimal(28,6) arrives as a string
+  });
+  it('keeps every valid percentage untouched, including 100 and 0', () => {
+    for (const v of [0, 5, 19, 21.4, 100]) expect(run(v)).toBe(v);
+  });
+  it('still maps non-numeric or missing values to 0', () => {
+    expect(run(null)).toBe(0);
+    expect(run('abc')).toBe(0);
   });
 });
