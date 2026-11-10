@@ -151,7 +151,8 @@ VALUES
    1, '2022-06-10 08:00:00', '2022-06-10 08:00:00');
 
 -- ============================================================
--- Map: inventarios → products  (3 rows, unique CodInventario)
+-- Map: inventarios → products  (5 rows, unique CodInventario; PROD004/PROD005 carry the two
+-- junk Iva values of the real dump, 2140 and 1900, which are not percentages)
 -- ============================================================
 CREATE TABLE `inventarios` (
   `IdInventario`         int(11)       NOT NULL AUTO_INCREMENT,
@@ -193,7 +194,9 @@ INSERT INTO `inventarios`
 VALUES
   (1, 'PROD001', NULL,            'Gaseosa 350ml',    1, 0, 0, 0, 100.000000, 1500.000000, 1, 0,  1, NULL, 1, 0, 0, 0, 1, 0, 0, NULL, NULL, NULL, NULL),
   (2, 'PROD002', '7890001234567', 'Agua Mineral 500ml',1, 0, 0, 0,  50.000000,  800.000000, 1, 0,  1, NULL, 1, 0, 0, 0, 1, 0, 0, NULL, NULL, NULL, NULL),
-  (3, 'PROD003', NULL,            'Cafe Negro 250g',   1, 0, 0, 0,  20.000000, 2000.000000, 1, 19, 1, NULL, 1, 0, 0, 0, 1, 0, 0, NULL, NULL, NULL, NULL);
+  (3, 'PROD003', NULL,            'Cafe Negro 250g',   1, 0, 0, 0,  20.000000, 2000.000000, 1, 19, 1, NULL, 1, 0, 0, 0, 1, 0, 0, NULL, NULL, NULL, NULL),
+  (4, 'PROD004', NULL,            'Iva Corrupto 2140', 1, 0, 0, 0,  10.000000,  500.000000, 1, 2140, 1, NULL, 1, 0, 0, 0, 1, 0, 0, NULL, NULL, NULL, NULL),
+  (5, 'PROD005', NULL,            'Iva Corrupto 1900', 1, 0, 0, 0,  10.000000,  500.000000, 1, 1900, 1, NULL, 1, 0, 0, 0, 1, 0, 0, NULL, NULL, NULL, NULL);
 
 -- ============================================================
 -- Lookup: inventarios_precios  (one price per product, IdLista=1)

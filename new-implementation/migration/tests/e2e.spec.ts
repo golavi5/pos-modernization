@@ -40,6 +40,15 @@ describe('M4 e2e parity (real schema, synthetic data)', () => {
     expect(ver.summary.mismatches).toBe(0);
     expect(ver.summary.missing).toBe(0);
   });
+  it('MIGR-001: legacy Iva 2140 and 1900 migrate as the standard 19%, valid rates are untouched', async () => {
+    const c = await mysql.createConnection({
+      host: process.env.DB_HOST, port: Number(process.env.DB_PORT), user: 'root', password: 'root', database: 'pos_db_migration',
+    });
+    const [rows] = await c.query('SELECT sku, tax_rate FROM products WHERE sku LIKE "PROD%" ORDER BY sku');
+    await c.end();
+    const rate = Object.fromEntries((rows as { sku: string; tax_rate: string }[]).map((r) => [r.sku, Number(r.tax_rate)]));
+    expect(rate).toEqual({ PROD001: 0, PROD002: 0, PROD003: 19, PROD004: 19, PROD005: 19 });
+  });
   it('is idempotent — second import keeps verify green', async () => {
     await runImport();
     expect(buildReport('verify', await runVerify(), '2026-06-29T00:00:00.000Z').exitCode).toBe(0);
