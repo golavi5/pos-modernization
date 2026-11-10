@@ -622,4 +622,44 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     await settings.updateCompany(tzCo.id, { timezone: 'Asia/Tokyo' });
     expect(await bars()).toEqual({ '2026-11-10': 2 });
   });
+  // by-period bucketing for every period type (the daily case is covered by the
+  // timezone test above); the expected keys come from an independent ISO-week
+  // computation, not from the SQL under test.
+  it('by-period buckets weekly (ISO), monthly and yearly correctly under MySQL 8 strict mode', async () => {
+    const co = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Periods Co' }));
+    // 2025-12-29 (Mon) and 2026-01-01 (Thu) are both ISO week 2026-W01: that is where
+    // `%x-W%v` (ISO) and the tempting `%Y-W%u` disagree.
+    const days = ['2025-12-29', '2026-01-01', '2026-10-31', '2026-11-09', '2026-11-10', '2026-11-16'];
+    for (const [i, day] of days.entries()) {
+      const o = await ds.manager.save(
+        Order,
+        ds.manager.create(Order, {
+          company_id: co.id, order_number: `PER-${i}-${Date.now()}`, total_amount: 10,
+          status: OrderStatus.COMPLETED, payment_status: OrderPaymentStatus.PAID, created_by: user.id,
+        }),
+      );
+      await ds.query('UPDATE orders SET created_at = ? WHERE id = ?', [`${day} 12:00:00.000000`, o.id]);
+    }
+    const isoWeek = (day: string) => {
+      const d = new Date(`${day}T12:00:00Z`);
+      const dow = (d.getUTCDay() + 6) % 7; // Monday = 0
+      d.setUTCDate(d.getUTCDate() - dow + 3); // the Thursday of this ISO week
+      const year = d.getUTCFullYear();
+      const jan4 = new Date(Date.UTC(year, 0, 4));
+      const week = 1 + Math.round(((d.getTime() - jan4.getTime()) / 86_400_000 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+      return `${year}-W${String(week).padStart(2, '0')}`;
+    };
+    const count = (keys: string[]) => keys.reduce<Record<string, number>>((m, k) => ({ ...m, [k]: (m[k] ?? 0) + 1 }), {});
+
+    const reports = new SalesReportService(
+      ds.getRepository(Order), ds.getRepository(OrderItem), { getSettings: async () => ({ timezone: 'UTC' }) } as never,
+    );
+    const range = { startDate: '2025-12-01T00:00:00.000Z', endDate: '2026-12-01T00:00:00.000Z' };
+    const buckets = async (period: PeriodType) =>
+      Object.fromEntries((await reports.getSalesByPeriod(co.id, { period, ...range })).periodData.map((r) => [r.date, r.totalSales]));
+
+    expect(await buckets(PeriodType.WEEKLY)).toEqual(count(days.map(isoWeek)));
+    expect(await buckets(PeriodType.MONTHLY)).toEqual({ '2025-12': 1, '2026-01': 1, '2026-10': 1, '2026-11': 3 });
+    expect(await buckets(PeriodType.YEARLY)).toEqual({ '2025': 1, '2026': 5 });
+  });
 });

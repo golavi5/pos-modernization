@@ -5,6 +5,7 @@ import { Order, OrderStatus } from '../../sales/entities/order.entity';
 import { PaymentStatus } from '../../sales/entities/payment.entity';
 import { SettingsService } from '../../settings/services/settings.service';
 import { mysqlOffset } from '../../../common/timezone';
+import { reportDateRange } from '../report-date-range';
 import { OrderItem } from '../../sales/entities/order-item.entity';
 import { ReportQueryDto, PeriodType } from '../dto/report-query.dto';
 import {
@@ -34,7 +35,8 @@ export class SalesReportService {
     companyId: string,
     query: ReportQueryDto,
   ): Promise<SalesSummaryDto> {
-    const { startDate, endDate } = this.getDateRange(query);
+    const { timezone } = await this.settingsService.getSettings(companyId);
+    const { startDate, endDate } = reportDateRange(query, timezone);
 
     // Get current period data
     const currentPeriod = await this.calculatePeriodMetrics(
@@ -86,8 +88,8 @@ export class SalesReportService {
     companyId: string,
     query: ReportQueryDto,
   ): Promise<SalesReportDto> {
-    const { startDate, endDate } = this.getDateRange(query);
     const { timezone } = await this.settingsService.getSettings(companyId);
+    const { startDate, endDate } = reportDateRange(query, timezone);
 
     const summary = await this.getSalesSummary(companyId, query);
 
@@ -114,8 +116,8 @@ export class SalesReportService {
     companyId: string,
     query: ReportQueryDto,
   ): Promise<RevenueTrendsDto> {
-    const { startDate, endDate } = this.getDateRange(query);
     const { timezone } = await this.settingsService.getSettings(companyId);
+    const { startDate, endDate } = reportDateRange(query, timezone);
 
     // Get trends over time (in the company's timezone)
     const trends = await this.getSalesGroupedByPeriod(
@@ -306,47 +308,5 @@ export class SalesReportService {
   private calculatePercentageChange(oldValue: number, newValue: number): number {
     if (oldValue === 0) return newValue > 0 ? 100 : 0;
     return ((newValue - oldValue) / oldValue) * 100;
-  }
-
-  /**
-   * Get date range based on query parameters
-   */
-  private getDateRange(query: ReportQueryDto): {
-    startDate: Date;
-    endDate: Date;
-  } {
-    if (query.startDate && query.endDate) {
-      return {
-        startDate: new Date(query.startDate),
-        endDate: new Date(query.endDate),
-      };
-    }
-
-    const endDate = new Date();
-    let startDate: Date;
-
-    switch (query.period) {
-      case PeriodType.DAILY:
-        startDate = new Date();
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case PeriodType.WEEKLY:
-        startDate = new Date();
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case PeriodType.MONTHLY:
-        startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case PeriodType.YEARLY:
-        startDate = new Date();
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        break;
-      default:
-        startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 1);
-    }
-
-    return { startDate, endDate };
   }
 }
