@@ -23,7 +23,7 @@ Local rehearsal, **not staging**. Goal: know what the next deploy does to an exi
 Reverting (`down`) was exercised earlier on a clean database for each migration (columns come back; values do not).
 
 ## What this does **not** prove
-- **Data is lost, by design:** the `capacity = 500` on `GEN` and `current_stock = 12` are gone after `DropLocationStockColumns`. Nothing in the app reads them any more, but check the real database first: `SELECT COUNT(*) FROM warehouse_locations WHERE capacity > 0 OR current_stock > 0;` and take a backup (`scripts/db-backup.sh`).
+- **Data is lost, by design:** the `capacity = 500` on `GEN` and `current_stock = 12` are gone after `DropLocationStockColumns`. Nothing in the app reads them any more, but check the real database first: `SELECT COUNT(*) FROM warehouse_locations WHERE capacity > 0 OR current_stock > 0;` and take a backup (`new-implementation/scripts/db-backup.sh`).
 - **Scale and lock time** on a large `stock_movements` (the drop of `locationId` plus its FK may rebuild the table on older MySQL 8 minors). Today that table is small; re-check if the legacy import ever fills it.
 - **Existing companies change behaviour:** report day boundaries move from UTC to `America/Bogota` (`AddCompanyTimezone`). Expected, but numbers by day will shift for historical data.
 
