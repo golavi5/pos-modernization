@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Customer } from '../../customers/customer.entity';
 import { Order, OrderStatus } from '../../sales/entities/order.entity';
+import { SettingsService } from '../../settings/services/settings.service';
+import { reportDateRange } from '../report-date-range';
 import { ReportQueryDto } from '../dto/report-query.dto';
 import {
   CustomerReportDto,
@@ -19,6 +21,7 @@ export class CustomerReportService {
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -28,7 +31,8 @@ export class CustomerReportService {
     companyId: string,
     query: ReportQueryDto,
   ): Promise<TopCustomerDto[]> {
-    const { startDate, endDate } = this.getDateRange(query);
+    const { timezone } = await this.settingsService.getSettings(companyId);
+    const { startDate, endDate } = reportDateRange(query, timezone);
     const limit = query.limit || 10;
 
     const results = await this.orderRepository
@@ -203,7 +207,8 @@ export class CustomerReportService {
     companyId: string,
     query: ReportQueryDto,
   ): Promise<CustomerReportDto> {
-    const { startDate, endDate } = this.getDateRange(query);
+    const { timezone } = await this.settingsService.getSettings(companyId);
+    const { startDate, endDate } = reportDateRange(query, timezone);
 
     const topBuyers = await this.getTopCustomers(companyId, query);
     const segments = await this.getCustomerSegments(companyId, query);
@@ -241,26 +246,5 @@ export class CustomerReportService {
       newCustomers,
       generatedAt: new Date(),
     };
-  }
-
-  /**
-   * Get date range based on query parameters
-   */
-  private getDateRange(query: ReportQueryDto): {
-    startDate: Date;
-    endDate: Date;
-  } {
-    if (query.startDate && query.endDate) {
-      return {
-        startDate: new Date(query.startDate),
-        endDate: new Date(query.endDate),
-      };
-    }
-
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 1);
-
-    return { startDate, endDate };
   }
 }

@@ -18,7 +18,7 @@ Los reportes agrupan por día con `DATE(created_at)` en la zona de MySQL (UTC) y
 ## 3. Límites conocidos (declarados, no ocultos)
 
 - El offset es **fijo por consulta** (el del final del rango): exacto en zonas sin horario de verano (Colombia, Perú, Ecuador…), con error de ≤1 h en los límites de día de un rango que cruce un cambio de horario. Usar zonas con nombre dentro de MySQL exigiría las tablas de zonas horarias cargadas; se descartó por frágil.
-- El preajuste `daily` del reporte de **ventas** empieza a la medianoche **local** de la empresa (antes, la del servidor). *Corrección:* este spec decía que los reportes de productos y clientes también usaban la medianoche del servidor; no es así: esos dos reportes **ignoran `period`** y, sin fechas explícitas, siempre cubren el último mes. Es el comportamiento previo y no depende de la zona.
+- El preajuste `daily` del reporte de **ventas** empieza a la medianoche **local** de la empresa (antes, la del servidor). *Corrección:* este spec decía que los reportes de productos y clientes también usaban la medianoche del servidor; no es así: esos dos reportes **ignoraban `period`** y, sin fechas explícitas, siempre cubrían el último mes, aunque la página de Reportes ofrece el selector en esas pestañas. **Corregido** (PR #95): ahora usan el mismo `reportDateRange` que ventas, también con la zona de la empresa.
 - No hay «cierre de caja por turno»: el día es el día calendario local.
 
 ## 4. Aceptación

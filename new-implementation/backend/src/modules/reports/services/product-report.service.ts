@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 import { OrderItem } from '../../sales/entities/order-item.entity';
 import { Order, OrderStatus } from '../../sales/entities/order.entity';
+import { SettingsService } from '../../settings/services/settings.service';
+import { reportDateRange } from '../report-date-range';
 import { StockMovement } from '../../inventory/entities/stock-movement.entity';
 import { ReportQueryDto } from '../dto/report-query.dto';
 import {
@@ -27,6 +29,7 @@ export class ProductReportService {
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(StockMovement)
     private readonly stockMovementRepository: Repository<StockMovement>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   /**
@@ -36,7 +39,8 @@ export class ProductReportService {
     companyId: string,
     query: ReportQueryDto,
   ): Promise<TopSellingProductDto[]> {
-    const { startDate, endDate } = this.getDateRange(query);
+    const { timezone } = await this.settingsService.getSettings(companyId);
+    const { startDate, endDate } = reportDateRange(query, timezone);
     const limit = query.limit || 10;
 
     const results = await this.orderItemRepository
@@ -122,7 +126,8 @@ export class ProductReportService {
     companyId: string,
     query: ReportQueryDto,
   ): Promise<InventoryReportDto> {
-    const { startDate, endDate } = this.getDateRange(query);
+    const { timezone } = await this.settingsService.getSettings(companyId);
+    const { startDate, endDate } = reportDateRange(query, timezone);
     const periodDays = Math.ceil(
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
     );
@@ -225,26 +230,5 @@ export class ProductReportService {
       .getRawOne();
 
     return parseInt(result?.total) || 0;
-  }
-
-  /**
-   * Get date range based on query parameters
-   */
-  private getDateRange(query: ReportQueryDto): {
-    startDate: Date;
-    endDate: Date;
-  } {
-    if (query.startDate && query.endDate) {
-      return {
-        startDate: new Date(query.startDate),
-        endDate: new Date(query.endDate),
-      };
-    }
-
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 1);
-
-    return { startDate, endDate };
   }
 }
