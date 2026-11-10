@@ -559,8 +559,11 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     const range = { startDate: new Date(Date.now() - 86_400_000).toISOString(), endDate: new Date(Date.now() + 86_400_000).toISOString() };
     const products = new ProductReportService(
       ds.getRepository(Product), ds.getRepository(OrderItem), ds.getRepository(Order), ds.getRepository(StockMovement),
+      { getSettings: async () => ({ timezone: 'UTC' }) } as never,
     );
-    const customers = new CustomerReportService(ds.getRepository(Customer), ds.getRepository(Order));
+    const customers = new CustomerReportService(
+      ds.getRepository(Customer), ds.getRepository(Order), { getSettings: async () => ({ timezone: 'UTC' }) } as never,
+    );
 
     const top = await products.getTopSellingProducts(co.id, range);
     expect(top).toHaveLength(1);
@@ -661,5 +664,50 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     expect(await buckets(PeriodType.WEEKLY)).toEqual(count(days.map(isoWeek)));
     expect(await buckets(PeriodType.MONTHLY)).toEqual({ '2025-12': 1, '2026-01': 1, '2026-10': 1, '2026-11': 3 });
     expect(await buckets(PeriodType.YEARLY)).toEqual({ '2025': 1, '2026': 5 });
+  });
+  // The Reports page has a period selector on the Products and Customers tabs; the
+  // backend used to ignore it and always return the last month.
+  it('product and customer reports honor the period selector', async () => {
+    const co = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Period2 Co' }));
+    const prod = await ds.manager.save(
+      Product,
+      ds.manager.create(Product, { company_id: co.id, name: 'Periodic', sku: `PRD-${Date.now()}`, price: 10, stock_quantity: 50, created_by: user.id }),
+    );
+    const cust = await ds.manager.save(
+      Customer,
+      ds.manager.create(Customer, { company_id: co.id, name: 'Periodic Buyer', email: `periodic${Date.now()}@example.com` }),
+    );
+    const sell = async (n: string, qty: number, daysAgo: number) => {
+      const o = await ds.manager.save(
+        Order,
+        ds.manager.create(Order, {
+          company_id: co.id, customer_id: cust.id, order_number: `PD-${n}-${Date.now()}`, total_amount: qty * 10,
+          status: OrderStatus.COMPLETED, payment_status: OrderPaymentStatus.PAID, created_by: user.id,
+        }),
+      );
+      await ds.manager.save(
+        OrderItem,
+        ds.manager.create(OrderItem, { order_id: o.id, product_id: prod.id, quantity: qty, unit_price: 10, subtotal: qty * 10, tax_amount: 0, total: qty * 10 }),
+      );
+      if (daysAgo) {
+        await ds.query('UPDATE orders SET created_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY) WHERE id = ?', [daysAgo, o.id]);
+      }
+    };
+    await sell('today', 1, 0);
+    await sell('old', 3, 40);
+
+    const settings = { getSettings: async () => ({ timezone: 'UTC' }) } as never;
+    const products = new ProductReportService(
+      ds.getRepository(Product), ds.getRepository(OrderItem), ds.getRepository(Order), ds.getRepository(StockMovement), settings,
+    );
+    const customers = new CustomerReportService(ds.getRepository(Customer), ds.getRepository(Order), settings);
+    const sold = async (period: PeriodType) => (await products.getTopSellingProducts(co.id, { period }))[0]?.totalQuantitySold;
+    const bought = async (period: PeriodType) => (await customers.getTopCustomers(co.id, { period }))[0]?.totalPurchases;
+
+    expect(await sold(PeriodType.DAILY)).toBe(1);
+    expect(await sold(PeriodType.MONTHLY)).toBe(1); // 40 days ago is outside the last month
+    expect(await sold(PeriodType.YEARLY)).toBe(4);
+    expect(await bought(PeriodType.DAILY)).toBe(1);
+    expect(await bought(PeriodType.YEARLY)).toBe(2);
   });
 });
