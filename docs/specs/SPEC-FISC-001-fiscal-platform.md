@@ -1,6 +1,6 @@
 # Fiscal Platform & Conversational Accounting Agent
 
-**Status**: DRAFT — not started; zero fiscal code in the backend. Blocked on the review/approval gate plus OQ-1/2/3/8, the signing / set-de-pruebas spike, and ADR-007.
+**Status**: DRAFT — not started; zero fiscal code in the backend. **ADR-007 accepted and OQ-8 answered 2026-11-10** (proposals doc). Still blocked on the review/approval gate, OQ-1/1a (accountant), OQ-2 (real habilitación dry run), OQ-3 (certificate cost) and the signing / set-de-pruebas spike.
 
 One Plane issue (`POS-FISC-001`) tracking the fiscal-platform design through
 its review gate and into the TASKS breakdown.
@@ -39,5 +39,6 @@ M5.
 > **Update (2026-11-10):** proposals for **ADR-007** (key custody) and **OQ-8** (POS
 > emission mode) are drafted in
 > [`2026-11-10-fisc-001-gate-proposals.md`](../superpowers/specs/2026-11-10-fisc-001-gate-proposals.md)
-> and await the owner's decision. Still DRAFT: the review gate, OQ-1/1a, OQ-2, OQ-3
-> and the signing spike need a human or credentials.
+> and were **accepted by the owner the same day** (ADR-007 option A; OQ-8 async outbox).
+> Still DRAFT: the review gate, OQ-1/1a, OQ-2, OQ-3 and the signing spike need a human
+> or credentials.

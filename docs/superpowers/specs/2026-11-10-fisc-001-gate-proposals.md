@@ -1,6 +1,6 @@
 # FISC-001 gate proposals — ADR-007 (key custody) and OQ-8 (POS emission mode)
 
-**Status:** PROPOSED — 2026-11-10. Prepared so the owner can decide at the review gate; **nothing here is decided and nothing is built.** Parent: [`2026-06-10-fiscal-platform-design.md`](2026-06-10-fiscal-platform-design.md) §5 (ADR-007) and §8 (OQ-8).
+**Status:** **ADR-007 ACCEPTED and OQ-8 ANSWERED — 2026-11-10, Gandhi Olavi** (ADR-007: option A as proposed, controls 1–6 mandatory, KMS/HSM as a later drop-in; OQ-8: async via transactional outbox as the default). The two VERIFY items below (CA/accountant on third-party custody; delivery-before-validation and numbering/contingencia rules) remain open and go on the OQ-1 agenda. **Nothing is built.** Prepared originally so the owner could decide at the review gate. Parent: [`2026-06-10-fiscal-platform-design.md`](2026-06-10-fiscal-platform-design.md) §5 (ADR-007) and §8 (OQ-8).
 
 What I could and could not do for the gate. Of its blockers, these two are design questions and are drafted below. The rest need a human or credentials and stay open: the review gate itself, OQ-1/1a (accountant), OQ-2 (a real habilitación dry run), OQ-3 (certificate cost), and the signing / set-de-pruebas spike (needs a real certificate and DIAN test-set access). Regulatory points are marked **VERIFY**; I did not assert DIAN rules from memory.
 
