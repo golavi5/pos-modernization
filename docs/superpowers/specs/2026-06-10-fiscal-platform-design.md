@@ -139,6 +139,7 @@ wira
 
 ### ADR-007: Certificate & signing-key custody — OPEN (blocks Phase 4)
 **Status:** Open. Raised at the review gate (§9, R3); must be decided before Phase 4 and before any real tenant signing key is persisted.
+**Proposal drafted 2026-11-10** (awaiting decision): [`2026-11-10-fisc-001-gate-proposals.md`](2026-11-10-fisc-001-gate-proposals.md). Status stays Open.
 **Question:** HSM vs encrypted software keystore; key issuance, rotation and revocation; the non-repudiation record tying a signature to the authorizing confirmation.
 **Why it is not already settled by §4.1:** §4.1's AES-256-GCM-at-rest line is a working assumption carried over from Tribuno credentials. Holding tenant signing keys means holding the ability to emit legally binding documents on their behalf — a larger exposure than the D10 filing boundary, and one that a credentials-storage pattern was never scoped to cover.
 
@@ -172,7 +173,7 @@ wira
 - **OQ-5:** Repo rename / identity (`pos-modernization` → platform name) and CLAUDE.md/CONTEXT.md updates for agent consumption.
 - **OQ-6:** Wira domain pack interface contract — confirm against current Wira tool-registration conventions (audit `wira` repo before Phase 3 spec).
 - **OQ-7:** Documento soporte (purchases from non-obligated suppliers) — v1.1 or Phase 2?
-- **OQ-8:** POS emission mode — sync-blocking on the sale path vs async on `SaleClosed`, with contingencia fallback and failed-emission reconciliation (§9, R6). *Answer required before Phase 1 emission is built: the sync choice blocks checkout when DIAN is unavailable mid-shift.*
+- **OQ-8:** POS emission mode — sync-blocking on the sale path vs async on `SaleClosed`, with contingencia fallback and failed-emission reconciliation (§9, R6). *Answer required before Phase 1 emission is built: the sync choice blocks checkout when DIAN is unavailable mid-shift.* Recommendation drafted 2026-11-10 (async via transactional outbox): [`2026-11-10-fisc-001-gate-proposals.md`](2026-11-10-fisc-001-gate-proposals.md).
 
 ---
 

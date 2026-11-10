@@ -35,3 +35,9 @@ M5.
 > of the blockers above have closed and the review gate has not run. Reset to
 > DRAFT. Do not mark DONE until every blocker in the paragraph above is
 > resolved.
+
+> **Update (2026-11-10):** proposals for **ADR-007** (key custody) and **OQ-8** (POS
+> emission mode) are drafted in
+> [`2026-11-10-fisc-001-gate-proposals.md`](../superpowers/specs/2026-11-10-fisc-001-gate-proposals.md)
+> and await the owner's decision. Still DRAFT: the review gate, OQ-1/1a, OQ-2, OQ-3
+> and the signing spike need a human or credentials.
