@@ -41,4 +41,9 @@ M5.
 > [`2026-11-10-fisc-001-gate-proposals.md`](../superpowers/specs/2026-11-10-fisc-001-gate-proposals.md)
 > and were **accepted by the owner the same day** (ADR-007 option A; OQ-8 async outbox).
 > Still DRAFT: the review gate, OQ-1/1a, OQ-2, OQ-3 and the signing spike need a human
-> or credentials.
+> or credentials. Prepared 2026-11-09, nothing run: the
+> [accountant session agenda](../superpowers/specs/2026-11-09-fisc-001-accountant-session-agenda.md)
+> (OQ-1/1a and the two VERIFY items), the
+> [OQ-2 habilitación checklist](../superpowers/specs/2026-11-09-fisc-001-oq2-habilitacion-checklist.md),
+> the [OQ-3 certificate quote request](../superpowers/specs/2026-11-09-fisc-001-oq3-certificate-quote-request.md)
+> and the [signing spike plan](../superpowers/specs/2026-11-09-fisc-001-signing-spike-plan.md).
