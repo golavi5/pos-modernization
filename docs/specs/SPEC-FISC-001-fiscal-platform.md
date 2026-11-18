@@ -47,3 +47,8 @@ M5.
 > [OQ-2 habilitación checklist](../superpowers/specs/2026-11-09-fisc-001-oq2-habilitacion-checklist.md),
 > the [OQ-3 certificate quote request](../superpowers/specs/2026-11-09-fisc-001-oq3-certificate-quote-request.md)
 > and the [signing spike plan](../superpowers/specs/2026-11-09-fisc-001-signing-spike-plan.md).
+>
+> **Actualización (2026-11-18):** el *spike* de firma/set de pruebas se ejecutó: una factura electrónica de venta fue
+> aceptada por la DIAN en habilitación al primer envío (confirmado por el propietario en el portal); ver el
+> [resultado](../superpowers/specs/2026-11-09-fisc-001-signing-spike-plan.md#result). Con esto se cumple la condición
+> de puerta n.º 2. **Sigue en DRAFT:** faltan la revisión/aprobación, OQ-1/1a, OQ-2 y OQ-3.
