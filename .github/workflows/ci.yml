@@ -111,7 +111,10 @@ jobs:
   e2e:
     name: E2E — Playwright
     needs: [backend, frontend]
-    runs-on: ubuntu-latest
+    # Pinned: `ubuntu-latest` moved to 26.04, where the locked Playwright (1.58.2)
+    # cannot install chromium ("does not support chromium on ubuntu26.04-x64").
+    # Unpin together with a Playwright upgrade that supports the newer image.
+    runs-on: ubuntu-24.04
     # Runs the whole suite (all spec files rewritten or deleted to match the
     # current UI; 56 tests green against a clean stack). NOT a required check, and
     # `continue-on-error` stays on until it has been green on a few real runs — see
