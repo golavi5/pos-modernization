@@ -1,6 +1,6 @@
 # M2 — IVA incluido o no en el precio (por empresa)
 
-**Status**: APPROVED — 2026-11-19 (PR #116, no fusionado). Construido y probado contra MySQL real (e2e con tasas null/5/0 en los dos modos y el ajuste cambiado a mitad de vida; identidad de pesos enteros del documento fiscal); Playwright solo en CI, sin verificar en staging. Abierto: redondeo bancario del legado solo si el propietario lo pide, otros tipos de impuesto (paso 2 de SPEC-BACK-009).
+**Status**: APPROVED — 2026-11-19 (PR #116). Construido y probado contra MySQL real (e2e con tasas null/5/0 en los dos modos y el ajuste cambiado a mitad de vida; identidad de pesos enteros del documento fiscal); Playwright solo en CI, sin verificar en staging. Abierto: redondeo bancario del legado solo si el propietario lo pide, otros tipos de impuesto (paso 2 de SPEC-BACK-009).
 
 ## 1. Problema
 `settings.taxIncludedInPrice` (por defecto `true`, mostrado en Ajustes como "IVA incluido en precio") se guardaba pero ningún código lo leía: la venta siempre sumaba el IVA encima del precio. El sistema legado trata `ValorUnit` como IVA incluido y la migración M4 copia `Precio` sin tocarlo (el propietario confirmó que los precios legados incluyen IVA), así que un catálogo migrado se cobraría con IVA doble.
