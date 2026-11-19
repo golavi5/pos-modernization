@@ -16,6 +16,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SettingsModule } from './modules/settings/settings.module';
 import { CompaniesModule } from './modules/companies/companies.module';
 import { BootstrapModule } from './modules/bootstrap/bootstrap.module';
+import { FiscalModule } from './modules/fiscal/fiscal.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { BootstrapModule } from './modules/bootstrap/bootstrap.module';
     SettingsModule,
     CompaniesModule,
     BootstrapModule,
+    FiscalModule,
   ],
   controllers: [AppController],
   providers: [AppService],
