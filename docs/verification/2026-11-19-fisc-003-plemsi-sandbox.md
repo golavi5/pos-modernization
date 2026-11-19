@@ -1,6 +1,6 @@
 # SPEC-FISC-003 — Plemsi sandbox run (2026-11-19)
 
-**Outcome: partial.** One **factura de venta** went through the whole stack (outbox → worker → `PlemsiAdapter` → DIAN verdict → sales ledger) and was **validated by DIAN** in Plemsi's sandbox. The **documento equivalente POS was not run** (owner skipped it, see below) and the **nota crédito was refused by Plemsi** for a payload reason that is now understood but not yet fixed. SPEC-FISC-003 acceptance item 3 ("a document issued in Plemsi's test environment") is met for the factura only.
+**Outcome: partial.** One **factura de venta** went through the whole stack (outbox → worker → `PlemsiAdapter` → DIAN verdict → sales ledger) and was **validated by DIAN** in Plemsi's sandbox. The **documento equivalente POS was not run** (owner skipped it, see below) and the **nota crédito was refused by Plemsi** (`ENCE017`), apparently because the parent invoice was issued to a final consumer. SPEC-FISC-003 acceptance item 3 ("a document issued in Plemsi's test environment") is met for the factura only.
 
 **Redaction.** No token, NIT, legal name, QR value or provider document body is recorded here. CUFEs are not recorded. Resolution numbers of the owner's account are not recorded. The sandbox account also held a 2024 document of another company; none of its data is recorded.
 
@@ -14,7 +14,7 @@
 | Status lookup of an unknown document | **HTTP 404**, mapped to `null` as designed (VERIFY resolved). |
 | **Factura de venta**, final consumer, one line with 19% IVA | `POST /api/billing/invoice` → **201**; status read-back → `state: Emitted`, DIAN `IsValid: true`, "Procesado Correctamente". Worker: `sent` → `validated`. Ledger entry written in the same transaction, dated 2026-11-19, equal to DIAN's `IssueDate`; base 10,000, tax 1,900, total 11,900. Two DIAN notifications (rules FAJ43b, FAJ44b, name/NIT vs RUT) that ApiFacturame's own sandbox notes show on every accepted invoice. |
 | Invoice PDF (`/api/billing/invoice/pdf/{cufe}`, Bearer, relative URL as in sandbox mode) | **HTTP 500**. ApiFacturame's notes also say "sandbox PDF broken". Production behaviour (raw key, absolute host) not exercised. Still VERIFY. |
-| **Nota crédito** (reference to the validated factura) | `POST /api/billing/credit` → **500, `ENCE017`**, `data`: *Cannot read properties of undefined (reading 'identification_number')*. Plemsi's credit-note endpoint **requires a `customer` object**; for a final consumer we (like ApiFacturame) omit it. Not accepted. |
+| **Nota crédito** (reference to the validated factura) | `POST /api/billing/credit` → **500, `ENCE017`**, `data`: *Cannot read properties of undefined (reading 'identification_number')*. Repeated with a generic final-consumer `customer` in the credit note (owner-approved, ApiFacturame's customer codes) and the parent's CUFE read back from Plemsi: **same error**. So the credit note's own customer is not the cause; Plemsi most likely reads the **parent invoice's** customer, and an invoice emitted with `isFinalCustomer: true` has none. **Not accepted.** (Two earlier probes in this step referenced no invoice at all because my own e2e run wiped the throwaway database they read the CUFE from; they were refused with `ENCE008 Parent Bill Doc not found` and prove nothing.) |
 | **Documento equivalente POS** | Skipped by the owner after three refusals caused by the account's numbering (below). Not run, not proven. |
 
 ## What the sandbox taught us (and what was fixed in code)
@@ -26,7 +26,7 @@ All fixes have unit tests and, where they touch the worker, e2e tests on real My
 5. **Rejected or refused sends do not consume numbers** (`lastNumberUsed` stayed null after four refused POSTs).
 
 ## Open
-- **Nota crédito:** needs a `customer`. What Plemsi/DIAN accept for a credit note to a final consumer is unobserved; the generic-consumer identification and its document-type code are VERIFY (anexo tables). Until then, credit notes work only for invoices that had an identified buyer, which is also untested.
+- **Nota crédito:** a credit note against an invoice issued to a final consumer is refused by Plemsi in the sandbox (`ENCE017`); a customer in the credit note does not help. Untested hypothesis: it works when the parent invoice carries an identified customer (needs a new invoice with a buyer plus a credit note, not run). Until that is known, the credit-note path is unproven; if the hypothesis holds, credit notes for final-consumer invoices need another route. The generic-consumer identification and document-type code stay VERIFY (anexo tables).
 - **POS:** needs a type-14 range without stale documents (a fresh prefix); the number the worker picks is the range start, which collides with a stuck stale document if one exists.
 - **PDF:** sandbox returns 500; production auth quirk unverified.
 - **Billing:** whether Plemsi bills sandbox documents is unknown to the author.
