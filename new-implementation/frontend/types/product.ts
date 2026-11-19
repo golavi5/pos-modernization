@@ -10,7 +10,10 @@ export interface Product {
   cost?: number;
   stock_quantity: number;
   reorder_level?: number;
-  tax_rate?: number;
+  /** `null`/ausente = usa la tasa de la empresa. */
+  tax_rate?: number | null;
+  /** Tasa resuelta por el backend (la del producto o, si no tiene, la de la empresa). */
+  effective_tax_rate?: number;
   is_active: boolean;
   image_url?: string;
   /** Tri-estado por producto; `null` hereda del ajuste global de la empresa. */
@@ -38,7 +41,7 @@ export interface CreateProductDto {
   cost?: number;
   stock_quantity: number;
   reorder_level?: number;
-  tax_rate?: number;
+  tax_rate?: number | null;
   image_url?: string;
   allow_sale_without_stock?: boolean | null;
 }
@@ -52,7 +55,7 @@ export interface UpdateProductDto {
   price?: number;
   cost?: number;
   reorder_level?: number;
-  tax_rate?: number;
+  tax_rate?: number | null;
   is_active?: boolean;
   image_url?: string;
   allow_sale_without_stock?: boolean | null;

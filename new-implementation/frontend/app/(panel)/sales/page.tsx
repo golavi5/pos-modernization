@@ -8,8 +8,6 @@ import { useCreateSale, useRecordPayment } from '@/hooks/useSales';
 import type { Product } from '@/types/product';
 import type { CartItem, Cart, PendingOrder } from '@/types/sale';
 
-const TAX_RATE = 0.19;
-
 const EMPTY_CART: Cart = {
   items: [],
   subtotal: 0,
@@ -38,7 +36,8 @@ export default function SalesPage() {
 
   const recalc = (items: CartItem[], discount = cart.discount): Cart => {
     const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-    const tax = subtotal * TAX_RATE;
+    // Vista previa: el IVA oficial lo calcula el backend por línea (tasa del producto o de la empresa).
+    const tax = items.reduce((s, i) => s + i.subtotal * ((i.tax_rate ?? 0) / 100), 0);
     return { ...cart, items, subtotal, tax, discount, total: subtotal + tax - discount };
   };
 
@@ -66,7 +65,7 @@ export default function SalesPage() {
           product_name: product.name,
           quantity: 1,
           unit_price: product.price,
-          tax_rate: product.tax_rate ?? TAX_RATE * 100,
+          tax_rate: product.effective_tax_rate ?? product.tax_rate ?? 0,
           subtotal: product.price,
           stock_quantity: product.stock_quantity,
           can_sell_without_stock: canOversell,
@@ -118,7 +117,6 @@ export default function SalesPage() {
           quantity: i.quantity,
           unit_price: i.unit_price,
           discount: i.discount ?? 0,
-          tax_rate: i.tax_rate ?? TAX_RATE * 100,
         })),
         payment_method: paymentMethod,
         payment_status: 'paid',

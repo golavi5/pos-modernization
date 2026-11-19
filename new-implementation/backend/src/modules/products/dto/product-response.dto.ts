@@ -52,8 +52,14 @@ export class ProductResponseDto {
   reorder_level: number;
 
   @Expose()
+  @IsOptional()
   @IsNumber()
-  tax_rate: number;
+  tax_rate: number | null;
+
+  /** La tasa que se aplicaría hoy: la del producto o, si no tiene, la de la empresa. */
+  @Expose()
+  @IsNumber()
+  effective_tax_rate: number;
 
   @Expose()
   @IsBoolean()

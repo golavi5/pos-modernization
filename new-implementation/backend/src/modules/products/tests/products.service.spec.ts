@@ -36,7 +36,7 @@ describe('ProductsService', () => {
         },
         {
           provide: SettingsService,
-          useValue: { getSettings: jest.fn(async () => ({ allowNegativeStock: false })) },
+          useValue: { getSettings: jest.fn(async () => ({ allowNegativeStock: false, taxRate: 19 })) },
         },
       ],
     }).compile();
@@ -76,7 +76,7 @@ describe('ProductsService', () => {
 
       const result = await service.findAll(mockUser, { offset: 0, limit: 10, is_active: true, sort: 'created_at', order: 'DESC' } as any);
 
-      expect(result.data).toEqual(mockProducts.map((p) => ({ ...p, can_sell_without_stock: false })));
+      expect(result.data).toEqual(mockProducts.map((p) => ({ ...p, can_sell_without_stock: false, effective_tax_rate: 19 })));
       expect(result.meta.total).toBe(1);
       expect(repository.findAndCount).toHaveBeenCalledWith({
         where: { company_id: mockUser.company_id, is_active: true },
@@ -184,7 +184,7 @@ describe('ProductsService', () => {
 
       const result = await service.create(createProductDto, mockUser);
 
-      expect(result).toEqual({ ...savedProduct, can_sell_without_stock: false });
+      expect(result).toEqual({ ...savedProduct, can_sell_without_stock: false, effective_tax_rate: 19 });
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { sku: createProductDto.sku, company_id: mockUser.company_id },
       });
@@ -288,7 +288,7 @@ describe('ProductsService', () => {
 
       const result = await service.update(productId, updateProductDto, mockUser);
 
-      expect(result).toEqual({ ...updatedProduct, can_sell_without_stock: false });
+      expect(result).toEqual({ ...updatedProduct, can_sell_without_stock: false, effective_tax_rate: 19 });
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: productId, company_id: mockUser.company_id },
       });
@@ -349,6 +349,37 @@ describe('ProductsService', () => {
       await expect(service.remove(productId, mockUser)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('effective_tax_rate en las respuestas (SPEC-BACK-009)', () => {
+    it('findAll resuelve la tasa de cada producto contra la de la empresa; 0 es una tasa, no "sin definir"', async () => {
+      jest.spyOn(settingsService, 'getSettings')
+        .mockResolvedValue({ allowNegativeStock: false, taxRate: 8 } as never);
+      const products = [
+        { id: '1', tax_rate: null },
+        { id: '2', tax_rate: 5 },
+        { id: '3', tax_rate: 0 },
+      ] as unknown as Product[];
+      jest.spyOn(repository, 'findAndCount').mockResolvedValue([products, 3]);
+
+      const result = await service.findAll(mockUser, { offset: 0, limit: 10, sort: 'created_at', order: 'DESC' } as never);
+
+      expect(result.data.map((p) => p.effective_tax_rate)).toEqual([8, 5, 0]);
+      expect(result.data.map((p) => p.tax_rate)).toEqual([null, 5, 0]);
+      expect(settingsService.getSettings).toHaveBeenCalledTimes(1);
+    });
+
+    it('getDefaultTaxRate lee la tasa de la empresa; MySQL entrega el DECIMAL como string y sale como número', async () => {
+      jest.spyOn(settingsService, 'getSettings').mockResolvedValue({ taxRate: '16.00' } as never);
+      await expect(service.getDefaultTaxRate('c1')).resolves.toBe(16);
+    });
+
+    it('la tasa heredada llega como número a la respuesta aunque settings la entregue como string', async () => {
+      jest.spyOn(settingsService, 'getSettings').mockResolvedValue({ allowNegativeStock: false, taxRate: '8.00' } as never);
+      jest.spyOn(repository, 'findAndCount').mockResolvedValue([[{ id: '1', tax_rate: null }] as unknown as Product[], 1]);
+      const r = await service.findAll(mockUser, { offset: 0, limit: 10, sort: 'created_at', order: 'DESC' } as never);
+      expect(r.data[0].effective_tax_rate).toBe(8);
     });
   });
 

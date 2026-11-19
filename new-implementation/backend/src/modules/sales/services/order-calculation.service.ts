@@ -5,6 +5,8 @@ interface CalculatedOrderItem {
   product_id: string;
   quantity: number;
   unit_price: number;
+  /** Tasa de IVA (%) aplicada a la línea. */
+  tax_rate: number;
   subtotal: number;
   tax_amount: number;
   total: number;
@@ -12,16 +14,22 @@ interface CalculatedOrderItem {
 
 @Injectable()
 export class OrderCalculationService {
-  calculateOrderItemTotals(items: CreateOrderItemDto[]): CalculatedOrderItem[] {
+  /** `taxRateFor` entrega la tasa (%) ya resuelta de cada producto (SPEC-BACK-009); aquí no hay tasa por defecto. */
+  calculateOrderItemTotals(
+    items: CreateOrderItemDto[],
+    taxRateFor: (productId: string) => number,
+  ): CalculatedOrderItem[] {
     return items.map((item) => {
+      const taxRate = taxRateFor(item.product_id);
       const subtotal = item.quantity * item.unit_price;
-      const taxAmount = subtotal * 0.19; // Assuming 19% tax rate
+      const taxAmount = subtotal * (taxRate / 100);
       const total = subtotal + taxAmount;
 
       return {
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
+        tax_rate: taxRate,
         subtotal,
         tax_amount: taxAmount,
         total,

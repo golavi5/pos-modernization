@@ -16,6 +16,7 @@ import { OrderQueryDto } from '../dto/order-query.dto';
 import { OrderCalculationService } from './order-calculation.service';
 import { ProductsService } from '../../products/products.service';
 import { canSellWithoutStock } from '../../products/can-sell-without-stock';
+import { resolveTaxRate } from '../../products/resolve-tax-rate';
 import { User } from '../../auth/entities/user.entity';
 import { Product } from '../../products/entities/product.entity';
 import { OversellPolicy } from '../../products/can-sell-without-stock';
@@ -112,6 +113,9 @@ export class SalesService {
 
     // Check stock availability
     const policy = await this.productsService.getOversellPolicy(user.company_id);
+    const companyTaxRate = await this.productsService.getDefaultTaxRate(user.company_id);
+    // La tasa de cada línea la decide el servidor (producto o, si no tiene, empresa).
+    const taxRates = new Map<string, number>();
     for (const item of dto.items) {
       const product = await this.productsService.findOne(item.product_id, user);
       if (!product) {
@@ -127,11 +131,13 @@ export class SalesService {
           `Insufficient stock for product ${product.name}. Available: ${product.stock_quantity}, Requested: ${item.quantity}`,
         );
       }
+      taxRates.set(item.product_id, resolveTaxRate(product, companyTaxRate));
     }
 
     // Calculate order items and totals
     const calculatedItems = this.calculationService.calculateOrderItemTotals(
       dto.items,
+      (productId) => taxRates.get(productId) as number,
     );
     const { subtotal, tax_amount, total_amount } =
       this.calculationService.calculateOrderTotals(
@@ -168,6 +174,7 @@ export class SalesService {
       orderItem.unit_price = item.unit_price;
       orderItem.subtotal = item.subtotal;
       orderItem.tax_amount = item.tax_amount;
+      orderItem.tax_rate = item.tax_rate;
       orderItem.total = item.total;
       return orderItem;
     });

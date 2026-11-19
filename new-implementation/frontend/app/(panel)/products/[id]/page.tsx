@@ -71,7 +71,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
             </div>
             <div>
               <h3 className="text-sm font-medium text-tertiary">{t('taxRate')}</h3>
-              <p>{product.tax_rate}%</p>
+              <p>{product.effective_tax_rate ?? product.tax_rate ?? 0}%</p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-tertiary">{tc('status')}</h3>

@@ -39,6 +39,10 @@ export class OrderItem {
   })
   tax_amount: number;
 
+  /** Tasa de IVA (%) aplicada a esta línea al crear el pedido. `null` en pedidos anteriores a SPEC-BACK-009. */
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: numericTransformer })
+  tax_rate: number | null;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, transformer: numericTransformer })
   total: number;
 

@@ -48,7 +48,7 @@ export function ProductForm({
     price: 0,
     cost: 0,
     stock_quantity: 0,
-    tax_rate: 19,
+    tax_rate: null,
     image_url: '',
     allow_sale_without_stock: null,
   });
@@ -64,7 +64,7 @@ export function ProductForm({
         price: product.price,
         cost: product.cost || 0,
         stock_quantity: product.stock_quantity,
-        tax_rate: product.tax_rate || 19,
+        tax_rate: product.tax_rate ?? null,
         image_url: product.image_url || '',
         allow_sale_without_stock: product.allow_sale_without_stock ?? null,
       });

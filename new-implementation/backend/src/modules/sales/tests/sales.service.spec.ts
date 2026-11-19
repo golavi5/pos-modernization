@@ -72,6 +72,7 @@ describe('SalesService', () => {
           useValue: {
             findOne: jest.fn(),
             getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: false })),
+            getDefaultTaxRate: jest.fn(async () => 19),
           },
         },
       ],
@@ -530,5 +531,51 @@ describe('SalesService', () => {
 
       await expect(service.getOrderById(1 as any, mockUser)).rejects.toThrow(NotFoundException);
     });
+  });
+});
+
+describe('SalesService.createOrder — tasa de IVA por producto (SPEC-BACK-009)', () => {
+  const build = async (companyRate: number, products: Record<string, { tax_rate: number | null }>) => {
+    const saved: { tax_rate: number; tax_amount: number; total: number }[] = [];
+    const productsService = {
+      getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: true })),
+      getDefaultTaxRate: jest.fn(async () => companyRate),
+      findOne: jest.fn(async (id: string) => ({ id, name: id, stock_quantity: 99, allow_sale_without_stock: null, ...products[id] })),
+    };
+    const orderRepo = { save: jest.fn(async (o: object) => ({ ...o, id: 'o1' })), findOne: jest.fn(), findAndCount: jest.fn(async () => [[], 0]) };
+    const itemRepo = { save: jest.fn(async (items: typeof saved) => { saved.push(...items); return items; }) };
+    const svc = new SalesService(
+      orderRepo as never, itemRepo as never, new OrderCalculationService(), productsService as never, {} as never, {} as never,
+    );
+    jest.spyOn(svc, 'getOrderById').mockResolvedValue({ id: 'o1' } as never);
+    jest.spyOn(svc as unknown as { generateOrderNumber: () => Promise<string> }, 'generateOrderNumber').mockResolvedValue('ORD-1');
+    return { svc, saved, orderRepo };
+  };
+  const user = { id: 'u1', company_id: 'c1' } as never;
+
+  it('each line uses its own rate, inherits the company rate when null, and records it', async () => {
+    const { svc, saved, orderRepo } = await build(8, { a: { tax_rate: 5 }, b: { tax_rate: null }, c: { tax_rate: 0 } });
+    await svc.createOrder(
+      { items: [
+        { product_id: 'a', quantity: 1, unit_price: 1000 },
+        { product_id: 'b', quantity: 1, unit_price: 1000 },
+        { product_id: 'c', quantity: 2, unit_price: 500 },
+      ] } as never,
+      user,
+    );
+    expect(saved.map((i) => [i.tax_rate, i.tax_amount, i.total])).toEqual([[5, 50, 1050], [8, 80, 1080], [0, 0, 1000]]);
+    expect(orderRepo.save).toHaveBeenCalledWith(expect.objectContaining({ tax_amount: 130, total_amount: 3130 }));
+  });
+
+  it('ignores a rate sent by the client', async () => {
+    const { svc, saved } = await build(19, { a: { tax_rate: 5 } });
+    await svc.createOrder({ items: [{ product_id: 'a', quantity: 1, unit_price: 1000, tax_rate: 99 }] } as never, user);
+    expect(saved[0].tax_rate).toBe(5);
+  });
+
+  it('with a 19% company rate the totals are exactly what the old fixed 0.19 gave', async () => {
+    const { svc, saved } = await build(19, { a: { tax_rate: null } });
+    await svc.createOrder({ items: [{ product_id: 'a', quantity: 3, unit_price: 1234.56 }] } as never, user);
+    expect(saved[0].tax_amount).toBe(3 * 1234.56 * 0.19);
   });
 });
