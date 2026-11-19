@@ -5,14 +5,13 @@
  * (3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71). Residuo 0 o 1 → DV
  * es el residuo; si no, DV = 11 - residuo.
  *
- * Fuente: DIAN, Orden Administrativa 0004 de 1989
- * (normograma.dian.gov.co/dian/compilacion/docs/orden_administrativa_dian_0004_1989.htm).
- * VERIFY: la página no pudo abrirse en esta sesión; el método fue contrastado con
- * el NIT público de la DIAN (800197268-4) y con fuentes secundarias que solo
- * listan ponderadores hasta 41. Los ponderadores 43..71 (NIT de más de 9
- * dígitos) vienen de la implementación de radian y NO están confirmados.
- * Portado de radian-dian/lib/utils/nit-helper.ts, sin adivinar el DV cuando
- * falta el guion.
+ * Fuente: DIAN, Orden Administrativa 0004 de 1989 (referida; la página no se leyó).
+ * Verificado contra la implementación de radian-dian (lib/utils/dv-calculator.ts y
+ * nit-helper.ts): mismos 15 ponderadores, mismo sentido y misma regla de residuo;
+ * y contra el NIT público de la DIAN (800197268-4). Aceptado por el propietario
+ * (2026-11-19) como verificación de los ponderadores 43..71.
+ * Portado de radian-dian/lib/utils/nit-helper.ts, sin adivinar el DV cuando falta
+ * el guion.
  */
 const WEIGHTS = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
 
