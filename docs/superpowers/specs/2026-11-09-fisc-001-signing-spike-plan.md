@@ -1,6 +1,6 @@
 # FISC-001 — Signing / set-de-pruebas spike plan
 
-**Status:** Draft — not started. Blocked on a **test** certificate and DIAN set-de-pruebas access, both from the owner. Prepared 2026-11-09.
+**Status:** Executed 2026-11-18 — gate condition #2 met: one factura accepted in the DIAN habilitación set de pruebas (owner confirmed in the portal). Result below.
 
 Gate condition #2 (design §9): **one document accepted in the DIAN set de pruebas** (UBL 2.1 per anexo técnico + XAdES + CUFE) before any Phase 4 timeline is committed. The spike answers one question: how hard is signing that DIAN accepts? It is throwaway code, not the `DianDirectAdapter`.
 
@@ -40,4 +40,24 @@ Gate condition #2 (design §9): **one document accepted in the DIAN set de prueb
 - Effort in hours → an evidence-based estimate for the Phase 4 adapter.
 
 ## Result
-_Not run._
+**Run 2026-11-18, owner's test NIT and test certificate, scratch directory outside the repo. Nothing from the run is committed.**
+
+**Outcome.** One factura electrónica de venta, built and signed by throwaway scripts, was accepted by the DIAN habilitación service on the **first send**: `SendTestSetAsync` returned a ZipKey, `GetStatusZip` went from "Batch en proceso de validación" to "Set de prueba … se encuentra Aceptado" (`StatusCode 2`) within about 10 s, and the owner confirmed in the habilitación portal that everything was accepted. No rejection was received, so no DIAN rule code was exercised. One caveat: the API's `IsValid` stayed `false` throughout, and the per-document result was read from the portal, not from the API response.
+
+**What was built, against anexo técnico v1.9 (Resolución 000165 de 2023-11-01) and DIAN's own toolbox:**
+| Step | Result |
+|---|---|
+| 1. UBL 2.1 invoice | Built from DIAN's `Consumidor Final.xml` example, one line with 19% IVA; validates against `UBL-Invoice-2.1.xsd`. DIAN's own examples validate with the same harness. |
+| 2. CUFE (SHA-384, anexo 11.2) and `SoftwareSecurityCode` (11.8) | CUFE reproduces the anexo's worked example exactly. DIAN accepted our CUFE, which confirms the `ClTec` and field order used. |
+| 3. XAdES-EPES enveloped signature (anexo 10) | RSA-SHA256, c14n 2001, three references (document, KeyInfo, SignedProperties), DIAN policy v2 with the hash of the policy PDF (matches DIAN's signed example), certificate chain in `X509Data`. Verified independently with the JDK's XMLDSig before sending. |
+| 4. SOAP 1.2 + WS-Security (anexo 7.5, 15.6-15.7) | X.509 binary token, RSA-SHA256, exclusive c14n, `wsa:To` signed, 60 s timestamp. DIAN accepted it with **no TLS client certificate**. |
+| 5. Status | `GetStatusZip` polled until the set was accepted. |
+
+**Findings that matter for the Phase 4 estimate**
+- **No library problem.** Python `lxml` (canonicalisation) plus `cryptography` (RSA-SHA256) were enough; no XAdES library was needed. Node was **not** evaluated, so the "Node first" question in this plan is still open. The key was loaded from the PKCS#12 into memory only and never written unencrypted, which fits ADR-007's decrypt-in-memory-inside-`SigningService` control.
+- **Everything needed is in DIAN's toolbox:** anexo PDF, XSDs, 30+ example XMLs, the policy PDF. The numbering range used (`SETP`, 990000000-995000000, resolución `18760000001`) and the technical key come from the anexo's examples and were accepted for this test set.
+- **Spec inconsistencies found:** the anexo (10.10) gives the policy identifier as `.../politicadefirma/v2/...` while DIAN's example uses `.../v1/...`; **v2 was accepted**. The ZIP/XML naming `ppp` code for software propio was assumed to be `000` and was accepted.
+- **Latency:** asynchronous validation of one document took about 10 s, which is relevant to the outbox design (OQ-8).
+- **Not covered:** notas crédito/débito, the documento equivalente POS, contingencia numbering, production habilitación, volume, multiple documents per ZIP, the DIAN schematron rules locally (the 2019 `.sch` needs an XSLT 3 processor), and the effort in hours (not recorded).
+
+**Next.** Delete the test certificate and the env file from the scratch directory. The spike scripts stay out of the repo; this document is the deliverable.
