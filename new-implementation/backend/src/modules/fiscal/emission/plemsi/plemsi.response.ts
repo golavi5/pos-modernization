@@ -2,6 +2,8 @@ import { DianVerdict, DocumentStatus, EmitResult, EmissionTransientError } from 
 import { STATES_REJECTED, STATE_ACCEPTED } from './plemsi.constants';
 
 type Json = Record<string, unknown>;
+/** What parsing can know; the adapter adds the send moment. */
+export type ParsedEmit = Exclude<EmitResult, { outcome: 'submitted' }> | Omit<Extract<EmitResult, { outcome: 'submitted' }>, 'issuedAt'>;
 const obj = (v: unknown): Json | null => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Json) : null);
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null);
 
@@ -47,7 +49,7 @@ function dianVerdict(response: unknown): { verdict: DianVerdict; reason: string 
 }
 
 /** 2xx response of a POST emission. */
-export function parseEmitResponse(body: Json | null): EmitResult {
+export function parseEmitResponse(body: Json | null): ParsedEmit {
   if (!body) throw new EmissionTransientError('Empty or non-JSON response from provider');
   const rejection = payloadRejectionReason(body);
   if (body.success !== true) {
@@ -60,7 +62,7 @@ export function parseEmitResponse(body: Json | null): EmitResult {
 }
 
 /** Non-2xx: a payload rejection if the body says so, otherwise transient. */
-export function parseEmitHttpError(status: number, raw: string): EmitResult {
+export function parseEmitHttpError(status: number, raw: string): ParsedEmit {
   const reason = payloadRejectionReason(parseJsonObject(raw));
   if (reason) return { outcome: 'payload_rejected', reason };
   throw new EmissionTransientError(`Provider HTTP ${status}`, status);

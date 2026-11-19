@@ -34,6 +34,10 @@ export class EmissionOutbox {
   @Column({ type: 'varchar', length: 32, nullable: true })
   resolution: string | null;
 
+  /** The moment stamped on the document when it was sent. */
+  @Column({ type: 'datetime', precision: 6, nullable: true })
+  issued_at: Date | null;
+
   @Column({ type: 'varchar', length: 128, nullable: true })
   cufe: string | null;
 

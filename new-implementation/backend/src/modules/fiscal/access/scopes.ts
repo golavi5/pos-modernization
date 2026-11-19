@@ -5,6 +5,7 @@ export const FISCAL_SCOPES = [
   'third-parties:write',
   'documents:read',
   'documents:write',
+  'ledger:read',
 ] as const;
 
 export type FiscalScope = (typeof FISCAL_SCOPES)[number];

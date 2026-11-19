@@ -11,6 +11,9 @@ import { PlemsiConfigController } from './emission/plemsi/plemsi-config.controll
 import { PlemsiConfigService } from './emission/plemsi/plemsi-config.service';
 import { EmissionOutbox } from './outbox/outbox.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { LedgerSale } from './ledger/ledger-sale.entity';
+import { SalesLedgerController, SalesLedgerStaffController } from './ledger/sales-ledger.controller';
+import { SalesLedgerService } from './ledger/sales-ledger.service';
 import { ReconciliationController } from './reconciliation/reconciliation.controller';
 import { ReconciliationService } from './reconciliation/reconciliation.service';
 import { DocumentsController } from './documents/documents.controller';
@@ -30,9 +33,9 @@ import { ThirdPartiesService } from './third-parties/third-parties.service';
  * Public API: `/fiscal/v1`.
  */
 @Module({
-  imports: [NotificationsModule, TypeOrmModule.forFeature([ApiKey, IdempotencyKey, FiscalProfile, ThirdParty, PlemsiConfig, EmissionOutbox])],
-  controllers: [ReconciliationController, DocumentsController, PlemsiConfigController, ApiKeysController, FiscalProfileController, ThirdPartiesController],
-  providers: [ReconciliationService, DocumentsService, OutboxWorker, FiscalEmissionService, PlemsiConfigService, ApiKeysService, ApiKeyGuard, IdempotencyInterceptor, FiscalProfileService, ThirdPartiesService],
+  imports: [NotificationsModule, TypeOrmModule.forFeature([ApiKey, IdempotencyKey, FiscalProfile, ThirdParty, PlemsiConfig, EmissionOutbox, LedgerSale])],
+  controllers: [SalesLedgerController, SalesLedgerStaffController, ReconciliationController, DocumentsController, PlemsiConfigController, ApiKeysController, FiscalProfileController, ThirdPartiesController],
+  providers: [SalesLedgerService, ReconciliationService, DocumentsService, OutboxWorker, FiscalEmissionService, PlemsiConfigService, ApiKeysService, ApiKeyGuard, IdempotencyInterceptor, FiscalProfileService, ThirdPartiesService],
   exports: [FiscalEmissionService],
 })
 export class FiscalModule {}
