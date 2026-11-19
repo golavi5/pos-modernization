@@ -81,6 +81,46 @@ describe('PlemsiAdapter', () => {
     await expect(bad.adapter.getPdf('x')).rejects.toBeInstanceOf(EmissionTransientError);
   });
 
+  it('getStatus by number ignores a document of another resolution or prefix, and by CUFE it skips that check', async () => {
+    const other = { data: { state: 'Error', resolution_number: '999', prefix: 'POS', cude: 'old' } };
+    expect(await make(() => json(other)).adapter.getStatus('pos', 'POS', 1, { resolution: '123' })).toBeNull();
+    expect(await make(() => json({ data: { state: 'Emitted', resolution_number: '123', prefix: 'ZZ' } })).adapter.getStatus('pos', 'POS', 1, { resolution: '123' })).toBeNull();
+    expect(await make(() => json({ data: { state: 'Emitted', resolution_number: '123', prefix: 'POS' } })).adapter.getStatus('pos', 'POS', 1, { resolution: '123' })).toMatchObject({ verdict: 'accepted' });
+    const byCufe = make(() => json({ data: { state: 'Emitted', resolution_number: '999', cude: 'mine' } }));
+    expect(await byCufe.adapter.getStatus('pos', 'POS', 1, { resolution: '123', cufe: 'a b' })).toMatchObject({ verdict: 'accepted' });
+    expect(byCufe.calls[0].url).toBe('https://plemsi.test/api/equivalent/pos/one?by=cude&value=a%20b');
+  });
+
+  it('getStatus ignores a stale document: one dated before our first attempt is not ours', async () => {
+    const stale = { data: { state: 'Error', prefix: 'POS', resolution_number: '123', date: '2024-06-05', time: '19:19:54' } };
+    const firstAttempt = new Date('2026-11-19T15:00:00Z');
+    expect(await make(() => json(stale)).adapter.getStatus('pos', 'POS', 1, { resolution: '123', notBefore: firstAttempt })).toBeNull();
+    const fresh = { data: { state: 'Emitted', prefix: 'POS', resolution_number: '123', date: '2026-11-19', time: '10:00:30' } }; // 15:00:30Z
+    expect(await make(() => json(fresh)).adapter.getStatus('pos', 'POS', 1, { resolution: '123', notBefore: firstAttempt })).toMatchObject({ verdict: 'accepted' });
+    expect(await make(() => json(stale)).adapter.getStatus('pos', 'POS', 1, { resolution: '123', notBefore: firstAttempt, cufe: 'mine' })).toMatchObject({ verdict: 'rejected' }); // by CUFE: trusted
+  });
+
+  it('nextNumber starts at the range start when no number has been used yet (number: null)', async () => {
+    const { adapter } = make(() => json({ data: [{ from: 5000, to: 6000, invoice: { prefix: 'EPOS', number: null }, remaining: null }] }));
+    expect(await adapter.nextNumber('1', 'EPOS')).toBe(5000);
+  });
+
+  it('nextNumber skips exhausted ranges of the same prefix (sandbox: 1..1,000,000 used up next to a live 1..1000)', async () => {
+    const { adapter } = make(() => json({ data: [
+      { from: 1, to: 5000000, invoice: { prefix: 'SETT', number: 1243 }, remaining: 4998757 },
+      { from: 1, to: 1000000, invoice: { prefix: 'EPOS', number: 1000000 }, remaining: 0 },
+      { from: 1, to: 1000, invoice: { prefix: 'EPOS', number: null }, remaining: null },
+    ] }));
+    expect(await adapter.nextNumber('18760000001', 'EPOS')).toBe(1);
+  });
+
+  it('nextNumber refuses to guess between two live ranges, and reports an exhausted one', async () => {
+    const two = make(() => json({ data: [{ from: 1, to: 10, invoice: { prefix: 'P', number: 3 }, remaining: 7 }, { from: 100, to: 200, invoice: { prefix: 'P', number: null }, remaining: null }] }));
+    await expect(two.adapter.nextNumber('1', 'P')).rejects.toThrow('More than one live range');
+    const done = make(() => json({ data: [{ from: 1, to: 10, invoice: { prefix: 'P', number: 10 }, remaining: 0 }] }));
+    await expect(done.adapter.nextNumber('1', 'P')).rejects.toThrow('exhausted');
+  });
+
   it('nextNumber is the last used number of the matching prefix plus one', async () => {
     const { adapter, calls } = make(() => json({ data: [{ invoice: { prefix: 'FE', number: 10 } }, { invoice: { prefix: 'SETP', number: 41 } }] }));
     expect(await adapter.nextNumber('18760', 'SETP')).toBe(42);

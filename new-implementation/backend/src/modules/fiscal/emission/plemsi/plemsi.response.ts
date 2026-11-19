@@ -61,9 +61,18 @@ export function parseEmitResponse(body: Json | null): ParsedEmit {
   return { outcome: 'submitted', cude: str(data?.cude), qr: str(data?.QRCode), verdict, reason };
 }
 
-/** Non-2xx: a payload rejection if the body says so, otherwise transient. */
+/** Client-error statuses that mean "this request will never work as sent". */
+const PERMANENT_STATUSES = [400, 409, 422];
+
+/**
+ * Non-2xx: a payload rejection if the body says so, otherwise transient. A 400/409/422
+ * with a JSON `success:false` and a message is also permanent even without `errCode`:
+ * the sandbox answers a resolution of the wrong document type with
+ * `400 {"success":false,"info":"Given resolution is not available","errCode":""}`.
+ */
 export function parseEmitHttpError(status: number, raw: string): ParsedEmit {
-  const reason = payloadRejectionReason(parseJsonObject(raw));
+  const body = parseJsonObject(raw);
+  const reason = payloadRejectionReason(body) ?? (PERMANENT_STATUSES.includes(status) && body?.success === false ? str(body.info) : null);
   if (reason) return { outcome: 'payload_rejected', reason };
   throw new EmissionTransientError(`Provider HTTP ${status}`, status);
 }

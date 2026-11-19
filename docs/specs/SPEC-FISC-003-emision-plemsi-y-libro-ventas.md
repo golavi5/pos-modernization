@@ -1,6 +1,6 @@
 # M5 — Emisión por Plemsi con outbox y libro de ventas
 
-**Status**: APPROVED — 2026-11-19 (PR #108, #109, #111 y #112, apilados sobre #107, no fusionados). T-01..T-09 construidos y probados contra MySQL real con el proveedor simulado (sin ninguna llamada a Plemsi); T-07 es API + notificación, sin pantalla. Abiertos: corrida en el sandbox de Plemsi (tercer criterio de aceptación), pantalla de conciliación/libro, y todos los códigos DIAN/Plemsi portados quedan VERIFY. Desglosado de SPEC-FISC-001 (Fase 1, segunda mitad). Depende de SPEC-FISC-002.
+**Status**: APPROVED — 2026-11-19 (PR #108, #109, #111, #112 y #113, apilados sobre #107, no fusionados). T-01..T-09 construidos y probados contra MySQL real con el proveedor simulado. Sandbox de Plemsi ([registro](../verification/2026-11-19-fisc-003-plemsi-sandbox.md)): **una factura validada por la DIAN** de punta a punta; la nota crédito fue rechazada por Plemsi (exige `customer`, causa entendida, sin corregir) y el documento equivalente POS no se ejecutó. Abiertos: nota crédito y POS en sandbox, pantalla de conciliación/libro, y todos los códigos DIAN/Plemsi portados quedan VERIFY. Desglosado de SPEC-FISC-001 (Fase 1, segunda mitad). Depende de SPEC-FISC-002.
 
 Origen: [diseño](../superpowers/specs/2026-06-10-fiscal-platform-design.md) §4.1, §4.3, OQ-8 (asíncrono por outbox transaccional, aceptado 2026-11-10).
 

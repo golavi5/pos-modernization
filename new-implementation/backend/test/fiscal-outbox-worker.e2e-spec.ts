@@ -95,7 +95,7 @@ describe('outbox worker (e2e, real MySQL)', () => {
     provider.getStatus.mockResolvedValue({ verdict: 'accepted', cude: 'cude-1', qr: 'qr-1', preview: null, reason: null });
     await worker.tick(later(backoffMs(1) + 1000));
     expect(provider.emit).toHaveBeenCalledTimes(1);
-    expect(provider.getStatus).toHaveBeenCalledWith('pos', 'POS', 100);
+    expect(provider.getStatus).toHaveBeenCalledWith('pos', 'POS', 100, expect.objectContaining({ resolution: '18760', cufe: 'cude-1' }));
     expect((await reload(row)).status).toBe('validated');
   });
 
@@ -222,7 +222,7 @@ describe('outbox worker (e2e, real MySQL)', () => {
     expect(provider.nextNumber).toHaveBeenCalledWith('99', 'FV');
     provider.getStatus.mockResolvedValue({ verdict: 'accepted', cude: 'c', qr: null, preview: null, reason: null });
     await worker.tick(later(backoffMs(1) + 1000));
-    expect(provider.getStatus).toHaveBeenCalledWith('invoice', 'FV', 41);
+    expect(provider.getStatus).toHaveBeenCalledWith('invoice', 'FV', 41, expect.objectContaining({ resolution: '99', cufe: 'cude-1' }));
     expect((await reload(row)).status).toBe('validated');
   });
 
