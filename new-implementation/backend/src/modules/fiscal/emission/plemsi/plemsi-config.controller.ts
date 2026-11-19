@@ -22,23 +22,24 @@ export class SetPlemsiConfigDto {
   token: string;
 }
 
-/** Plemsi credentials of the signed-in tenant admin's issuer (POS JWT). */
+/** Plemsi credentials of the signed-in tenant admin's issuer (POS JWT). `@Roles` per handler: RolesGuard ignores class-level metadata. */
 @ApiTags('fiscal-v1')
 @ApiBearerAuth('access-token')
 @Controller('fiscal/v1/admin/plemsi-config')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @UseFilters(FiscalExceptionFilter)
-@Roles('admin', 'superadmin')
 export class PlemsiConfigController {
   constructor(private readonly config: PlemsiConfigService) {}
 
   @Put()
+  @Roles('admin', 'superadmin')
   @HttpCode(204)
   async set(@CurrentUser() user: User, @Body() dto: SetPlemsiConfigDto) {
     await this.config.set(user.company_id, dto.environment, dto.token);
   }
 
   @Get()
+  @Roles('admin', 'superadmin')
   get(@CurrentUser() user: User) {
     return this.config.describe(user.company_id);
   }
