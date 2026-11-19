@@ -68,6 +68,11 @@ describe('PlemsiAdapter', () => {
     expect(calls[1].url).toBe('https://plemsi.test/api/billing/invoice/one?by=number&value=SETP9');
   });
 
+  it('getStatus returns null on 404 (document unknown to the provider) and is transient on 5xx', async () => {
+    expect(await make(() => new Response('', { status: 404 })).adapter.getStatus('pos', 'POS', 1)).toBeNull();
+    await expect(make(() => new Response('', { status: 502 })).adapter.getStatus('pos', 'POS', 1)).rejects.toBeInstanceOf(EmissionTransientError);
+  });
+
   it('getPdf returns base64 and filename; failure is transient', async () => {
     const ok = make(() => json({ data: 'JVBERi0=', filename: 'f.pdf' }));
     expect(await ok.adapter.getPdf('abc def')).toEqual({ base64: 'JVBERi0=', filename: 'f.pdf' });

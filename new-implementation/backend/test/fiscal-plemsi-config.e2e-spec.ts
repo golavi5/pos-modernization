@@ -73,6 +73,7 @@ describe('plemsi config (e2e, real MySQL)', () => {
     user = asUser(COMPANY_A, ['cashier']);
     await http().put('/fiscal/v1/admin/plemsi-config').send({ environment: 'sandbox', token: TOKEN }).expect(403);
     await http().get('/fiscal/v1/admin/plemsi-config').expect(403);
+    await http().patch('/fiscal/v1/admin/plemsi-config/emission').send({ enabled: false }).expect(403);
     user = asUser(COMPANY_A, ['admin']);
   });
 
@@ -95,6 +96,20 @@ describe('plemsi config (e2e, real MySQL)', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+
+  it('emission can only be switched on with numbering and a fiscal profile in place', async () => {
+    user = asUser(COMPANY_A, ['admin']);
+    await http().put('/fiscal/v1/admin/plemsi-config').send({ environment: 'sandbox', token: TOKEN }).expect(204);
+    const patch = (b: object) => http().patch('/fiscal/v1/admin/plemsi-config/emission').send(b);
+    await patch({ enabled: true }).expect(400); // no prefix/resolution
+    await patch({ enabled: true, pos_prefix: 'POS', pos_resolution: '18760' }).expect(400); // no profile
+    await ds.query("INSERT INTO fiscal_profiles (id, company_id, nit, dv, legal_name, responsibility_codes) VALUES (UUID(), ?, '800197268', '4', 'Empresa SAS', '[]')", [COMPANY_A]);
+    await patch({ enabled: true, pos_prefix: 'POS', pos_resolution: '18760' }).expect(204);
+    expect((await http().get('/fiscal/v1/admin/plemsi-config').expect(200)).body).toMatchObject({ emission_enabled: true, pos_prefix: 'POS', pos_resolution: '18760' });
+    await patch({ enabled: false }).expect(204); // keeps numbering, switches off
+    expect((await http().get('/fiscal/v1/admin/plemsi-config').expect(200)).body).toMatchObject({ emission_enabled: false, pos_prefix: 'POS' });
+    await ds.query('DELETE FROM fiscal_profiles WHERE company_id = ?', [COMPANY_A]);
   });
 
   it('a row moved to another company does not decrypt (AAD binding)', async () => {

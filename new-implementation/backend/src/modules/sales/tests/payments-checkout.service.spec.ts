@@ -1,3 +1,4 @@
+import { FiscalEmissionService } from '../../fiscal/outbox/fiscal-emission.service';
 import 'reflect-metadata';
 import { PaymentsService } from '../services/payments.service';
 import { OrderStatus, PaymentStatus as OrderPaymentStatus } from '../entities/order.entity';
@@ -57,6 +58,7 @@ describe('recordPayment — cierre de venta', () => {
       dataSource,
       locations,
       productsService,
+      { isEnabled: jest.fn(async () => false), enqueuePos: jest.fn() } as unknown as FiscalEmissionService,
     );
   });
 
@@ -287,6 +289,7 @@ describe('refundPayment — deshacer el cierre de venta', () => {
       // refundPayment no consulta la política de sobreventa; está aquí porque el
       // constructor lo pide.
       {} as any,
+      {} as unknown as FiscalEmissionService, // refundPayment no toca fiscal
     );
   });
 

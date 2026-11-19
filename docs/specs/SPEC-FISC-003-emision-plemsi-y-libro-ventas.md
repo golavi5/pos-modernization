@@ -1,6 +1,6 @@
 # M5 — Emisión por Plemsi con outbox y libro de ventas
 
-**Status**: APPROVED — 2026-11-19 (PR #108, apilado sobre #107, no fusionado). T-01..T-03 construidos con pruebas de contrato (sin ninguna llamada a Plemsi); abiertos: T-04..T-09, corrida en sandbox de Plemsi, y todos los códigos DIAN/Plemsi portados quedan VERIFY. Desglosado de SPEC-FISC-001 (Fase 1, segunda mitad). Depende de SPEC-FISC-002.
+**Status**: APPROVED — 2026-11-19 (PR #108 y #109, apilados sobre #107, no fusionados). T-01..T-05 construidos y probados contra MySQL real con el proveedor simulado (sin ninguna llamada a Plemsi); abiertos: T-06..T-09, la corrida en el sandbox de Plemsi, y todos los códigos DIAN/Plemsi portados quedan VERIFY. Desglosado de SPEC-FISC-001 (Fase 1, segunda mitad). Depende de SPEC-FISC-002.
 
 Origen: [diseño](../superpowers/specs/2026-06-10-fiscal-platform-design.md) §4.1, §4.3, OQ-8 (asíncrono por outbox transaccional, aceptado 2026-11-10).
 
