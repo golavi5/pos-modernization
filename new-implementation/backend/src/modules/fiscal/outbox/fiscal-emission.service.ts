@@ -11,10 +11,13 @@ import { EnqueuePosInput } from './outbox.types';
  */
 @Injectable()
 export class FiscalEmissionService {
-  /** Whether sales of this company close into a POS document. Tenants without fiscal set up pay one indexed read. */
+  /** Whether sales of this company close into a POS document: emission on AND POS numbering set. Tenants without fiscal pay one indexed read. */
   async isEnabled(manager: EntityManager, companyId: string): Promise<boolean> {
-    const cfg = await manager.findOne(PlemsiConfig, { where: { company_id: companyId }, select: ['id', 'emission_enabled'] });
-    return cfg?.emission_enabled === true;
+    const cfg = await manager.findOne(PlemsiConfig, {
+      where: { company_id: companyId },
+      select: ['id', 'emission_enabled', 'pos_prefix', 'pos_resolution'],
+    });
+    return cfg?.emission_enabled === true && !!cfg.pos_prefix && !!cfg.pos_resolution;
   }
 
   /** Idempotent per order: a second call for the same sale does nothing. */

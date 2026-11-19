@@ -1,11 +1,14 @@
 import { Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdown } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { DocumentStatus, EmissionPort, EmitResult, PosDocument } from '../emission/emission.types';
+import { DocumentStatus, EmissionDocument, EmissionPort, EmitResult } from '../emission/emission.types';
+import { NotificationPriority, NotificationType } from '../../notifications/entities/notification.entity';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 import { PlemsiConfig } from '../emission/plemsi/plemsi-config.entity';
 import { PlemsiConfigService } from '../emission/plemsi/plemsi-config.service';
 import { FiscalProfile } from '../fiscal-profile/entities/fiscal-profile.entity';
 import { EmissionOutbox } from './outbox.entity';
+import { OutboxDocumentType } from './outbox.types';
 
 const TICK_MS = 5_000;
 const BATCH = 10;
@@ -14,6 +17,19 @@ const BASE_BACKOFF_MS = 15_000;
 const MAX_BACKOFF_MS = 60 * 60_000;
 const MAX_ATTEMPTS = 12;
 const SOFTWARE_NAME = 'Plemsi'; // VERIFY: softwareManufacturer.softwareName, as sent by ApiFacturame
+
+/** Credit notes are looked up on the invoice endpoint, as ApiFacturame does (VERIFY against the sandbox). */
+const statusKind = (t: OutboxDocumentType): 'invoice' | 'pos' => (t === 'pos' ? 'pos' : 'invoice');
+
+function numberingFor(cfg: PlemsiConfig, t: OutboxDocumentType): { prefix: string; resolution: string } | null {
+  const [prefix, resolution] =
+    t === 'pos'
+      ? [cfg.pos_prefix, cfg.pos_resolution]
+      : t === 'invoice'
+        ? [cfg.invoice_prefix, cfg.invoice_resolution]
+        : [cfg.credit_note_prefix, cfg.credit_note_resolution];
+  return prefix && resolution ? { prefix, resolution } : null;
+}
 
 export const backoffMs = (attempts: number): number => Math.min(BASE_BACKOFF_MS * 2 ** attempts, MAX_BACKOFF_MS);
 
@@ -35,6 +51,7 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
   constructor(
     private readonly ds: DataSource,
     private readonly configs: PlemsiConfigService,
+    private readonly notifications: NotificationsService,
     @InjectRepository(EmissionOutbox) private readonly outbox: Repository<EmissionOutbox>,
     @InjectRepository(PlemsiConfig) private readonly cfgRepo: Repository<PlemsiConfig>,
     @InjectRepository(FiscalProfile) private readonly profiles: Repository<FiscalProfile>,
@@ -93,39 +110,41 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
 
   private async process(row: EmissionOutbox, adapter: EmissionPort, now: Date): Promise<void> {
     if (row.status === 'sent') {
-      const st = await adapter.getStatus('pos', row.prefix!, row.number!);
+      const st = await adapter.getStatus(statusKind(row.document_type), row.prefix!, row.number!);
       return this.applyStatus(row, st, now);
     }
     const cfg = await this.cfgRepo.findOneByOrFail({ company_id: row.company_id });
     const profile = await this.profiles.findOneBy({ company_id: row.company_id });
-    if (!profile || !cfg.pos_prefix || !cfg.pos_resolution || !row.draft) {
-      return this.terminal(row, 'failed', 'Missing fiscal profile, POS numbering or document data');
+    const numbering = numberingFor(cfg, row.document_type);
+    if (!profile || !numbering || !row.draft) {
+      return this.terminal(row, 'failed', 'Missing fiscal profile, numbering or document data');
     }
     if (row.number === null) {
       const last = await this.outbox
         .createQueryBuilder('o')
         .select('MAX(o.number)', 'n')
-        .where('o.company_id = :c AND o.prefix = :p', { c: row.company_id, p: cfg.pos_prefix })
+        .where('o.company_id = :c AND o.prefix = :p', { c: row.company_id, p: numbering.prefix })
         .getRawOne<{ n: number | null }>();
-      const provider = await adapter.nextNumber(cfg.pos_resolution, cfg.pos_prefix);
-      row.prefix = cfg.pos_prefix;
-      row.resolution = cfg.pos_resolution;
+      const provider = await adapter.nextNumber(numbering.resolution, numbering.prefix);
+      row.prefix = numbering.prefix;
+      row.resolution = numbering.resolution;
       row.number = Math.max(provider, (last?.n ?? 0) + 1);
       await this.outbox.update(row.id, { prefix: row.prefix, resolution: row.resolution, number: row.number });
     }
     if (row.attempts > 0) {
       // An earlier attempt may have reached the provider before failing on our side.
-      const known = await adapter.getStatus('pos', row.prefix!, row.number);
+      const known = await adapter.getStatus(statusKind(row.document_type), row.prefix!, row.number);
       if (known) return this.applyStatus(row, known, now);
     }
-    const doc: PosDocument = {
-      type: 'pos',
-      prefix: row.prefix!,
-      number: row.number,
-      resolution: row.resolution!,
+    const numbered = { prefix: row.prefix!, number: row.number, resolution: row.resolution! };
+    const doc = {
       ...row.draft,
-      softwareManufacturer: { ownerName: profile.legal_name, softwareName: SOFTWARE_NAME, companyName: profile.legal_name },
-    };
+      ...numbered,
+      type: row.document_type,
+      ...(row.document_type === 'pos' && {
+        softwareManufacturer: { ownerName: profile.legal_name, softwareName: SOFTWARE_NAME, companyName: profile.legal_name },
+      }),
+    } as EmissionDocument;
     return this.applyEmit(row, await adapter.emit(doc), now);
   }
 
@@ -147,6 +166,23 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
 
   private async terminal(row: EmissionOutbox, status: 'validated' | 'rejected' | 'failed', error: string | null, extra: Partial<EmissionOutbox> = {}): Promise<void> {
     await this.outbox.update(row.id, { ...extra, status, last_error: error });
+    if (status !== 'validated') await this.notify(row, status, error);
+  }
+
+  /** A document that needs a person. Never lets a notification problem undo or block the worker. */
+  private async notify(row: EmissionOutbox, status: 'rejected' | 'failed', reason: string | null): Promise<void> {
+    try {
+      await this.notifications.create({
+        companyId: row.company_id,
+        type: NotificationType.SYSTEM,
+        priority: NotificationPriority.HIGH,
+        title: status === 'rejected' ? 'Documento electrónico rechazado' : 'Documento electrónico sin enviar',
+        message: reason ?? 'Revisa el documento en conciliación fiscal.',
+        data: { fiscalOutboxId: row.id, status, documentType: row.document_type },
+      });
+    } catch (e) {
+      this.logger.error(`notification failed: ${(e as Error).name}`);
+    }
   }
 
   private async retry(row: EmissionOutbox, error: string | null, now: Date): Promise<void> {

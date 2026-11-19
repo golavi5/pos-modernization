@@ -28,6 +28,18 @@ export class PlemsiConfig {
   @Column({ type: 'varchar', length: 32, nullable: true })
   pos_resolution: string | null;
 
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  invoice_prefix: string | null;
+
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  invoice_resolution: string | null;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  credit_note_prefix: string | null;
+
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  credit_note_resolution: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 

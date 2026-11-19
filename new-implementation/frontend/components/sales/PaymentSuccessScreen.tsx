@@ -4,6 +4,7 @@ import { CheckCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { formatCOP } from '@/lib/utils';
+import { FiscalStatusLine } from './FiscalStatusLine';
 
 interface PaymentSuccessScreenProps {
   total: number;
@@ -12,6 +13,8 @@ interface PaymentSuccessScreenProps {
   method: 'cash' | 'card' | 'mixed';
   countdown: number;
   onNewSale: () => void;
+  /** The closed sale, for the electronic-document status line. */
+  orderId?: string | null;
 }
 
 export function PaymentSuccessScreen({
@@ -21,6 +24,7 @@ export function PaymentSuccessScreen({
   method,
   countdown,
   onNewSale,
+  orderId,
 }: PaymentSuccessScreenProps) {
   const t = useTranslations('sales');
   return (
@@ -54,6 +58,8 @@ export function PaymentSuccessScreen({
           </>
         )}
       </div>
+
+      <FiscalStatusLine orderId={orderId} />
 
       <Button onClick={onNewSale} size="lg" className="w-full max-w-sm">
         {t('nuevaVenta')}

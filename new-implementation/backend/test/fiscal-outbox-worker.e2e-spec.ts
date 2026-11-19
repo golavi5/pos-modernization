@@ -9,7 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoggerModule } from 'nestjs-pino';
 import { DataSource } from 'typeorm';
 import { dataSourceOptions } from '../src/database/data-source';
-import { EmissionTransientError, PosDocument } from '../src/modules/fiscal/emission/emission.types';
+import { EmissionDocument, EmissionTransientError, PosDocument } from '../src/modules/fiscal/emission/emission.types';
 import { PlemsiConfig } from '../src/modules/fiscal/emission/plemsi/plemsi-config.entity';
 import { PlemsiConfigService } from '../src/modules/fiscal/emission/plemsi/plemsi-config.service';
 import { FiscalProfile } from '../src/modules/fiscal/fiscal-profile/entities/fiscal-profile.entity';
@@ -51,7 +51,7 @@ describe('outbox worker (e2e, real MySQL)', () => {
     facade = app.get(FiscalEmissionService);
     jest.spyOn(app.get(PlemsiConfigService), 'adapterFor').mockResolvedValue(provider as unknown as never);
     for (const company_id of [CO, CO_NO_PROFILE]) {
-      await ds.manager.insert(PlemsiConfig, { company_id, environment: 'sandbox', wrapped_data_key: 'x', token_encrypted: 'x', emission_enabled: true, pos_prefix: 'POS', pos_resolution: '18760' });
+      await ds.manager.insert(PlemsiConfig, { company_id, environment: 'sandbox', wrapped_data_key: 'x', token_encrypted: 'x', emission_enabled: true, pos_prefix: 'POS', pos_resolution: '18760', invoice_prefix: 'FV', invoice_resolution: '99' });
     }
     await ds.manager.insert(FiscalProfile, { company_id: CO, nit: '800197268', dv: '4', legal_name: 'Empresa SAS', responsibility_codes: ['O-13'] });
   });
@@ -60,14 +60,15 @@ describe('outbox worker (e2e, real MySQL)', () => {
 
   beforeEach(async () => {
     await ds.query('DELETE FROM fiscal_emission_outbox');
+    await ds.query('DELETE FROM notifications');
     Object.values(provider).forEach((f) => f.mockReset());
     provider.nextNumber.mockResolvedValue(100);
   });
 
   async function seed(over: Partial<EmissionOutbox> = {}): Promise<EmissionOutbox> {
     const id = `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`;
-    await ds.manager.insert(EmissionOutbox, { company_id: CO, order_id: id, status: 'pending', draft, next_attempt_at: later(-1000), ...over });
-    return ds.manager.findOneByOrFail(EmissionOutbox, { order_id: id });
+    const res = await ds.manager.insert(EmissionOutbox, { company_id: CO, order_id: id, status: 'pending', draft, next_attempt_at: later(-1000), ...over });
+    return ds.manager.findOneByOrFail(EmissionOutbox, { id: res.identifiers[0].id });
   }
   const reload = (r: EmissionOutbox) => ds.manager.findOneByOrFail(EmissionOutbox, { id: r.id });
 
@@ -208,6 +209,47 @@ describe('outbox worker (e2e, real MySQL)', () => {
     await worker.tick(NOW);
     expect(provider.emit).toHaveBeenCalledTimes(1);
     expect((await reload(row)).status).toBe('validated');
+  });
+
+  it('invoices use the invoice numbering, are sent as invoices and their status is looked up on the invoice endpoint', async () => {
+    const row = await seed({ order_id: null, document_type: 'invoice', draft: { ...draft, buyer: null, sendEmail: false } as never });
+    provider.nextNumber.mockResolvedValue(41);
+    provider.emit.mockResolvedValue({ ...accepted, verdict: 'pending' });
+    await worker.tick(NOW);
+    const sent = provider.emit.mock.calls[0][0] as EmissionDocument;
+    expect(sent).toMatchObject({ type: 'invoice', prefix: 'FV', number: 41, resolution: '99' });
+    expect((sent as unknown as Record<string, unknown>).softwareManufacturer).toBeUndefined();
+    expect(provider.nextNumber).toHaveBeenCalledWith('99', 'FV');
+    provider.getStatus.mockResolvedValue({ verdict: 'accepted', cude: 'c', qr: null, preview: null, reason: null });
+    await worker.tick(later(backoffMs(1) + 1000));
+    expect(provider.getStatus).toHaveBeenCalledWith('invoice', 'FV', 41);
+    expect((await reload(row)).status).toBe('validated');
+  });
+
+  it('a document type with no numbering configured fails with a reason instead of being sent', async () => {
+    const row = await seed({ order_id: null, document_type: 'credit_note', draft: draft as never });
+    await worker.tick(NOW);
+    expect(provider.emit).not.toHaveBeenCalled();
+    expect(await reload(row)).toMatchObject({ status: 'failed' });
+  });
+
+  it('notifies the company when a document ends rejected or failed, and not when it validates', async () => {
+    const ok = await seed();
+    provider.emit.mockResolvedValueOnce(accepted);
+    await worker.tick(NOW);
+    expect(await ds.query('SELECT COUNT(*) c FROM notifications')).toEqual([{ c: '0' }]);
+
+    const bad = await seed();
+    provider.emit.mockResolvedValueOnce({ outcome: 'payload_rejected', reason: 'Municipio inexistente' });
+    await worker.tick(NOW);
+    const failed = await seed({ company_id: CO_NO_PROFILE });
+    await worker.tick(NOW);
+    const rows = await ds.query('SELECT companyId, priority, title, message, data FROM notifications ORDER BY id');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ companyId: CO, priority: 'high', title: 'Documento electrónico rechazado', message: 'Municipio inexistente' });
+    expect(JSON.parse(JSON.stringify(rows[0].data))).toMatchObject({ fiscalOutboxId: bad.id, status: 'rejected' });
+    expect(rows[1]).toMatchObject({ companyId: CO_NO_PROFILE, title: 'Documento electrónico sin enviar' });
+    expect([ok.id, failed.id]).not.toContain(bad.id);
   });
 
   it('facade: one row per order, ignores a repeat, records an unmappable sale as failed', async () => {
