@@ -122,10 +122,14 @@ export function ProductFormFields({ formData, onChange, t, stockReadOnly }: Prod
           step="0.01"
           min="0"
           max="100"
-          value={formData.tax_rate}
-          onChange={(e) => onChange('tax_rate', parseFloat(e.target.value) || 0)}
-          placeholder="19"
+          value={formData.tax_rate ?? ''}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            onChange('tax_rate', Number.isNaN(v) ? null : v);
+          }}
+          placeholder={t('taxRateInheritPlaceholder')}
         />
+        <p className="text-xs text-tertiary mt-1">{t('taxRateHint')}</p>
       </div>
       <div className="md:col-span-2">
         <Label htmlFor="image_url">{t('imageUrl')}</Label>

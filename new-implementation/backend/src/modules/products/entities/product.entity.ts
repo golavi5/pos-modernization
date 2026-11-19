@@ -68,11 +68,13 @@ export class Product {
   @IsBoolean()
   allow_sale_without_stock?: boolean | null;
 
-  @Column({ name: 'tax_rate', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: numericTransformer })
+  /** Tasa de IVA en %. `null` = heredar de `settings.taxRate` (SPEC-BACK-009). */
+  @Column({ name: 'tax_rate', type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: numericTransformer })
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
-  tax_rate: number;
+  tax_rate: number | null;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   @IsBoolean()

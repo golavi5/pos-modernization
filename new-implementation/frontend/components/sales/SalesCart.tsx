@@ -44,6 +44,9 @@ export function SalesCart({
    *  de 3 no avisaba de nada. */
   const isOversold = (i: CartItem) => i.quantity > (i.stock_quantity ?? Infinity);
   const oversellCount = items.filter(isOversold).length;
+  // Un solo IVA en el carrito → "IVA (x%)"; tasas mezcladas (o carrito vacío) → "IVA".
+  const rates = Array.from(new Set(items.map((i) => i.tax_rate ?? 0)));
+  const taxLabel = rates.length === 1 ? t('cartTax', { rate: rates[0] }) : t('cartTaxMixed');
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -129,7 +132,7 @@ export function SalesCart({
           <span>{formatCOP(subtotal)}</span>
         </div>
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{t('cartTax')}</span>
+          <span>{taxLabel}</span>
           <span>{formatCOP(tax)}</span>
         </div>
         {discount > 0 && (

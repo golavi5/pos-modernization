@@ -6,8 +6,9 @@ export type PosDraftResult = { draft: PosDraft } | { unsupported: string };
 
 /**
  * Maps a closed sale to the fiscal context's draft. The amounts are the order's own;
- * no tax is computed here. The POS stores no IVA rate per line (OrderCalculationService
- * applies a fixed 19%), so the rate is derived from the stored amounts. VERIFY.
+ * no tax is computed here. The IVA rate is the one recorded on the line when the order was
+ * created (SPEC-BACK-009); orders created before that have none, so it is derived from the
+ * stored amounts. VERIFY the derived case.
  */
 export function buildPosDraft(
   order: Order,
@@ -26,7 +27,7 @@ export function buildPosDraft(
       description: p?.name ?? i.product_id,
       quantity: Number(i.quantity),
       unitPrice: Number(i.unit_price),
-      ivaRate: subtotal > 0 ? Math.round((ivaAmount / subtotal) * 100) : 0,
+      ivaRate: i.tax_rate != null ? Number(i.tax_rate) : subtotal > 0 ? Math.round((ivaAmount / subtotal) * 100) : 0,
       subtotal,
       ivaAmount,
       total: Number(i.total),

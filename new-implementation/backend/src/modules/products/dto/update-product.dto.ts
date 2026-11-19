@@ -69,7 +69,7 @@ export class UpdateProductDto {
   @IsNumber()
   @Min(0)
   @Max(100)
-  tax_rate?: number;
+  tax_rate?: number | null;
 
   @IsOptional()
   @IsBoolean()

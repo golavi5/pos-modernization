@@ -63,10 +63,12 @@ export class CreateProductDto {
   @Min(0)
   reorder_level?: number;
 
+  // `null`/ausente = heredar la tasa de la empresa (settings.taxRate).
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
-  tax_rate: number;
+  tax_rate?: number | null;
 
   @IsOptional()
   @IsBoolean()
