@@ -11,12 +11,12 @@ Dejar el contexto `fiscal/` con su modelo base y una puerta de entrada que sirva
 - El backend no tiene claves de API, ni planificador, ni bus de eventos (`@nestjs/schedule` y `@nestjs/event-emitter` no están instalados).
 - `companies.tax_id` y `settings.nit` guardan el NIT en dos sitios, sin dígito de verificación.
 
-## 3. Decisión pendiente (bloquea T-02)
-**¿Quién es el emisor?** Una app externa puede facturar para un NIT que no es una `company` del POS. Opciones: (a) el emisor fiscal es siempre una `company` (recomendado: menor cambio, tenencia ya resuelta); (b) entidad `fiscal_issuer` propia, enlazable a una `company`.
+## 3. Decisión tomada
+**El emisor fiscal es siempre una `company`** (Gandhi Olavi, 2026-11-18). Una app externa que facture para otro NIT necesita que ese NIT exista como `company`; la tenencia y el alcance de las claves de API se apoyan en `company_id`. No se crea una entidad de emisor aparte.
 
 ## 4. Tareas
 - **T-01** Esqueleto `modules/fiscal/` con subcarpetas `emission`, `reception`, `ledger`, `third-parties`, `fiscal-profile`; regla de frontera: no importa internos de `sales`, `inventory` ni `customers`.
-- **T-02** Emisor y perfil fiscal: NIT + DV, razón social, régimen, códigos de responsabilidad del RUT, estado de habilitación. Migración TypeORM. Los valores de régimen y responsabilidades salen de las tablas del anexo, no se inventan.
+- **T-02** Perfil fiscal ligado a `company_id` (el emisor es la `company`): NIT + DV, razón social, régimen, códigos de responsabilidad del RUT, estado de habilitación. Migración TypeORM. Los valores de régimen y responsabilidades salen de las tablas del anexo, no se inventan.
 - **T-03** Utilidad NIT/DV (portar `radian/lib/utils/nit-helper.ts`, que tiene pruebas; hay dos implementaciones en radian, se conserva una).
 - **T-04** `ThirdParty` como agregado fiscal distinto de `Customer` (ADR-006): NIT, DV, responsabilidades, correo de notificación; referencia opcional a `customer_id`.
 - **T-05** Credenciales por aplicación: clave de API con hash en base de datos, ligada a un emisor, con alcances; guard propio, separado del JWT de usuarios del POS.

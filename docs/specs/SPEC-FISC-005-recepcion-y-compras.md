@@ -1,6 +1,6 @@
 # M5 — Recepción de documentos y registro de compras
 
-**Status**: DRAFT — 2026-11-18. Desglosado de SPEC-FISC-001 (Fase 2). Nada construido. Depende de SPEC-FISC-002. Su orden frente a SPEC-FISC-004 no está decidido por el propietario.
+**Status**: DRAFT — 2026-11-18. Desglosado de SPEC-FISC-001 (Fase 2). Nada construido. Depende de SPEC-FISC-002. Va **después** de SPEC-FISC-004 por decisión del propietario (2026-11-18): primero la emisión directa.
 
 Origen: [diseño](../superpowers/specs/2026-06-10-fiscal-platform-design.md) §4.2, §4.4, R5.
 
