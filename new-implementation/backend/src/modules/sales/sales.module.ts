@@ -12,6 +12,7 @@ import { AuthModule } from '../auth/auth.module';
 import { ProductsModule } from '../products/products.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { SettingsModule } from '../settings/settings.module';
+import { FiscalModule } from '../fiscal/fiscal.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SettingsModule } from '../settings/settings.module';
     ProductsModule,
     InventoryModule,
     SettingsModule,
+    FiscalModule,
   ],
   controllers: [SalesController, PaymentsController],
   providers: [SalesService, PaymentsService, OrderCalculationService],

@@ -9,6 +9,9 @@ import { IdempotencyInterceptor } from './common/idempotency.interceptor';
 import { PlemsiConfig } from './emission/plemsi/plemsi-config.entity';
 import { PlemsiConfigController } from './emission/plemsi/plemsi-config.controller';
 import { PlemsiConfigService } from './emission/plemsi/plemsi-config.service';
+import { EmissionOutbox } from './outbox/outbox.entity';
+import { FiscalEmissionService } from './outbox/fiscal-emission.service';
+import { OutboxWorker } from './outbox/outbox.worker';
 import { FiscalProfile } from './fiscal-profile/entities/fiscal-profile.entity';
 import { FiscalProfileController } from './fiscal-profile/fiscal-profile.controller';
 import { FiscalProfileService } from './fiscal-profile/fiscal-profile.service';
@@ -22,8 +25,9 @@ import { ThirdPartiesService } from './third-parties/third-parties.service';
  * Public API: `/fiscal/v1`.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([ApiKey, IdempotencyKey, FiscalProfile, ThirdParty, PlemsiConfig])],
+  imports: [TypeOrmModule.forFeature([ApiKey, IdempotencyKey, FiscalProfile, ThirdParty, PlemsiConfig, EmissionOutbox])],
   controllers: [PlemsiConfigController, ApiKeysController, FiscalProfileController, ThirdPartiesController],
-  providers: [PlemsiConfigService, ApiKeysService, ApiKeyGuard, IdempotencyInterceptor, FiscalProfileService, ThirdPartiesService],
+  providers: [OutboxWorker, FiscalEmissionService, PlemsiConfigService, ApiKeysService, ApiKeyGuard, IdempotencyInterceptor, FiscalProfileService, ThirdPartiesService],
+  exports: [FiscalEmissionService],
 })
 export class FiscalModule {}

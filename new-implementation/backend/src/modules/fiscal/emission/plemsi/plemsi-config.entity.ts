@@ -18,6 +18,16 @@ export class PlemsiConfig {
   @Column({ type: 'text' })
   token_encrypted: string;
 
+  /** Sales close into a POS document only while this is true (set through the admin endpoint, which checks the prerequisites). */
+  @Column({ type: 'boolean', default: false })
+  emission_enabled: boolean;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  pos_prefix: string | null;
+
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  pos_resolution: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 

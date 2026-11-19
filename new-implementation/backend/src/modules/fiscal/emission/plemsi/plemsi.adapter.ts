@@ -41,9 +41,10 @@ export class PlemsiAdapter extends EmissionPort {
     return res.ok ? parseEmitResponse(parseJsonObject(res.raw)) : parseEmitHttpError(res.status, res.raw);
   }
 
-  async getStatus(type: 'invoice' | 'pos', prefix: string, number: number): Promise<DocumentStatus> {
+  async getStatus(type: 'invoice' | 'pos', prefix: string, number: number): Promise<DocumentStatus | null> {
     const base = type === 'invoice' ? 'api/billing/invoice' : 'api/equivalent/pos';
     const res = await this.call('GET', `${base}/one?by=number&value=${encodeURIComponent(`${prefix}${number}`)}`);
+    if (res.status === 404) return null;
     if (!res.ok) throw new EmissionTransientError(`Provider HTTP ${res.status}`, res.status);
     return parseStatusResponse(parseJsonObject(res.raw));
   }

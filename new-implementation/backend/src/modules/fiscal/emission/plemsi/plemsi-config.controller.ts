@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, Put, UseFilters, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Put, UseFilters, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
-import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { CurrentUser } from '../../../auth/decorators/current-user.decorator';
 import { Roles } from '../../../auth/decorators/roles.decorator';
 import { User } from '../../../auth/entities/user.entity';
@@ -22,6 +22,24 @@ export class SetPlemsiConfigDto {
   token: string;
 }
 
+export class ConfigureEmissionDto {
+  @ApiProperty()
+  @IsBoolean()
+  enabled: boolean;
+
+  @ApiProperty({ required: false, description: 'Authorised POS numbering prefix' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(16)
+  pos_prefix?: string;
+
+  @ApiProperty({ required: false, description: 'Authorised POS numbering resolution' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  pos_resolution?: string;
+}
+
 /** Plemsi credentials of the signed-in tenant admin's issuer (POS JWT). */
 @ApiTags('fiscal-v1')
 @ApiBearerAuth('access-token')
@@ -36,6 +54,12 @@ export class PlemsiConfigController {
   @HttpCode(204)
   async set(@CurrentUser() user: User, @Body() dto: SetPlemsiConfigDto) {
     await this.config.set(user.company_id, dto.environment, dto.token);
+  }
+
+  @Patch('emission')
+  @HttpCode(204)
+  async configureEmission(@CurrentUser() user: User, @Body() dto: ConfigureEmissionDto) {
+    await this.config.configureEmission(user.company_id, dto);
   }
 
   @Get()

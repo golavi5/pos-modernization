@@ -104,7 +104,8 @@ export class EmissionTransientError extends Error {
 
 export abstract class EmissionPort {
   abstract emit(doc: EmissionDocument): Promise<EmitResult>;
-  abstract getStatus(type: 'invoice' | 'pos', prefix: string, number: number): Promise<DocumentStatus>;
+  /** `null` = the provider has no such document (HTTP 404; VERIFY against the sandbox). */
+  abstract getStatus(type: 'invoice' | 'pos', prefix: string, number: number): Promise<DocumentStatus | null>;
   abstract getPdf(cude: string): Promise<PdfResult>;
   /** Next free number of an authorised range, from the provider's remaining-numbers view. */
   abstract nextNumber(resolution: string, prefix: string): Promise<number>;

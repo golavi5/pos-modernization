@@ -24,6 +24,9 @@ import { PeriodType } from '../src/modules/reports/dto/report-query.dto';
 import { ProductReportService } from '../src/modules/reports/services/product-report.service';
 import { CustomerReportService } from '../src/modules/reports/services/customer-report.service';
 import { Customer } from '../src/modules/customers/customer.entity';
+import { FiscalEmissionService } from '../src/modules/fiscal/outbox/fiscal-emission.service';
+import { EmissionOutbox } from '../src/modules/fiscal/outbox/outbox.entity';
+import { PlemsiConfig } from '../src/modules/fiscal/emission/plemsi/plemsi-config.entity';
 import { PaymentsService } from '../src/modules/sales/services/payments.service';
 import { StockService } from '../src/modules/inventory/services/stock.service';
 import { SalesService } from '../src/modules/sales/services/sales.service';
@@ -87,6 +90,7 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
       ds,
       new InventoryLocationsService(),
       productsService,
+      new FiscalEmissionService(),
     );
 
     sales = new SalesService(
@@ -709,5 +713,64 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     expect(await sold(PeriodType.YEARLY)).toBe(4);
     expect(await bought(PeriodType.DAILY)).toBe(1);
     expect(await bought(PeriodType.YEARLY)).toBe(2);
+  });
+
+  // SPEC-FISC-003 T-04: the fiscal document is queued in the sale's own transaction.
+  describe('fiscal outbox on sale close', () => {
+    const outboxFor = (orderId: string) => ds.manager.find(EmissionOutbox, { where: { order_id: orderId } });
+
+    beforeAll(async () => {
+      await ds.manager.insert(PlemsiConfig, {
+        company_id: company.id,
+        environment: 'sandbox',
+        wrapped_data_key: 'x',
+        token_encrypted: 'x',
+        emission_enabled: true,
+        pos_prefix: 'POS',
+        pos_resolution: '1',
+      });
+    });
+    afterAll(async () => {
+      await ds.manager.delete(PlemsiConfig, { company_id: company.id });
+    });
+
+    it('two concurrent full-balance payments leave exactly one pending outbox row with the sale lines', async () => {
+      for (let i = 1; i <= 5; i++) {
+        const order = await seedOrder(9000 + i);
+        const pay = () => service.recordPayment(order.id, { payment_method: PaymentMethod.CASH, amount: TOTAL }, user);
+        const results = await Promise.allSettled([pay(), pay()]);
+        expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+        const rows = await outboxFor(order.id);
+        expect(rows).toHaveLength(1);
+        expect(rows[0]).toMatchObject({ status: 'pending', company_id: company.id, number: null });
+        expect(rows[0].draft?.lines).toEqual([
+          expect.objectContaining({ code: 'LOCK-1', description: 'Widget', quantity: 1, subtotal: TOTAL, total: TOTAL, ivaRate: 0 }),
+        ]);
+      }
+    });
+
+    it('a sale that does not commit queues nothing', async () => {
+      const order = await seedOrder(9100);
+      await expect(service.recordPayment(order.id, { payment_method: PaymentMethod.CASH, amount: TOTAL * 2 }, user)).rejects.toThrow();
+      expect(await outboxFor(order.id)).toHaveLength(0);
+    });
+
+    it('a sale with an order-level discount is recorded as failed with its reason, and the sale still closes', async () => {
+      const order = await seedOrder(9101);
+      await ds.manager.update(Order, order.id, { discount_amount: 5 });
+      await service.recordPayment(order.id, { payment_method: PaymentMethod.CASH, amount: TOTAL }, user);
+      const [row] = await outboxFor(order.id);
+      expect(row).toMatchObject({ status: 'failed' });
+      expect(row.last_error).toContain('discount');
+      expect((await ds.manager.findOneByOrFail(Order, { id: order.id })).status).toBe(OrderStatus.COMPLETED);
+    });
+
+    it('with fiscal disabled for the company, nothing is queued', async () => {
+      await ds.manager.update(PlemsiConfig, { company_id: company.id }, { emission_enabled: false });
+      const order = await seedOrder(9102);
+      await service.recordPayment(order.id, { payment_method: PaymentMethod.CASH, amount: TOTAL }, user);
+      expect(await outboxFor(order.id)).toHaveLength(0);
+      await ds.manager.update(PlemsiConfig, { company_id: company.id }, { emission_enabled: true });
+    });
   });
 });

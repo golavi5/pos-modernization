@@ -1,3 +1,4 @@
+import { FiscalEmissionService } from '../../fiscal/outbox/fiscal-emission.service';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -67,6 +68,7 @@ describe('PaymentsService', () => {
             transaction: (cb: (m: typeof manager) => unknown) => cb(manager),
           },
         },
+        { provide: FiscalEmissionService, useValue: { isEnabled: jest.fn(async () => false), enqueuePos: jest.fn() } },
         {
           provide: InventoryLocationsService,
           useValue: { ensureDefaultLocation: jest.fn(async () => 'loc1') },

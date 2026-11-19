@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { Payment, PaymentStatus } from '../entities/payment.entity';
 import {
   Order,
@@ -22,6 +22,9 @@ import {
 import { InventoryLocationsService } from '../../inventory/services/inventory-locations.service';
 import { ProductsService } from '../../products/products.service';
 import { canSellWithoutStock } from '../../products/can-sell-without-stock';
+import { FiscalEmissionService } from '../../fiscal/outbox/fiscal-emission.service';
+import { buildPosDraft } from '../fiscal/order-to-pos-draft';
+import { OrderItem } from '../entities/order-item.entity';
 
 @Injectable()
 export class PaymentsService {
@@ -35,6 +38,7 @@ export class PaymentsService {
     private readonly dataSource: DataSource,
     private readonly locations: InventoryLocationsService,
     private readonly productsService: ProductsService,
+    private readonly fiscal: FiscalEmissionService,
   ) {}
 
   async recordPayment(
@@ -220,6 +224,9 @@ export class PaymentsService {
         // Se marca completado sólo cuando todo el inventario se descontó sin
         // incidencias: si el stock falla, el pedido no queda como vendido.
         locked.status = OrderStatus.COMPLETED;
+        // Same transaction as the sale: the fiscal document is queued if and only
+        // if the sale commits (SPEC-FISC-003 T-04). Emission itself is async.
+        await this.enqueueFiscal(manager, locked, items);
       }
 
       // Se guarda la entidad bloqueada, que se leyó SIN `relations`: así el
@@ -233,6 +240,18 @@ export class PaymentsService {
     );
 
     return savedPayment;
+  }
+
+  private async enqueueFiscal(manager: EntityManager, order: Order, items: OrderItem[]): Promise<void> {
+    if (!(await this.fiscal.isEnabled(manager, order.company_id))) return;
+    const products = await manager.find(Product, { where: { id: In(items.map((i) => i.product_id)) } });
+    const mapped = buildPosDraft(order, items, new Map(products.map((p) => [p.id, p])));
+    await this.fiscal.enqueuePos(manager, {
+      companyId: order.company_id,
+      orderId: order.id,
+      draft: 'draft' in mapped ? mapped.draft : null,
+      unsupportedReason: 'unsupported' in mapped ? mapped.unsupported : undefined,
+    });
   }
 
   async getPaymentsByOrderId(orderId: string, user: User): Promise<Payment[]> {
