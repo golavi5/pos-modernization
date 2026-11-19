@@ -247,7 +247,7 @@ that seam. Gate the `accountant` route wiring on this spec's approval.
 | 2. Signing / set-de-pruebas spike | **Met 2026-11-18** | [Result](2026-11-09-fisc-001-signing-spike-plan.md#result): one factura accepted on the first send (PR #101). Covers the factura only: not notas, the POS equivalent, contingencia or production. |
 | 3. ADR-007 key custody | **Accepted 2026-11-10** | Option A, six controls. CA/accountant check on third-party custody still open (agenda §7). |
 
-**Other blockers for the TASKS breakdown (SPEC-FISC-001):** OQ-2 (habilitación dry run: the registration steps were performed for the spike, but time and cost were not recorded) and OQ-3 (certificate unit cost; [quote request](2026-11-09-fisc-001-oq3-certificate-quote-request.md) not sent). OQ-8 is answered (async outbox); delivery-before-validation per document type is on the accountant agenda.
+**Other blockers for the TASKS breakdown (SPEC-FISC-001):** OQ-2 (habilitación dry run: the spike used a software id, PIN and test set that already existed in habilitación for the owner's test NIT; who created them, when, and at what time or cost is not recorded, so the dry run itself has not been measured) and OQ-3 (certificate unit cost; [quote request](2026-11-09-fisc-001-oq3-certificate-quote-request.md) not sent). OQ-8 is answered (async outbox); delivery-before-validation per document type is on the accountant agenda.
 
 **R1 (interim margin plan): resolved.** Phase 4 stays ahead of Phase 3 as in §6, so Plemsi's 88 COP/doc is removed as early as possible. No interim cost cap is needed, since Phase 3 is not run first. If this order is ever reversed, an interim margin plan has to be stated at that point.
 
