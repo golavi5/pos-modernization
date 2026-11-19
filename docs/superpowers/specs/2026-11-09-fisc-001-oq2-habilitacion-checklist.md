@@ -28,6 +28,9 @@ Use one tenant (tenant zero, an Automatizate entity per design §6). Do not use 
 
 Steps 3–5 are the signing spike's territory ([spike plan](2026-11-09-fisc-001-signing-spike-plan.md)). The spike uses a test certificate, so it can run before this checklist does.
 
+## Owner-reported figures (2026-11-18, not measured)
+The owner personally registered the software and obtained the test set used by the signing spike (steps 2-3, and the test-set acceptance of steps 4-5). Estimate: about **15 minutes** of effort, and a cost of **up to ~100,000 COP**; what that cost covers was not itemised. Steps 6-9 (own numbering resolution, production switch, first real document) have not been done. OQ-2 stays open until the table below is filled from a real run.
+
 ## Record at the end
 - Total calendar days, steps 1→8, and total human hours.
 - Money spent (certificate, any fees) — feeds OQ-3.
