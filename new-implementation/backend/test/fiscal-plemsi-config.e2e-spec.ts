@@ -24,7 +24,9 @@ const TOKEN = 'plemsi-secret-token-0123456789';
 describe('plemsi config (e2e, real MySQL)', () => {
   let app: INestApplication;
   let ds: DataSource;
-  let user = { company_id: COMPANY_A, roles: ['admin'] };
+  // RolesGuard calls `user.hasAnyRole`, so the fake user must answer it like the real entity does.
+  const asUser = (company_id: string, roles: string[]) => ({ company_id, roles, hasAnyRole: (r: string[]) => r.some((x) => roles.includes(x)) });
+  let user = asUser(COMPANY_A, ['admin']);
   const kek = randomBytes(32).toString('base64');
 
   beforeAll(async () => {
@@ -67,6 +69,14 @@ describe('plemsi config (e2e, real MySQL)', () => {
     expect(JSON.stringify(got.body)).not.toContain(TOKEN);
   });
 
+  it('is admin-only: a cashier cannot read or write the Plemsi credentials', async () => {
+    user = asUser(COMPANY_A, ['cashier']);
+    await http().put('/fiscal/v1/admin/plemsi-config').send({ environment: 'sandbox', token: TOKEN }).expect(403);
+    await http().get('/fiscal/v1/admin/plemsi-config').expect(403);
+    await http().patch('/fiscal/v1/admin/plemsi-config/emission').send({ enabled: false }).expect(403);
+    user = asUser(COMPANY_A, ['admin']);
+  });
+
   it('upserts on a second PUT and rejects an unknown environment or a short token', async () => {
     await http().put('/fiscal/v1/admin/plemsi-config').send({ environment: 'production', token: TOKEN }).expect(204);
     expect(await ds.query('SELECT COUNT(*) c FROM fiscal_plemsi_config WHERE company_id = ?', [COMPANY_A])).toEqual([{ c: '1' }]);
@@ -89,7 +99,7 @@ describe('plemsi config (e2e, real MySQL)', () => {
   });
 
   it('emission can only be switched on with numbering and a fiscal profile in place', async () => {
-    user = { company_id: COMPANY_A, roles: ['admin'] };
+    user = asUser(COMPANY_A, ['admin']);
     await http().put('/fiscal/v1/admin/plemsi-config').send({ environment: 'sandbox', token: TOKEN }).expect(204);
     const patch = (b: object) => http().patch('/fiscal/v1/admin/plemsi-config/emission').send(b);
     await patch({ enabled: true }).expect(400); // no prefix/resolution
@@ -111,7 +121,7 @@ describe('plemsi config (e2e, real MySQL)', () => {
     const saved = process.env.FISCAL_KEK;
     delete process.env.FISCAL_KEK;
     try {
-      user = { company_id: COMPANY_A, roles: ['admin'] };
+      user = asUser(COMPANY_A, ['admin']);
       const res = await http().put('/fiscal/v1/admin/plemsi-config').send({ environment: 'sandbox', token: TOKEN }).expect(500);
       expect(res.body.error.code).toBe('internal_error');
       expect(await ds.query('SELECT COUNT(*) c FROM fiscal_plemsi_config WHERE company_id = ?', [COMPANY_A])).toEqual([{ c: '0' }]);
