@@ -7,6 +7,20 @@ import { PLEMSI_BASE_URL, PlemsiEnvironment } from './plemsi.constants';
 import { PlemsiAdapter } from './plemsi.adapter';
 import { PlemsiConfig } from './plemsi-config.entity';
 
+export interface EmissionSettings {
+  enabled: boolean;
+  pos_prefix?: string;
+  pos_resolution?: string;
+  invoice_prefix?: string;
+  invoice_resolution?: string;
+  credit_note_prefix?: string;
+  credit_note_resolution?: string;
+}
+
+const NUMBERING = ['pos_prefix', 'pos_resolution', 'invoice_prefix', 'invoice_resolution', 'credit_note_prefix', 'credit_note_resolution'] as const;
+const pick = (row: PlemsiConfig) => ({ enabled: row.emission_enabled, ...Object.fromEntries(NUMBERING.map((k) => [k, row[k]])) }) as EmissionSettings;
+const definedOnly = (dto: EmissionSettings) => Object.fromEntries(Object.entries(dto).filter(([, v]) => v !== undefined)) as Partial<EmissionSettings>;
+
 @Injectable()
 export class PlemsiConfigService {
   constructor(
@@ -26,21 +40,25 @@ export class PlemsiConfigService {
   async describe(companyId: string) {
     const row = await this.repo.findOneBy({ company_id: companyId });
     if (!row) throw new NotFoundException('Plemsi is not configured for this issuer');
-    const { environment, updated_at, emission_enabled, pos_prefix, pos_resolution } = row;
-    return { environment, updated_at, emission_enabled, pos_prefix, pos_resolution };
+    const { environment, updated_at, emission_enabled, ...rest } = row;
+    const { id: _id, company_id: _c, wrapped_data_key: _w, token_encrypted: _t, created_at: _ca, ...numbering } = rest;
+    return { environment, updated_at, emission_enabled, ...numbering };
   }
 
-  /** Turning emission on needs everything the worker will need, so a sale never closes into a row that cannot be sent. */
-  async configureEmission(companyId: string, dto: { enabled: boolean; pos_prefix?: string; pos_resolution?: string }): Promise<void> {
+  /** Turning emission on needs everything the worker will need, so a document never queues into a row that cannot be sent. */
+  async configureEmission(companyId: string, dto: EmissionSettings): Promise<void> {
     const row = await this.repo.findOneBy({ company_id: companyId });
     if (!row) throw new NotFoundException('Plemsi is not configured for this issuer');
-    const pos_prefix = dto.pos_prefix ?? row.pos_prefix;
-    const pos_resolution = dto.pos_resolution ?? row.pos_resolution;
-    if (dto.enabled) {
-      if (!pos_prefix || !pos_resolution) throw new BadRequestException('pos_prefix and pos_resolution are required to enable emission');
+    const next = { ...pick(row), ...definedOnly(dto) };
+    if (next.enabled) {
+      const complete = (p: string | null | undefined, r: string | null | undefined) => !!p && !!r;
+      if (!complete(next.pos_prefix, next.pos_resolution) && !complete(next.invoice_prefix, next.invoice_resolution)) {
+        throw new BadRequestException('Configure numbering (prefix and resolution) for at least one document type to enable emission');
+      }
       if (!(await this.profiles.existsBy({ company_id: companyId }))) throw new BadRequestException('Set the fiscal profile first');
     }
-    await this.repo.update(row.id, { emission_enabled: dto.enabled, pos_prefix, pos_resolution });
+    const { enabled, ...numbering } = next;
+    await this.repo.update(row.id, { emission_enabled: enabled, ...numbering });
   }
 
   /** Decrypts only here, in memory, to build the adapter for one issuer. */

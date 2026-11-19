@@ -38,6 +38,11 @@ export class ConfigureEmissionDto {
   @IsString()
   @MaxLength(32)
   pos_resolution?: string;
+
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(16) invoice_prefix?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(32) invoice_resolution?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(16) credit_note_prefix?: string;
+  @ApiProperty({ required: false }) @IsOptional() @IsString() @MaxLength(32) credit_note_resolution?: string;
 }
 
 /** Plemsi credentials of the signed-in tenant admin's issuer (POS JWT). */

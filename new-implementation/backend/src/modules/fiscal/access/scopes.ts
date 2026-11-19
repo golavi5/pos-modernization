@@ -3,6 +3,8 @@ export const FISCAL_SCOPES = [
   'profile:write',
   'third-parties:read',
   'third-parties:write',
+  'documents:read',
+  'documents:write',
 ] as const;
 
 export type FiscalScope = (typeof FISCAL_SCOPES)[number];
