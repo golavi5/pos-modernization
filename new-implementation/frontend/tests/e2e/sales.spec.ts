@@ -63,11 +63,11 @@ test.describe('Sales cart', () => {
 
     await line.locator('button').nth(1).click(); // plus
     await expect(line.getByText('2', { exact: true })).toBeVisible();
-    await expect(cart(page).getByTestId('cobrar-button')).toContainText('23.800');
+    await expect(cart(page).getByTestId('cobrar-button')).toContainText('20.000'); // prices include the IVA by default (SPEC-BACK-010)
 
     await line.locator('button').nth(0).click(); // minus
     await expect(line.getByText('1', { exact: true })).toBeVisible();
-    await expect(cart(page).getByTestId('cobrar-button')).toContainText('11.900');
+    await expect(cart(page).getByTestId('cobrar-button')).toContainText('10.000');
   });
 
   test('cannot add more units than the stock available', async ({ page, request }) => {
