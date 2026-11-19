@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, dev, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev, develop]
 
 # Gates PRs on backend unit tests + build and frontend build (Next build runs the
 # TS typecheck). Node 20 matches the Dockerfiles. Both apps now ship an ESLint
