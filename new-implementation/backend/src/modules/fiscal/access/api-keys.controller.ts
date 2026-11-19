@@ -9,27 +9,33 @@ import { FiscalExceptionFilter } from '../common/fiscal-exception.filter';
 import { ApiKeysService } from './api-keys.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 
-/** Key management for the signed-in tenant admin (POS JWT, not an app key). */
+/**
+ * Key management for the signed-in tenant admin (POS JWT, not an app key).
+ * `@Roles` goes on each handler: `RolesGuard` reads handler metadata only, so a
+ * class-level `@Roles` is silently ignored.
+ */
 @ApiTags('fiscal-v1')
 @ApiBearerAuth('access-token')
 @Controller('fiscal/v1/admin/api-keys')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @UseFilters(FiscalExceptionFilter)
-@Roles('admin', 'superadmin')
 export class ApiKeysController {
   constructor(private readonly keys: ApiKeysService) {}
 
   @Post()
+  @Roles('admin', 'superadmin')
   create(@CurrentUser() user: User, @Body() dto: CreateApiKeyDto) {
     return this.keys.create(user.company_id, dto.name, dto.scopes);
   }
 
   @Get()
+  @Roles('admin', 'superadmin')
   list(@CurrentUser() user: User) {
     return this.keys.list(user.company_id);
   }
 
   @Delete(':id')
+  @Roles('admin', 'superadmin')
   @HttpCode(204)
   async revoke(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     if (!(await this.keys.revoke(user.company_id, id))) throw new NotFoundException('API key not found');

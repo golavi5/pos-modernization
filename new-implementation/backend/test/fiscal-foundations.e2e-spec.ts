@@ -30,7 +30,9 @@ describe('fiscal foundations (e2e, real MySQL)', () => {
   let keys: ApiKeysService;
   let keyA: string;
   let keyB: string;
-  let adminUser: { company_id: string; roles: string[] } = { company_id: COMPANY_A, roles: ['admin'] };
+  // RolesGuard calls `user.hasAnyRole`, so the fake user must answer it like the real entity does.
+  const asUser = (company_id: string, roles: string[]) => ({ company_id, roles, hasAnyRole: (r: string[]) => r.some((x) => roles.includes(x)) });
+  let adminUser = asUser(COMPANY_A, ['admin']);
 
   beforeAll(async () => {
     const mod = await Test.createTestingModule({
@@ -138,16 +140,26 @@ describe('fiscal foundations (e2e, real MySQL)', () => {
   });
 
   it('tenant admin issues a key; only its hash is stored; admin routes are tenant-scoped', async () => {
-    adminUser = { company_id: COMPANY_B, roles: ['admin'] };
+    adminUser = asUser(COMPANY_B, ['admin']);
     const res = await http().post('/fiscal/v1/admin/api-keys').send({ name: 'erp', scopes: ['profile:read'] }).expect(201);
     expect(res.body.key).toMatch(/^fsk_/);
     const [row] = await ds.query('SELECT key_hash, company_id FROM fiscal_api_keys WHERE id = ?', [res.body.id]);
     expect(row.company_id).toBe(COMPANY_B);
     expect(row.key_hash).not.toContain(res.body.key);
     await http().get('/fiscal/v1/admin/api-keys').expect(200).expect((r) => expect(r.body.some((k: { key?: string }) => k.key)).toBe(false));
-    adminUser = { company_id: COMPANY_A, roles: ['admin'] };
+    adminUser = asUser(COMPANY_A, ['admin']);
     await http().delete(`/fiscal/v1/admin/api-keys/${res.body.id}`).expect(404); // other tenant's key
     await http().post('/fiscal/v1/admin/api-keys').send({ name: 'x', scopes: ['bogus'] }).expect(400);
+  });
+
+  it('key management is admin-only: a cashier gets 403 on every route', async () => {
+    const { id } = await keys.create(COMPANY_A, 'victim', ['profile:read']);
+    adminUser = asUser(COMPANY_A, ['cashier']);
+    await http().post('/fiscal/v1/admin/api-keys').send({ name: 'x', scopes: ['profile:read'] }).expect(403);
+    await http().get('/fiscal/v1/admin/api-keys').expect(403);
+    await http().delete(`/fiscal/v1/admin/api-keys/${id}`).expect(403);
+    adminUser = asUser(COMPANY_A, ['admin']);
+    await http().delete(`/fiscal/v1/admin/api-keys/${id}`).expect(204);
   });
 
   it('profile: upsert and read per issuer', async () => {
