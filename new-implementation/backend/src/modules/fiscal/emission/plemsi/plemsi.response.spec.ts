@@ -26,6 +26,16 @@ describe('non-2xx responses', () => {
   it('errCode without message falls back to info', () => {
     expect(parseEmitHttpError(500, JSON.stringify({ success: false, info: 'Something went wrong', errCode: 'E1' }))).toEqual(rejected('Something went wrong'));
   });
+  it('a 400 with a message but an EMPTY errCode (seen in the sandbox) is permanent too', () => {
+    const body = JSON.stringify({ code: 400, success: false, info: 'Given resolution is not available', errCode: '' });
+    expect(parseEmitHttpError(400, body)).toEqual(rejected('Given resolution is not available'));
+  });
+  it('but 401, 429 and 5xx with a message stay transient, and so does a 400 without a message', () => {
+    for (const status of [401, 429, 500, 503]) {
+      expect(() => parseEmitHttpError(status, JSON.stringify({ success: false, info: 'x', errCode: '' }))).toThrow(EmissionTransientError);
+    }
+    expect(() => parseEmitHttpError(400, JSON.stringify({ success: false, errCode: '' }))).toThrow(EmissionTransientError);
+  });
   it.each([
     [502, '<html>Bad Gateway</html>'],
     [503, ''],

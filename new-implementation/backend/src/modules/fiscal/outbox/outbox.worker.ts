@@ -112,7 +112,7 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
 
   private async process(row: EmissionOutbox, adapter: EmissionPort, now: Date): Promise<void> {
     if (row.status === 'sent') {
-      const st = await adapter.getStatus(statusKind(row.document_type), row.prefix!, row.number!);
+      const st = await adapter.getStatus(statusKind(row.document_type), row.prefix!, row.number!, { resolution: row.resolution ?? undefined, cufe: row.cufe, notBefore: row.created_at });
       return this.applyStatus(row, st, now);
     }
     const cfg = await this.cfgRepo.findOneByOrFail({ company_id: row.company_id });
@@ -135,7 +135,7 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
     }
     if (row.attempts > 0) {
       // An earlier attempt may have reached the provider before failing on our side.
-      const known = await adapter.getStatus(statusKind(row.document_type), row.prefix!, row.number);
+      const known = await adapter.getStatus(statusKind(row.document_type), row.prefix!, row.number, { resolution: row.resolution ?? undefined, cufe: row.cufe, notBefore: row.created_at });
       if (known) return this.applyStatus(row, known, now);
     }
     const numbered = { prefix: row.prefix!, number: row.number, resolution: row.resolution! };

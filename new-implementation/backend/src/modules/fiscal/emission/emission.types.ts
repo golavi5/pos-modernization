@@ -98,6 +98,13 @@ export interface DocumentStatus {
   reason: string | null;
 }
 
+export interface StatusLookup {
+  resolution?: string;
+  cufe?: string | null;
+  /** When we first tried to send: a document dated before this is somebody else's (stale) and is ignored. */
+  notBefore?: Date;
+}
+
 export interface PdfResult {
   filename: string;
   base64: string;
@@ -112,8 +119,12 @@ export class EmissionTransientError extends Error {
 
 export abstract class EmissionPort {
   abstract emit(doc: EmissionDocument): Promise<EmitResult>;
-  /** `null` = the provider has no such document (HTTP 404; VERIFY against the sandbox). */
-  abstract getStatus(type: 'invoice' | 'pos', prefix: string, number: number): Promise<DocumentStatus | null>;
+  /**
+   * `null` = the provider has no such document of ours. A lookup by prefix+number can
+   * hit a document of another resolution in the same account (seen in the sandbox), so
+   * pass the resolution (checked) and, once known, the CUFE (preferred).
+   */
+  abstract getStatus(type: 'invoice' | 'pos', prefix: string, number: number, opts?: StatusLookup): Promise<DocumentStatus | null>;
   abstract getPdf(cude: string): Promise<PdfResult>;
   /** Next free number of an authorised range, from the provider's remaining-numbers view. */
   abstract nextNumber(resolution: string, prefix: string): Promise<number>;
