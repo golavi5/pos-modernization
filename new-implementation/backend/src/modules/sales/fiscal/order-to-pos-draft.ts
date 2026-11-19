@@ -26,7 +26,9 @@ export function buildPosDraft(
       code: p?.sku ?? i.product_id,
       description: p?.name ?? i.product_id,
       quantity: Number(i.quantity),
-      unitPrice: Number(i.unit_price),
+      // price_amount es el precio unitario NETO (subtotal / cantidad): con precios con IVA incluido
+      // `unit_price` lo trae dentro, y precio × cantidad debe dar el subtotal de la línea.
+      unitPrice: Number(i.quantity) > 0 ? subtotal / Number(i.quantity) : Number(i.unit_price),
       ivaRate: i.tax_rate != null ? Number(i.tax_rate) : subtotal > 0 ? Math.round((ivaAmount / subtotal) * 100) : 0,
       subtotal,
       ivaAmount,

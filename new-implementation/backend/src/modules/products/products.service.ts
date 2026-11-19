@@ -21,7 +21,13 @@ import { resolveTaxRate } from './resolve-tax-rate';
  * `mockResolvedValue(...)` de los specs del controlador dejan de type-checkear
  * con un error que no dice nada.
  */
-export type ProductWithOversell = Product & { can_sell_without_stock: boolean; effective_tax_rate: number };
+export type ProductWithOversell = Product & { can_sell_without_stock: boolean; effective_tax_rate: number; price_includes_tax: boolean };
+
+/** Ajustes de impuesto de la empresa: la tasa que heredan los productos y si los precios ya incluyen el IVA. */
+export interface TaxSettings {
+  rate: number;
+  included: boolean;
+}
 
 @Injectable()
 export class ProductsService {
@@ -48,26 +54,31 @@ export class ProductsService {
   private withOversellFlag(
     product: Product,
     policy: OversellPolicy,
-    companyTaxRate: number,
+    companyTax: TaxSettings,
   ): ProductWithOversell {
     return {
       ...product,
       can_sell_without_stock: canSellWithoutStock(product, policy),
       // Resuelta aquí por la misma razón: el cajero no puede leer `GET /settings`.
-      effective_tax_rate: resolveTaxRate(product, companyTaxRate),
+      effective_tax_rate: resolveTaxRate(product, companyTax.rate),
+      // El precio del producto ¿incluye el IVA? (SPEC-BACK-010) Mismo motivo: el cajero no lee /settings.
+      price_includes_tax: companyTax.included,
     };
   }
 
   /** Una sola lectura de settings (puede crear la fila) para todo lo que hereda de la empresa. */
-  private async companyDefaults(companyId: string): Promise<{ policy: OversellPolicy; taxRate: number }> {
+  private async companyDefaults(companyId: string): Promise<{ policy: OversellPolicy; tax: TaxSettings }> {
     const settings = await this.settingsService.getSettings(companyId);
-    // `settings.taxRate` es DECIMAL sin transformer: MySQL lo entrega como string ("8.00").
-    return { policy: { allowNegativeStock: settings.allowNegativeStock }, taxRate: Number(settings.taxRate) };
+    return {
+      policy: { allowNegativeStock: settings.allowNegativeStock },
+      // `settings.taxRate` es DECIMAL sin transformer: MySQL lo entrega como string ("8.00").
+      tax: { rate: Number(settings.taxRate), included: settings.taxIncludedInPrice === true },
+    };
   }
 
-  /** La tasa de IVA de la empresa, que heredan los productos sin tasa propia. */
-  async getDefaultTaxRate(companyId: string): Promise<number> {
-    return Number((await this.settingsService.getSettings(companyId)).taxRate);
+  /** Tasa de IVA de la empresa (la heredan los productos sin tasa propia) y si los precios ya la incluyen. */
+  async getTaxSettings(companyId: string): Promise<TaxSettings> {
+    return (await this.companyDefaults(companyId)).tax;
   }
 
   async findAll(user: User, query: ProductQueryDto) {
@@ -103,10 +114,10 @@ export class ProductsService {
       order: { [sort]: order },
     });
 
-    const { policy, taxRate } = await this.companyDefaults(user.company_id);
+    const { policy, tax } = await this.companyDefaults(user.company_id);
 
     return {
-      data: products.map((p) => this.withOversellFlag(p, policy, taxRate)),
+      data: products.map((p) => this.withOversellFlag(p, policy, tax)),
       meta: {
         total,
         offset,
@@ -131,8 +142,8 @@ export class ProductsService {
   /** `findOne` para la API: la entidad más la bandera resuelta. */
   async findOneForApi(id: string, user: User): Promise<ProductWithOversell> {
     const product = await this.findOne(id, user);
-    const { policy, taxRate } = await this.companyDefaults(user.company_id);
-    return this.withOversellFlag(product, policy, taxRate);
+    const { policy, tax } = await this.companyDefaults(user.company_id);
+    return this.withOversellFlag(product, policy, tax);
   }
 
   async create(createProductDto: CreateProductDto, user: User) {
@@ -189,8 +200,8 @@ export class ProductsService {
             return created;
           })
         : await this.productRepository.save(product);
-    const { policy, taxRate } = await this.companyDefaults(user.company_id);
-    return this.withOversellFlag(saved, policy, taxRate);
+    const { policy, tax } = await this.companyDefaults(user.company_id);
+    return this.withOversellFlag(saved, policy, tax);
   }
 
   async update(id: string, updateProductDto: UpdateProductDto, user: User) {
@@ -226,8 +237,8 @@ export class ProductsService {
 
     Object.assign(product, updateProductDto);
     const saved = await this.productRepository.save(product);
-    const { policy, taxRate } = await this.companyDefaults(user.company_id);
-    return this.withOversellFlag(saved, policy, taxRate);
+    const { policy, tax } = await this.companyDefaults(user.company_id);
+    return this.withOversellFlag(saved, policy, tax);
   }
 
   async remove(id: string, user: User) {

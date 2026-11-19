@@ -674,7 +674,7 @@
     "localeESPE": "es-PE (Peru)",
     "localeENUS": "en-US (USA)",
     "taxIncluded": "Tax included in price",
-    "taxIncludedDesc": "Prices already include tax",
+    "taxIncludedDesc": "Your product prices already include tax. Applies to new sales only.",
     "paymentMethods": "Payment methods",
     "paymentMethodsDesc": "Activate the methods your business accepts",
     "cashMethod": "Cash",

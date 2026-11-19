@@ -7,6 +7,7 @@ import { PaymentModal } from '@/components/sales/PaymentModal';
 import { useCreateSale, useRecordPayment } from '@/hooks/useSales';
 import type { Product } from '@/types/product';
 import type { CartItem, Cart, PendingOrder } from '@/types/sale';
+import { computeLine } from '@/lib/tax';
 
 const EMPTY_CART: Cart = {
   items: [],
@@ -35,10 +36,15 @@ export default function SalesPage() {
   };
 
   const recalc = (items: CartItem[], discount = cart.discount): Cart => {
-    const subtotal = items.reduce((s, i) => s + i.subtotal, 0);
-    // Vista previa: el IVA oficial lo calcula el backend por línea (tasa del producto o de la empresa).
-    const tax = items.reduce((s, i) => s + i.subtotal * ((i.tax_rate ?? 0) / 100), 0);
-    return { ...cart, items, subtotal, tax, discount, total: subtotal + tax - discount };
+    // Vista previa con la misma regla que el backend (pesos enteros; precio con o sin IVA).
+    // El importe oficial lo calcula el servidor al crear el pedido.
+    const lines = items.map((i) =>
+      computeLine({ quantity: i.quantity, unitPrice: i.unit_price, taxRate: i.tax_rate ?? 0, included: i.price_includes_tax ?? false }),
+    );
+    const subtotal = lines.reduce((s, l) => s + l.subtotal, 0);
+    const tax = lines.reduce((s, l) => s + l.tax, 0);
+    const total = lines.reduce((s, l) => s + l.total, 0) - discount;
+    return { ...cart, items, subtotal, tax, discount, total };
   };
 
   const handleAddProduct = (product: Product) => {
@@ -66,6 +72,7 @@ export default function SalesPage() {
           quantity: 1,
           unit_price: product.price,
           tax_rate: product.effective_tax_rate ?? product.tax_rate ?? 0,
+          price_includes_tax: product.price_includes_tax ?? false,
           subtotal: product.price,
           stock_quantity: product.stock_quantity,
           can_sell_without_stock: canOversell,

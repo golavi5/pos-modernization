@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateOrderItemDto } from '../dto/create-order.dto';
+import { computeLine } from '../tax-math';
 
 interface CalculatedOrderItem {
   product_id: string;
@@ -14,16 +15,18 @@ interface CalculatedOrderItem {
 
 @Injectable()
 export class OrderCalculationService {
-  /** `taxRateFor` entrega la tasa (%) ya resuelta de cada producto (SPEC-BACK-009); aquí no hay tasa por defecto. */
+  /**
+   * `taxRateFor` entrega la tasa (%) ya resuelta de cada producto (SPEC-BACK-009); aquí no hay
+   * tasa por defecto. `taxIncluded`: el precio ya incluye el IVA (SPEC-BACK-010).
+   */
   calculateOrderItemTotals(
     items: CreateOrderItemDto[],
     taxRateFor: (productId: string) => number,
+    taxIncluded: boolean,
   ): CalculatedOrderItem[] {
     return items.map((item) => {
       const taxRate = taxRateFor(item.product_id);
-      const subtotal = item.quantity * item.unit_price;
-      const taxAmount = subtotal * (taxRate / 100);
-      const total = subtotal + taxAmount;
+      const { subtotal, tax, total } = computeLine({ quantity: item.quantity, unitPrice: item.unit_price, taxRate, included: taxIncluded });
 
       return {
         product_id: item.product_id,
@@ -31,7 +34,7 @@ export class OrderCalculationService {
         unit_price: item.unit_price,
         tax_rate: taxRate,
         subtotal,
-        tax_amount: taxAmount,
+        tax_amount: tax,
         total,
       };
     });

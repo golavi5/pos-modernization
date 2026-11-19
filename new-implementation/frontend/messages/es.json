@@ -674,7 +674,7 @@
     "localeESPE": "es-PE (Perú)",
     "localeENUS": "en-US (EE.UU.)",
     "taxIncluded": "IVA incluido en precio",
-    "taxIncludedDesc": "Los precios ya incluyen el impuesto",
+    "taxIncludedDesc": "Los precios de tus productos ya incluyen el IVA. Solo afecta a las ventas nuevas.",
     "paymentMethods": "Métodos de pago",
     "paymentMethodsDesc": "Activa los métodos que acepta tu negocio",
     "cashMethod": "Efectivo",

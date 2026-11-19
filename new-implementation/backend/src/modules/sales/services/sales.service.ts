@@ -113,7 +113,7 @@ export class SalesService {
 
     // Check stock availability
     const policy = await this.productsService.getOversellPolicy(user.company_id);
-    const companyTaxRate = await this.productsService.getDefaultTaxRate(user.company_id);
+    const taxSettings = await this.productsService.getTaxSettings(user.company_id);
     // La tasa de cada línea la decide el servidor (producto o, si no tiene, empresa).
     const taxRates = new Map<string, number>();
     for (const item of dto.items) {
@@ -131,13 +131,14 @@ export class SalesService {
           `Insufficient stock for product ${product.name}. Available: ${product.stock_quantity}, Requested: ${item.quantity}`,
         );
       }
-      taxRates.set(item.product_id, resolveTaxRate(product, companyTaxRate));
+      taxRates.set(item.product_id, resolveTaxRate(product, taxSettings.rate));
     }
 
     // Calculate order items and totals
     const calculatedItems = this.calculationService.calculateOrderItemTotals(
       dto.items,
       (productId) => taxRates.get(productId) as number,
+      taxSettings.included,
     );
     const { subtotal, tax_amount, total_amount } =
       this.calculationService.calculateOrderTotals(

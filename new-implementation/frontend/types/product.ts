@@ -14,6 +14,8 @@ export interface Product {
   tax_rate?: number | null;
   /** Tasa resuelta por el backend (la del producto o, si no tiene, la de la empresa). */
   effective_tax_rate?: number;
+  /** El precio ya incluye el IVA (ajuste de la empresa; lo resuelve el backend). */
+  price_includes_tax?: boolean;
   is_active: boolean;
   image_url?: string;
   /** Tri-estado por producto; `null` hereda del ajuste global de la empresa. */

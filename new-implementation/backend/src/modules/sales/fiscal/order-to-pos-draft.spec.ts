@@ -1,11 +1,34 @@
 import { Order } from '../entities/order.entity';
 import { OrderItem } from '../entities/order-item.entity';
+import { buildAllTaxTotals, buildHeaderTotals } from '../../fiscal/emission/plemsi/plemsi.items';
 import { buildPosDraft } from './order-to-pos-draft';
 
 const order = (o: Partial<Order> = {}) => ({ order_number: 'ORD-1', total_amount: 119, discount_amount: 0, ...o }) as Order;
 const item = (o: Partial<OrderItem> = {}) =>
   ({ product_id: 'p1', quantity: 1, unit_price: 100, subtotal: 100, tax_amount: 19, total: 119, ...o }) as OrderItem;
 const products = new Map([['p1', { name: 'Widget', sku: 'W-1' }]]);
+
+describe('buildPosDraft — IVA included in the price (SPEC-BACK-010)', () => {
+  it('price_amount is the NET unit price, so price x quantity equals the line subtotal', () => {
+    // a 9,990 price at 19%, quantity 3: stored by the sale as subtotal 25,185 / tax 4,785 / total 29,970
+    const i = item({ quantity: 3, unit_price: 9990, subtotal: 25185, tax_amount: 4785, total: 29970, tax_rate: 19 });
+    const r = buildPosDraft(order({ total_amount: 29970 }), [i], products);
+    expect('draft' in r && r.draft.lines[0]).toMatchObject({ unitPrice: 8395, quantity: 3, subtotal: 25185, ivaRate: 19 });
+  });
+
+  it('the document amounts add up in whole pesos (DIAN rule FAU06): base + tax = total', () => {
+    const lines = [
+      item({ product_id: 'p1', unit_price: 9990, subtotal: 8395, tax_amount: 1595, total: 9990, tax_rate: 19 }),
+      item({ product_id: 'p1', quantity: 2, unit_price: 10500, subtotal: 20000, tax_amount: 1000, total: 21000, tax_rate: 5 }),
+    ];
+    const r = buildPosDraft(order({ total_amount: 30990 }), lines, products);
+    if (!('draft' in r)) throw new Error('unsupported');
+    const totals = buildHeaderTotals(r.draft.lines);
+    const taxes = buildAllTaxTotals(r.draft.lines).reduce((s, t) => s + t.tax_amount, 0);
+    expect(totals.invoiceBaseTotal + taxes).toBe(totals.invoiceTaxInclusiveTotal);
+    expect(totals.invoiceTaxInclusiveTotal).toBe(30990);
+  });
+});
 
 describe('buildPosDraft', () => {
   it('maps the order amounts as they are and derives the IVA rate from them', () => {
