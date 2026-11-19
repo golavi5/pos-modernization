@@ -25,6 +25,8 @@ interface PaymentModalProps {
   total: number;
   onConfirm: (paymentMethod: string, notes?: string) => Promise<void> | void;
   isLoading?: boolean;
+  /** The order being charged; lets the success screen show its electronic-document status. */
+  orderId?: string | null;
 }
 
 type PaymentMethod = 'cash' | 'card';
@@ -39,6 +41,7 @@ export function PaymentModal({
   total,
   onConfirm,
   isLoading,
+  orderId,
 }: PaymentModalProps) {
   const t = useTranslations('sales');
   const tCommon = useTranslations('common');
@@ -128,6 +131,7 @@ export function PaymentModal({
         method={method}
         countdown={countdown}
         onNewSale={handleNewSale}
+        orderId={orderId}
       />
     );
   }

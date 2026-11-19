@@ -193,6 +193,16 @@
       "loading": "Cargando clientes...",
       "error": "No se pudieron cargar los clientes"
     },
+    "fiscal": {
+      "title": "Factura electrónica",
+      "pending": "Pendiente de validación",
+      "attention": "Tiene una novedad; avisa al administrador.",
+      "validated": "Validada por la DIAN",
+      "number": "Número",
+      "cufe": "CUFE",
+      "qr": "QR",
+      "qrOpen": "Abrir"
+    },
     "payment": {
       "backToCart": "Volver al carrito",
       "inProgress": "Venta en curso",

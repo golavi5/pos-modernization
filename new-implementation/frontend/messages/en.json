@@ -193,6 +193,16 @@
       "loading": "Loading customers...",
       "error": "Could not load customers"
     },
+    "fiscal": {
+      "title": "Electronic invoice",
+      "pending": "Pending validation",
+      "attention": "There is an issue; tell an administrator.",
+      "validated": "Validated by DIAN",
+      "number": "Number",
+      "cufe": "CUFE",
+      "qr": "QR",
+      "qrOpen": "Open"
+    },
     "payment": {
       "backToCart": "Back to cart",
       "inProgress": "Sale in progress",

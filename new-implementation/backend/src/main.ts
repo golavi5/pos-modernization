@@ -77,6 +77,10 @@ async function bootstrap() {
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'access-token',
     )
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', description: 'Per-app key for /fiscal/v1 (fsk_...)' },
+      'fiscal-api-key',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
