@@ -1,20 +1,65 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
-  "parserOptions": { "sourceType": "module", "ecmaVersion": 2022 },
-  "plugins": ["@typescript-eslint"],
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaVersion": 2022
+  },
+  "plugins": [
+    "@typescript-eslint"
+  ],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "prettier"
   ],
-  "env": { "node": true, "jest": true },
-  "ignorePatterns": ["dist", "node_modules", "migrations"],
+  "env": {
+    "node": true,
+    "jest": true
+  },
+  "ignorePatterns": [
+    "dist",
+    "node_modules",
+    "migrations"
+  ],
   "rules": {
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": [
       "error",
-      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/modules/fiscal/**/*.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/modules/sales/**",
+                  "**/modules/inventory/**",
+                  "**/modules/customers/**",
+                  "../../sales/**",
+                  "../../inventory/**",
+                  "../../customers/**",
+                  "../../../sales/**",
+                  "../../../inventory/**",
+                  "../../../customers/**"
+                ],
+                "message": "fiscal/ must not import internals of sales, inventory or customers (DESIGN-001 \u00a73). Use a public interface."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
