@@ -1,6 +1,6 @@
 # M5 — Emisión por Plemsi con outbox y libro de ventas
 
-**Status**: DRAFT — 2026-11-18. Desglosado de SPEC-FISC-001 (Fase 1, segunda mitad). Nada construido. Depende de SPEC-FISC-002.
+**Status**: APPROVED — 2026-11-19 (PR #108, apilado sobre #107, no fusionado). T-01..T-03 construidos con pruebas de contrato (sin ninguna llamada a Plemsi); abiertos: T-04..T-09, corrida en sandbox de Plemsi, y todos los códigos DIAN/Plemsi portados quedan VERIFY. Desglosado de SPEC-FISC-001 (Fase 1, segunda mitad). Depende de SPEC-FISC-002.
 
 Origen: [diseño](../superpowers/specs/2026-06-10-fiscal-platform-design.md) §4.1, §4.3, OQ-8 (asíncrono por outbox transaccional, aceptado 2026-11-10).
 
@@ -9,6 +9,13 @@ Emitir factura, nota crédito y documento equivalente POS a través de Plemsi, d
 
 ## 2. Corrección al diseño
 El diseño decía "extraer `PlemsiAdapter` de radian". **No existe:** `radian/lib/dian-api.ts` solo envía eventos RADIAN. El cliente de emisión está en `ApiFacturame` en C# (`PlemsiApi.cs`, `DianPayloadBuilder.cs`, con pruebas de rechazo). Aquí es **trabajo nuevo en TypeScript** usando ese código como especificación.
+
+## 2.1 Hallazgos del código C# (2026-11-19)
+- El cliente vivo es `FactApi.cs`; `PlemsiApi.cs` solo tiene duplicados heredados.
+- **No hay** endpoint de nota débito, ni descarga de XML, ni tiempo de espera o reintento. Nota débito queda fuera de v1 (decisión del propietario, 2026-11-19); el PDF sí existe.
+- El POST devuelve `success:true` antes del veredicto de la DIAN: se lee después con `GET .../one`. Estados: `Emitted` aceptado, `Error`/`Deleted` rechazado, otro = pendiente (no reenviar: gasta consecutivo).
+- Rechazo de carga útil (`errCode` o `data.errors`) es permanente y no dispara contingencia; fallos de pasarela, transporte y 401 sí son reintentables.
+- La fecha y hora del documento deben ser el momento de transmisión (reglas FAD09b/FAD09e, observado por ApiFacturame): el adaptador las fija en cada envío.
 
 ## 3. Tareas
 - **T-01** `EmissionPort`: emitir, consultar estado, obtener PDF/XML. Tipos de documento v1: factura de venta, nota crédito, nota débito, documento equivalente POS.
