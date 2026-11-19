@@ -181,6 +181,7 @@ export default function SalesPage() {
 
       <PaymentModal
         isOpen={showPayment}
+        orderId={pendingOrder?.id}
         onClose={() => setShowPayment(false)}
         onFinished={handleSaleFinished}
         // El importe autoritativo en cuanto el pedido existe. `cart.total` lo
