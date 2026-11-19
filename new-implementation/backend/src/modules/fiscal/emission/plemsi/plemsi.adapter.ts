@@ -37,8 +37,10 @@ export class PlemsiAdapter extends EmissionPort {
   }
 
   async emit(doc: EmissionDocument): Promise<EmitResult> {
-    const res = await this.call('POST', PLEMSI_EMIT_PATH[doc.type], buildPayload(doc, this.now()));
-    return res.ok ? parseEmitResponse(parseJsonObject(res.raw)) : parseEmitHttpError(res.status, res.raw);
+    const issuedAt = this.now();
+    const res = await this.call('POST', PLEMSI_EMIT_PATH[doc.type], buildPayload(doc, issuedAt));
+    const parsed = res.ok ? parseEmitResponse(parseJsonObject(res.raw)) : parseEmitHttpError(res.status, res.raw);
+    return parsed.outcome === 'submitted' ? { ...parsed, issuedAt } : parsed;
   }
 
   async getStatus(type: 'invoice' | 'pos', prefix: string, number: number): Promise<DocumentStatus | null> {

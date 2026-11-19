@@ -78,7 +78,15 @@ export type DianVerdict = 'accepted' | 'rejected' | 'pending';
 
 export type EmitResult =
   /** The provider took the document. DIAN's verdict may not be attached yet. */
-  | { outcome: 'submitted'; cude: string | null; qr: string | null; verdict: DianVerdict; reason: string | null }
+  | {
+      outcome: 'submitted';
+      cude: string | null;
+      qr: string | null;
+      verdict: DianVerdict;
+      reason: string | null;
+      /** The moment stamped on the document (it is the transmission moment, DIAN rule FAD09). */
+      issuedAt: Date;
+    }
   /** The provider refused the payload itself. Permanent: fix the data, do not retry or fall back to contingency. */
   | { outcome: 'payload_rejected'; reason: string };
 

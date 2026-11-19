@@ -25,7 +25,7 @@ describe('PlemsiAdapter', () => {
   it('POSTs the document to the type-specific path with Bearer auth and a timeout', async () => {
     const { adapter, calls } = make(() => json({ success: true, data: { cude: 'c1', QRCode: 'q1' } }, 201));
     const r = await adapter.emit(doc);
-    expect(r).toEqual({ outcome: 'submitted', cude: 'c1', qr: 'q1', verdict: 'pending', reason: null });
+    expect(r).toEqual({ outcome: 'submitted', cude: 'c1', qr: 'q1', verdict: 'pending', reason: null, issuedAt: new Date('2026-11-19T15:00:00Z') });
     expect(calls[0].url).toBe('https://plemsi.test/api/equivalent/pos');
     expect(calls[0].init.method).toBe('POST');
     expect((calls[0].init.headers as Record<string, string>).Authorization).toBe(`Bearer ${TOKEN}`);

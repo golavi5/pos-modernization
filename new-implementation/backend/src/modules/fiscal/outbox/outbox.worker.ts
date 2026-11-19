@@ -7,6 +7,7 @@ import { NotificationsService } from '../../notifications/services/notifications
 import { PlemsiConfig } from '../emission/plemsi/plemsi-config.entity';
 import { PlemsiConfigService } from '../emission/plemsi/plemsi-config.service';
 import { FiscalProfile } from '../fiscal-profile/entities/fiscal-profile.entity';
+import { SalesLedgerService } from '../ledger/sales-ledger.service';
 import { EmissionOutbox } from './outbox.entity';
 import { OutboxDocumentType } from './outbox.types';
 
@@ -52,6 +53,7 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
     private readonly ds: DataSource,
     private readonly configs: PlemsiConfigService,
     private readonly notifications: NotificationsService,
+    private readonly ledger: SalesLedgerService,
     @InjectRepository(EmissionOutbox) private readonly outbox: Repository<EmissionOutbox>,
     @InjectRepository(PlemsiConfig) private readonly cfgRepo: Repository<PlemsiConfig>,
     @InjectRepository(FiscalProfile) private readonly profiles: Repository<FiscalProfile>,
@@ -150,6 +152,9 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
 
   private async applyEmit(row: EmissionOutbox, r: EmitResult, now: Date): Promise<void> {
     if (r.outcome === 'payload_rejected') return this.terminal(row, 'rejected', r.reason);
+    // Keep the exact moment stamped on the document: the sales book dates its entry with it.
+    row.issued_at = r.issuedAt ?? now;
+    await this.outbox.update(row.id, { issued_at: row.issued_at });
     return this.applyStatus(row, { verdict: r.verdict, cude: r.cude, qr: r.qr, preview: null, reason: r.reason }, now);
   }
 
@@ -165,8 +170,16 @@ export class OutboxWorker implements OnApplicationBootstrap, OnApplicationShutdo
   }
 
   private async terminal(row: EmissionOutbox, status: 'validated' | 'rejected' | 'failed', error: string | null, extra: Partial<EmissionOutbox> = {}): Promise<void> {
+    if (status === 'validated') {
+      // The book entry and the status change commit together: a validated document is never missing from the book.
+      await this.ds.transaction(async (m) => {
+        await m.update(EmissionOutbox, row.id, { ...extra, status, last_error: error });
+        await this.ledger.record(m, Object.assign(row, extra, { status }));
+      });
+      return;
+    }
     await this.outbox.update(row.id, { ...extra, status, last_error: error });
-    if (status !== 'validated') await this.notify(row, status, error);
+    await this.notify(row, status, error);
   }
 
   /** A document that needs a person. Never lets a notification problem undo or block the worker. */
