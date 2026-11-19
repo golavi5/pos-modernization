@@ -243,12 +243,24 @@ that seam. Gate the `accountant` route wiring on this spec's approval.
 
 | Gate condition (§9) | State | Evidence |
 |---|---|---|
-| 1. OQ-1 yields the v2026 Fiscal Rule Catalog skeleton | **Open, blocks TASKS** | Needs the accountant session; [agenda](2026-11-09-fisc-001-accountant-session-agenda.md) is ready, session not held. |
-| 2. Signing / set-de-pruebas spike | **Met 2026-11-18** | [Result](2026-11-09-fisc-001-signing-spike-plan.md#result): one factura accepted on the first send (PR #101). Covers the factura only: not notas, the POS equivalent, contingencia or production. |
+| 1. OQ-1 yields the v2026 Fiscal Rule Catalog skeleton | **Waived by the owner 2026-11-18, not answered** | No accountant session will be held. The catalog has no validated source; see "Owner inputs" below. The [agenda](2026-11-09-fisc-001-accountant-session-agenda.md) stays for later use. |
+| 2. Signing / set-de-pruebas spike | **Met 2026-11-18** | [Result](2026-11-09-fisc-001-signing-spike-plan.md#result): one factura accepted on the first send (PR #101). Covers the factura only: not notas, the POS equivalent, contingencia or production. Signed with the owner's own real certificate for his own NIT, not a test one (see the Result's deviation note). |
 | 3. ADR-007 key custody | **Accepted 2026-11-10** | Option A, six controls. CA/accountant check on third-party custody still open (agenda §7). |
 
-**Other blockers for the TASKS breakdown (SPEC-FISC-001):** OQ-2 (habilitación dry run: the owner personally registered the software and obtained the test set used by the spike; owner-reported estimate of about 15 minutes and up to ~100,000 COP, not measured and with the cost items not itemised. The production switch and an own numbering resolution have not been exercised, so OQ-2 stays open) and OQ-3 (certificate unit cost; [quote request](2026-11-09-fisc-001-oq3-certificate-quote-request.md) not sent). OQ-8 is answered (async outbox); delivery-before-validation per document type is on the accountant agenda.
+**Other blockers for the TASKS breakdown (SPEC-FISC-001):** none left as of 2026-11-18, see "Owner inputs" below. OQ-8 is answered (async outbox); delivery-before-validation per document type stays VERIFY.
 
 **R1 (interim margin plan): resolved.** Phase 4 stays ahead of Phase 3 as in §6, so Plemsi's 88 COP/doc is removed as early as possible. No interim cost cap is needed, since Phase 3 is not run first. If this order is ever reversed, an interim margin plan has to be stated at that point.
 
-**Not decided here:** OQ-4 to OQ-7 (product name, repo rename, Wira pack contract, documento soporte) are not gate blockers. Phase 0 (OQ-1, OQ-2, OQ-3) can start now.
+**Not decided here:** OQ-4 to OQ-7 (product name, repo rename, Wira pack contract, documento soporte) are not gate blockers. Phase 0 was closed by owner decision on 2026-11-18 (below).
+
+### Owner inputs added after the gate (2026-11-18)
+
+**OQ-1/1a waived, not answered.** The owner decided not to hold the accountant session. Nothing in OQ-1/1a was answered: report set per régimen, VAT periodicity, retefuente conceptos and bases, Régimen Simple exclusions (R4), delivery-before-validation per document type, numbering/contingencia rules and third-party certificate custody all stay **unvalidated and marked VERIFY**. The exposure is limited by D10 (the product prepares supporting figures and does not file) and by labelling every tax figure "soporte para revisión del contador" (§7). Any rule that ships must cite its norm; one without a source stays VERIFY in the catalog.
+
+**Commercial inputs (owner statements, not validated).** Intended price: **50 to 200 COP per generated document, by volume**. Today 3 customers pay Plemsi 88 COP per document. So the 50 COP tier is below Plemsi's cost per document, which reinforces R1 (Phase 4 before Phase 3, as decided). Arithmetic only, if the platform bears the certificate (140,000 COP per tenant per year): it takes about 2,800 documents a year per tenant at 50 COP, or 700 at 200 COP, to cover the certificate alone, before hosting and support.
+
+**New requirement: the engine must be an API usable by any other app the owner builds**, not only this POS. This touches **ADR-001 and D4** (fiscal as a bounded context inside the POS monolith, "not a new service"), which were approved without it. **Decided by the owner 2026-11-18: it stays inside the monolith (ADR-001 unchanged) behind a public, versioned API, and is extracted to a service only when a second app needs it.** What it implies for the TASKS breakdown: an API-first contract (OpenAPI), credentials per consuming app that are separate from POS user JWTs, idempotency keys on emission, tenant scoping by company, and a way for callers to learn the result of an asynchronous emission (OQ-8: status endpoint and/or webhook).
+
+**OQ-2 and OQ-3 closed by owner decision (2026-11-18), on owner-reported figures, not measured.** OQ-2: about 15 minutes and up to ~100,000 COP for the DIAN registration and configuration. OQ-3: SOENAC certificate, 140,000 COP for 1 year, IVA included, `.p12`. Not covered and accepted as such: the production switch, an own numbering resolution, volume pricing, and the CA's terms on third-party custody (ADR-007 VERIFY). **The TASKS breakdown is unblocked; it does not exist yet.**
+
+**One certificate for all customers: not viable under D2.** See the [research note](2026-11-18-fisc-001-shared-certificate-research.md): DIAN rule ZE03 rejects a document whose issuer differs from the certificate's owner; signing for others is the Proveedor Tecnológico model (Res. 165/2023 art. 55: 20,000 UVT patrimonio, ISO 27001, Colombian sociedad). Per-tenant certificates under ADR-007 stay the design.

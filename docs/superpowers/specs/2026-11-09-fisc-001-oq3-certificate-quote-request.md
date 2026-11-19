@@ -37,3 +37,5 @@ The question about third-party custody here is the same one as ADR-007's CA VERI
 | | | | | | | | | | |
 
 **Feeds:** OQ-3 (unit cost → pricing), ADR-007 (does option B, KMS/HSM, become possible via remote signing; is custody A permitted), and the spike (test certificate source).
+
+**Owner-reported data point (2026-11-18, not a quote):** the owner bought a real certificate for his own NIT at **140,000 COP**, **1 year**, **IVA included**, delivered as a `.p12`, from the certification authority **SOENAC**. Per the owner the certificate can be issued either as persona natural or as persona jurídica (whether the price is the same for both was not stated). One buyer, one price, no volume or custody terms: OQ-3 was closed by owner decision on 2026-11-18 on this single figure; no quotes were requested, and volume pricing and the third-party custody answer remain unknown.

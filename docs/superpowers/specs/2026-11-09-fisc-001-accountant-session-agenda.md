@@ -1,6 +1,6 @@
 # FISC-001 — Accountant session agenda (OQ-1 / OQ-1a)
 
-**Status:** Draft — session not held. Prepared 2026-11-09 so the owner can run the session; nothing below is an answer.
+**Status:** Waived by the owner 2026-11-18 — no session held, nothing below was answered. Kept for later use; every question stays VERIFY. Prepared 2026-11-09.
 
 Parent: [`2026-06-10-fiscal-platform-design.md`](2026-06-10-fiscal-platform-design.md) §8 (OQ-1, OQ-1a, OQ-8), §9 (R4, R6) and [`2026-11-10-fisc-001-gate-proposals.md`](2026-11-10-fisc-001-gate-proposals.md) (the two VERIFY items routed here).
 
