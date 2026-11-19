@@ -72,7 +72,7 @@ describe('SalesService', () => {
           useValue: {
             findOne: jest.fn(),
             getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: false })),
-            getDefaultTaxRate: jest.fn(async () => 19),
+            getTaxSettings: jest.fn(async () => ({ rate: 19, included: false })),
           },
         },
       ],
@@ -535,11 +535,11 @@ describe('SalesService', () => {
 });
 
 describe('SalesService.createOrder — tasa de IVA por producto (SPEC-BACK-009)', () => {
-  const build = async (companyRate: number, products: Record<string, { tax_rate: number | null }>) => {
+  const build = async (companyRate: number, products: Record<string, { tax_rate: number | null }>, included = false) => {
     const saved: { tax_rate: number; tax_amount: number; total: number }[] = [];
     const productsService = {
       getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: true })),
-      getDefaultTaxRate: jest.fn(async () => companyRate),
+      getTaxSettings: jest.fn(async () => ({ rate: companyRate, included })),
       findOne: jest.fn(async (id: string) => ({ id, name: id, stock_quantity: 99, allow_sale_without_stock: null, ...products[id] })),
     };
     const orderRepo = { save: jest.fn(async (o: object) => ({ ...o, id: 'o1' })), findOne: jest.fn(), findAndCount: jest.fn(async () => [[], 0]) };
@@ -573,9 +573,51 @@ describe('SalesService.createOrder — tasa de IVA por producto (SPEC-BACK-009)'
     expect(saved[0].tax_rate).toBe(5);
   });
 
-  it('with a 19% company rate the totals are exactly what the old fixed 0.19 gave', async () => {
-    const { svc, saved } = await build(19, { a: { tax_rate: null } });
+  it('excluded mode: IVA on top, in whole pesos (3 x 1,234.56 = 3,704 at 19% -> 704)', async () => {
+    const { svc, saved } = await build(19, { a: { tax_rate: null } }, false);
     await svc.createOrder({ items: [{ product_id: 'a', quantity: 3, unit_price: 1234.56 }] } as never, user);
-    expect(saved[0].tax_amount).toBe(3 * 1234.56 * 0.19);
+    expect(saved[0]).toMatchObject({ tax_rate: 19, tax_amount: 704, total: 4408 });
+  });
+});
+
+describe('SalesService.createOrder — IVA incluido en el precio (SPEC-BACK-010)', () => {
+  const user = { id: 'u1', company_id: 'c1' } as never;
+  const run = async (included: boolean, items: { product_id: string; quantity: number; unit_price: number }[], rates: Record<string, number | null>) => {
+    const saved: { tax_rate: number; subtotal: number; tax_amount: number; total: number }[] = [];
+    const productsService = {
+      getOversellPolicy: jest.fn(async () => ({ allowNegativeStock: true })),
+      getTaxSettings: jest.fn(async () => ({ rate: 19, included })),
+      findOne: jest.fn(async (id: string) => ({ id, name: id, stock_quantity: 99, allow_sale_without_stock: null, tax_rate: rates[id] })),
+    };
+    const orderRepo = { save: jest.fn(async (o: object) => ({ ...o, id: 'o1' })), findOne: jest.fn(), findAndCount: jest.fn(async () => [[], 0]) };
+    const itemRepo = { save: jest.fn(async (i: typeof saved) => { saved.push(...i); return i; }) };
+    const svc = new SalesService(orderRepo as never, itemRepo as never, new OrderCalculationService(), productsService as never, {} as never, {} as never);
+    jest.spyOn(svc, 'getOrderById').mockResolvedValue({ id: 'o1' } as never);
+    jest.spyOn(svc as unknown as { generateOrderNumber: () => Promise<string> }, 'generateOrderNumber').mockResolvedValue('ORD-1');
+    await svc.createOrder({ items } as never, user);
+    return { saved, order: orderRepo.save.mock.calls[0][0] as { subtotal: number; tax_amount: number; total_amount: number } };
+  };
+
+  it('a migrated catalog price is not taxed twice: 11,900 at 19% sells for 11,900', async () => {
+    const { saved, order } = await run(true, [{ product_id: 'a', quantity: 1, unit_price: 11900 }], { a: null });
+    expect(saved[0]).toMatchObject({ subtotal: 10000, tax_amount: 1900, total: 11900, tax_rate: 19 });
+    expect(order).toMatchObject({ subtotal: 10000, tax_amount: 1900, total_amount: 11900 });
+  });
+
+  it('mixed rates in one order stay whole pesos and add up', async () => {
+    const { saved, order } = await run(true, [
+      { product_id: 'a', quantity: 1, unit_price: 9990 },
+      { product_id: 'b', quantity: 2, unit_price: 10500 },
+      { product_id: 'c', quantity: 1, unit_price: 3000 },
+    ], { a: null, b: 5, c: 0 });
+    expect(saved.map((i) => [i.subtotal, i.tax_amount, i.total])).toEqual([[8395, 1595, 9990], [20000, 1000, 21000], [3000, 0, 3000]]);
+    expect(order).toMatchObject({ subtotal: 31395, tax_amount: 2595, total_amount: 33990 });
+  });
+
+  it('the same sale excluded costs more: the setting decides, not the code path', async () => {
+    const incl = await run(true, [{ product_id: 'a', quantity: 1, unit_price: 10000 }], { a: null });
+    const excl = await run(false, [{ product_id: 'a', quantity: 1, unit_price: 10000 }], { a: null });
+    expect(incl.order.total_amount).toBe(10000);
+    expect(excl.order.total_amount).toBe(11900);
   });
 });

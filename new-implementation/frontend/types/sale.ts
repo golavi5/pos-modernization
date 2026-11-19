@@ -85,6 +85,8 @@ export interface CartItem extends SaleItem {
   /** Permiso resuelto por el backend, copiado al añadir. No es estado: no dice si esta
    *  línea está sobrevendida, dice si se le permite estarlo. */
   can_sell_without_stock?: boolean;
+  /** El `unit_price` ya incluye el IVA (copiado del producto al añadir). */
+  price_includes_tax?: boolean;
   image_url?: string;
 }
 

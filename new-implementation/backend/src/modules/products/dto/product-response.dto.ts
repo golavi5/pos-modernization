@@ -61,6 +61,11 @@ export class ProductResponseDto {
   @IsNumber()
   effective_tax_rate: number;
 
+  /** El precio incluye el IVA (ajuste de la empresa, SPEC-BACK-010). */
+  @Expose()
+  @IsBoolean()
+  price_includes_tax: boolean;
+
   @Expose()
   @IsBoolean()
   is_active: boolean;

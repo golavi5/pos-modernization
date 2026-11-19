@@ -715,8 +715,9 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
     expect(await bought(PeriodType.YEARLY)).toBe(2);
   });
 
-  // SPEC-BACK-009: IVA per product with the company rate as fallback, on real MySQL.
-  it('sales use each product tax rate (null inherits the company rate) and record it per line', async () => {
+  // SPEC-BACK-009 / SPEC-BACK-010: IVA per product with the company rate as fallback, and
+  // prices with or without IVA included, on real MySQL, with the setting changed mid-life.
+  it('sales use each product tax rate and the company mode, record it per line, and feed the fiscal draft', async () => {
     const co = await ds.manager.save(Company, ds.manager.create(Company, { name: 'Tax Co' }));
     const u = await ds.manager.save(User, ds.manager.create(User, { email: `tax-${Date.now()}@t.test`, password_hash: 'x', name: 'T', company_id: co.id }));
     const settings = new SettingsService(ds.getRepository(Settings));
@@ -733,29 +734,44 @@ describe('PaymentsService.recordPayment — pessimistic lock (real MySQL)', () =
       ds.getRepository(Order), ds.getRepository(OrderItem), new OrderCalculationService(), products, ds, new InventoryLocationsService(),
     );
     const cashier = { id: u.id, company_id: co.id } as User;
-
-    const listed = await products.findAll(cashier, { offset: 0, limit: 10, sort: 'created_at', order: 'DESC' } as never);
-    const eff = Object.fromEntries(listed.data.map((p) => [p.sku.slice(-1), [p.tax_rate, p.effective_tax_rate]]));
-    expect(eff).toEqual({ N: [null, 8], '5': [5, 5], '0': [0, 0] });
-
-    const order = await taxSales.createOrder(
-      { items: [
-        { product_id: inherit.id, quantity: 1, unit_price: 1000 },
-        { product_id: five.id, quantity: 1, unit_price: 1000 },
-        { product_id: exempt.id, quantity: 2, unit_price: 500 },
-      ] } as never,
-      cashier,
-    );
-    const items = await ds.manager.find(OrderItem, { where: { order_id: order.id }, order: { tax_rate: 'DESC' } });
-    expect(items.map((i) => [i.tax_rate, i.tax_amount, i.total])).toEqual([[8, 80, 1080], [5, 50, 1050], [0, 0, 1000]]);
-    const saved = await ds.manager.findOneByOrFail(Order, { id: order.id });
-    expect([saved.subtotal, saved.tax_amount, saved.total_amount]).toEqual([3000, 130, 3130]);
-
-    // SPEC-BACK-009 x SPEC-FISC-003: the fiscal draft carries the rate recorded on each line.
     await ds.manager.insert(PlemsiConfig, { company_id: co.id, environment: 'sandbox', wrapped_data_key: 'x', token_encrypted: 'x', emission_enabled: true, pos_prefix: 'POS', pos_resolution: '1' });
-    await service.recordPayment(order.id, { payment_method: PaymentMethod.CASH, amount: 3130 }, cashier);
-    const queued = await ds.manager.findOneByOrFail(EmissionOutbox, { order_id: order.id });
-    expect((queued.draft?.lines ?? []).map((l) => [l.ivaRate, l.ivaAmount]).sort()).toEqual([[0, 0], [5, 50], [8, 80]]);
+
+    const listed = async () => (await products.findAll(cashier, { offset: 0, limit: 10, sort: 'created_at', order: 'DESC' } as never)).data;
+    const sell = async (included: boolean) => {
+      await ds.manager.update(Settings, { companyId: co.id }, { taxIncludedInPrice: included });
+      const order = await taxSales.createOrder(
+        { items: [
+          { product_id: inherit.id, quantity: 1, unit_price: 1000 },
+          { product_id: five.id, quantity: 1, unit_price: 1000 },
+          { product_id: exempt.id, quantity: 2, unit_price: 500 },
+        ] } as never,
+        cashier,
+      );
+      const items = await ds.manager.find(OrderItem, { where: { order_id: order.id }, order: { tax_rate: 'DESC' } });
+      const saved = await ds.manager.findOneByOrFail(Order, { id: order.id });
+      await service.recordPayment(order.id, { payment_method: PaymentMethod.CASH, amount: saved.total_amount }, cashier);
+      const draft = (await ds.manager.findOneByOrFail(EmissionOutbox, { order_id: order.id })).draft;
+      return { items, saved, lines: draft?.lines ?? [] };
+    };
+
+    // Per-product rates resolved against the company's, whatever the mode.
+    expect(Object.fromEntries((await listed()).map((p) => [p.sku.slice(-1), [p.tax_rate, p.effective_tax_rate]]))).toEqual({ N: [null, 8], '5': [5, 5], '0': [0, 0] });
+
+    // Excluded: IVA on top.
+    const excl = await sell(false);
+    expect((await listed()).every((p) => p.price_includes_tax === false)).toBe(true);
+    expect(excl.items.map((i) => [i.tax_rate, i.tax_amount, i.total])).toEqual([[8, 80, 1080], [5, 50, 1050], [0, 0, 1000]]);
+    expect([excl.saved.subtotal, excl.saved.tax_amount, excl.saved.total_amount]).toEqual([3000, 130, 3130]);
+
+    // Included (the owner flips the setting): the same prices now contain the IVA.
+    const incl = await sell(true);
+    expect((await listed()).every((p) => p.price_includes_tax === true)).toBe(true);
+    expect(incl.items.map((i) => [i.tax_rate, i.subtotal, i.tax_amount, i.total])).toEqual([[8, 926, 74, 1000], [5, 952, 48, 1000], [0, 1000, 0, 1000]]);
+    expect([incl.saved.subtotal, incl.saved.tax_amount, incl.saved.total_amount]).toEqual([2878, 122, 3000]);
+
+    // The fiscal draft carries the recorded rate and the NET unit price; amounts are whole pesos and add up.
+    expect(incl.lines.map((l) => [l.ivaRate, l.unitPrice, l.subtotal, l.ivaAmount, l.total]).sort()).toEqual([[0, 500, 1000, 0, 1000], [5, 952, 952, 48, 1000], [8, 926, 926, 74, 1000]]);
+    expect(incl.lines.every((l) => l.subtotal + l.ivaAmount === l.total)).toBe(true);
     await ds.manager.delete(PlemsiConfig, { company_id: co.id });
   });
 

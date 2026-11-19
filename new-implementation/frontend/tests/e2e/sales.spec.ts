@@ -27,11 +27,32 @@ test.describe('Sales cart', () => {
     await expect(cart(page).getByText('Carrito · 2 items')).toBeVisible();
     await expect(cart(page).getByText(a.name)).toBeVisible();
     await expect(cart(page).getByText(b.name)).toBeVisible();
-    // 30.000 subtotal + 19% IVA (5.700) = 35.700
-    await expect(cart(page).getByText(/^\$\s?30\.000$/)).toBeVisible();
+    // SPEC-BACK-010: prices include the IVA by default. 30.000 of prices at 19% =
+    // 25.210 subtotal + 4.790 IVA = 30.000 (whole pesos, half up).
+    await expect(cart(page).getByText(/^\$\s?25\.210$/)).toBeVisible();
     await expect(cart(page).getByText('IVA (19%)')).toBeVisible();
-    await expect(cart(page).getByText(/^\$\s?5\.700$/)).toBeVisible();
-    await expect(cart(page).getByTestId('cobrar-button')).toContainText('35.700');
+    await expect(cart(page).getByText(/^\$\s?4\.790$/)).toBeVisible();
+    await expect(cart(page).getByTestId('cobrar-button')).toContainText('30.000');
+  });
+
+  test('with prices WITHOUT IVA (company setting off) the IVA is added on top', async ({ page, request }) => {
+    const a = await seedProduct(request, { price: 10000 });
+    const b = await seedProduct(request, { price: 20000 });
+    const { headers } = await apiSession(request);
+    const setIncluded = (v: boolean) => request.patch(`${API_BASE_URL}/settings/tax`, { headers, data: { taxIncludedInPrice: v } });
+    expect((await setIncluded(false)).ok()).toBeTruthy();
+    try {
+      await openSales(page);
+      await card(page, a.name).click();
+      await card(page, b.name).click();
+      // 30.000 + 19% IVA (5.700) = 35.700
+      await expect(cart(page).getByText(/^\$\s?30\.000$/)).toBeVisible();
+      await expect(cart(page).getByText('IVA (19%)')).toBeVisible();
+      await expect(cart(page).getByText(/^\$\s?5\.700$/)).toBeVisible();
+      await expect(cart(page).getByTestId('cobrar-button')).toContainText('35.700');
+    } finally {
+      await setIncluded(true);
+    }
   });
 
   test('increases and decreases the quantity of a line', async ({ page, request }) => {
@@ -42,11 +63,11 @@ test.describe('Sales cart', () => {
 
     await line.locator('button').nth(1).click(); // plus
     await expect(line.getByText('2', { exact: true })).toBeVisible();
-    await expect(cart(page).getByTestId('cobrar-button')).toContainText('23.800');
+    await expect(cart(page).getByTestId('cobrar-button')).toContainText('20.000'); // prices include the IVA by default (SPEC-BACK-010)
 
     await line.locator('button').nth(0).click(); // minus
     await expect(line.getByText('1', { exact: true })).toBeVisible();
-    await expect(cart(page).getByTestId('cobrar-button')).toContainText('11.900');
+    await expect(cart(page).getByTestId('cobrar-button')).toContainText('10.000');
   });
 
   test('cannot add more units than the stock available', async ({ page, request }) => {
