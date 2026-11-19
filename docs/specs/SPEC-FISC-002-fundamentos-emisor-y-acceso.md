@@ -1,6 +1,6 @@
 # M5 — Fundamentos fiscales: módulo, emisor, terceros y acceso por API
 
-**Status**: DRAFT — 2026-11-18. Desglosado de SPEC-FISC-001 (Fase 1, primera mitad). Nada construido. Sin dependencias previas.
+**Status**: APPROVED — 2026-11-19 (PR #107, no fusionado). T-01..T-07 construidos y probados contra MySQL real (e2e + migración arriba/abajo/arriba); sin verificar en staging. Abiertos: ponderadores del DV para NIT de más de 9 dígitos (VERIFY), tablas del anexo para régimen/responsabilidades (campos libres hasta entonces). Desglosado de SPEC-FISC-001 (Fase 1, primera mitad).
 
 Origen: [diseño](../superpowers/specs/2026-06-10-fiscal-platform-design.md) §3, §4.1, §6 y "Owner inputs" (el motor se expone como API pública versionada dentro del monolito, ADR-001).
 
