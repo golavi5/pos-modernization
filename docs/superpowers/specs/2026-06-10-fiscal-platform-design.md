@@ -1,7 +1,7 @@
 # DESIGN-001: Fiscal Platform & Conversational Accounting Agent
 
 **Issue:** POS-FISC-001
-**Status:** Draft — pending review gate
+**Status:** Approved at the review gate 2026-11-18 (Gandhi Olavi). TASKS breakdown stays blocked on OQ-1/1a, OQ-2 and OQ-3 — see [Gate record](#gate-record).
 **Owner:** Gandhi Olavi (Automatizate LLC)
 **Date:** 2026-06-10
 **Level:** 1 (Design Doc — cross-domain work)
@@ -234,3 +234,21 @@ that seam. Gate the `accountant` route wiring on this spec's approval.
 
 ---
 *Next step per workflow: review/approval gate (Telegram), then TASKS breakdown synced to Plane.*
+
+---
+
+## Gate record
+
+**Review gate held 2026-11-18. Outcome: approved, TASKS breakdown blocked.** Decided by Gandhi Olavi. The §9 verdict stands: architecture approvable in shape, with the three gate conditions below.
+
+| Gate condition (§9) | State | Evidence |
+|---|---|---|
+| 1. OQ-1 yields the v2026 Fiscal Rule Catalog skeleton | **Open, blocks TASKS** | Needs the accountant session; [agenda](2026-11-09-fisc-001-accountant-session-agenda.md) is ready, session not held. |
+| 2. Signing / set-de-pruebas spike | **Met 2026-11-18** | [Result](2026-11-09-fisc-001-signing-spike-plan.md#result): one factura accepted on the first send (PR #101). Covers the factura only: not notas, the POS equivalent, contingencia or production. |
+| 3. ADR-007 key custody | **Accepted 2026-11-10** | Option A, six controls. CA/accountant check on third-party custody still open (agenda §7). |
+
+**Other blockers for the TASKS breakdown (SPEC-FISC-001):** OQ-2 (habilitación dry run: the owner personally registered the software and obtained the test set used by the spike; owner-reported estimate of about 15 minutes and up to ~100,000 COP, not measured and with the cost items not itemised. The production switch and an own numbering resolution have not been exercised, so OQ-2 stays open) and OQ-3 (certificate unit cost; [quote request](2026-11-09-fisc-001-oq3-certificate-quote-request.md) not sent). OQ-8 is answered (async outbox); delivery-before-validation per document type is on the accountant agenda.
+
+**R1 (interim margin plan): resolved.** Phase 4 stays ahead of Phase 3 as in §6, so Plemsi's 88 COP/doc is removed as early as possible. No interim cost cap is needed, since Phase 3 is not run first. If this order is ever reversed, an interim margin plan has to be stated at that point.
+
+**Not decided here:** OQ-4 to OQ-7 (product name, repo rename, Wira pack contract, documento soporte) are not gate blockers. Phase 0 (OQ-1, OQ-2, OQ-3) can start now.

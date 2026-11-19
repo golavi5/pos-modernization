@@ -1,6 +1,6 @@
 # Fiscal Platform & Conversational Accounting Agent
 
-**Status**: DRAFT — not started; zero fiscal code in the backend. **ADR-007 accepted and OQ-8 answered 2026-11-10** (proposals doc). Still blocked on the review/approval gate, OQ-1/1a (accountant), OQ-2 (real habilitación dry run), OQ-3 (certificate cost) and the signing / set-de-pruebas spike.
+**Status**: APPROVED — 2026-11-18 (PR #102). **Diseño aprobado en la puerta de revisión por Gandhi Olavi** ([registro de la puerta](../superpowers/specs/2026-06-10-fiscal-platform-design.md#gate-record)): condición n.º 2 cumplida ([spike de firma, PR #101](../superpowers/specs/2026-11-09-fisc-001-signing-spike-plan.md#result): una factura aceptada en el set de pruebas de la DIAN, solo factura de venta) y ADR-007/OQ-8 aceptados 2026-11-10. R1 resuelto: la Fase 4 va antes que la Fase 3, sin tope de costo interino. **Sigue bloqueado el desglose TASKS** hasta cerrar OQ-1/1a (sesión con contador, agenda lista), OQ-2 (el propietario registró personalmente el software y obtuvo el set de pruebas del spike: estimación suya de unos 15 min y hasta ~100.000 COP, sin medir y sin detallar el costo; no se ha probado el paso a producción ni una resolución de numeración propia) y OQ-3 (cotizaciones de certificado, sin enviar). No hay código fiscal en el backend; nada de esto está verificado contra producción.
 
 One Plane issue (`POS-FISC-001`) tracking the fiscal-platform design through
 its review gate and into the TASKS breakdown.
@@ -17,7 +17,7 @@ books, VAT by period, year-versioned retefuente catalog), tenant fiscal
 profiles seeded from RUT, Wira `domains/accounting/` agent pack
 (reads free, writes confirm-gated).
 
-Blocking before TASKS: review/approval gate (Telegram) + OQ-1 (accountant
+Blocking before TASKS (the review gate was held 2026-11-18, see the status line): OQ-1 (accountant
 validation → Fiscal Rule Catalog v2026, including OQ-1a Régimen Simple
 retención exclusions), OQ-2 (real habilitación dry run), OQ-3 (certificate cost
 model), OQ-8 (POS emission mode — sync vs async-on-`SaleClosed` with
