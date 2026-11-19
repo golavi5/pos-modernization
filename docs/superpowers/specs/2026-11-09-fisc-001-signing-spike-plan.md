@@ -40,9 +40,11 @@ Gate condition #2 (design §9): **one document accepted in the DIAN set de prueb
 - Effort in hours → an evidence-based estimate for the Phase 4 adapter.
 
 ## Result
-**Run 2026-11-18, owner's test NIT and test certificate, scratch directory outside the repo. Nothing from the run is committed.**
+**Run 2026-11-18 with the owner's own NIT and the owner's own real (non-test) certificate, in a scratch directory outside the repo. Nothing from the run is committed.** (An earlier version of this section said "test NIT and test certificate"; that was an assumption and was wrong.)
 
 **Outcome.** One factura electrónica de venta, built and signed by throwaway scripts, was accepted by the DIAN habilitación service on the **first send**: `SendTestSetAsync` returned a ZipKey, `GetStatusZip` went from "Batch en proceso de validación" to "Set de prueba … se encuentra Aceptado" (`StatusCode 2`) within about 10 s, and the owner confirmed in the habilitación portal that everything was accepted. No rejection was received, so no DIAN rule code was exercised. One caveat: the API's `IsValid` stayed `false` throughout, and the per-document result was read from the portal, not from the API response.
+
+**Deviation from this plan's rules.** The Rules above say *test certificate only*. The owner signed with his own real certificate, for his own NIT (not a customer's), and sent it to the habilitación environment, which has no legal effect. The key stayed in the owner's scratch directory as a password-protected `.p12`, was loaded into memory by the throwaway scripts, was never persisted by any platform component or committed, and the file was shredded afterwards. The assistant never read the file or its password. The result is valid, but the plan's rule was not followed; for any further spike with a certificate that is not the owner's own, the test-only rule stands.
 
 **What was built, against anexo técnico v1.9 (Resolución 000165 de 2023-11-01) and DIAN's own toolbox:**
 | Step | Result |
