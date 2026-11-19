@@ -1,6 +1,6 @@
 # M2 — Tasa de IVA configurable por producto
 
-**Status**: DRAFT — 2026-11-19. En construcción.
+**Status**: APPROVED — 2026-11-19 (PR #110, no fusionado). Construido y probado contra MySQL real (e2e con tasas null/5/0, migración arriba/abajo/arriba); Playwright solo en CI, sin verificar en staging. Abierto: revisar el log de la migración antes de desplegar (productos cuya tasa guardada difiere de la de su empresa), paso 2 (otros tipos de impuesto).
 
 ## 1. Problema
 El IVA estaba fijo en 19 % en `OrderCalculationService` y otra vez en la página de ventas del frontend. `products.tax_rate` y `settings.taxRate` existían pero ninguna venta los leía.
